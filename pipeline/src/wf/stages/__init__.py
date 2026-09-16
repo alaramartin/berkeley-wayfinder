@@ -36,4 +36,4 @@ def select(from_stage: str | None, to_stage: str | None) -> list[str]:
 
 
 # Import stage modules so their @stage decorators register.
-from wf.stages import classify, crop, graph, ingest, rectify, regions  # noqa: F401
+from wf.stages import classify, crop, graph, ingest, ocr, rectify, regions  # noqa: F401

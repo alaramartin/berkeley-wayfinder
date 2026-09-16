@@ -6,12 +6,13 @@ osmWayId: null            # looked up via Overpass in M2
 defaultFloorHeightM: 4.5
 riserHeightM: 0.17
 levels:                   # order follows the placard list; M's position is UNVERIFIED (see PLAN.md §11)
-  - { id: B,  displayName: "B", sortIndex: 0, photo: wheeler-B.heic }
-  - { id: M,  displayName: "M", sortIndex: 1, photo: wheeler-M.heic, verified: false }
-  - { id: L1, displayName: "1", sortIndex: 2, photo: wheeler-L1.heic }
-  - { id: L2, displayName: "2", sortIndex: 3, photo: wheeler-L2.heic }
-  - { id: L3, displayName: "3", sortIndex: 4, photo: wheeler-L3.heic }
-  - { id: L4, displayName: "4", sortIndex: 5, photo: wheeler-L4.heic }
+  # roomPattern: OCR'd numbers that don't match go to review even when confident.
+  - { id: B,  displayName: "B", sortIndex: 0, photo: wheeler-B.heic,  roomPattern: '^\d{1,2}[A-Z]?$' }
+  - { id: M,  displayName: "M", sortIndex: 1, photo: wheeler-M.heic,  roomPattern: '^M\d{2}[A-Z]?$', verified: false }
+  - { id: L1, displayName: "1", sortIndex: 2, photo: wheeler-L1.heic, roomPattern: '^1\d{2}[A-Z]?$' }
+  - { id: L2, displayName: "2", sortIndex: 3, photo: wheeler-L2.heic, roomPattern: '^2\d{2}[A-Z]?$' }
+  - { id: L3, displayName: "3", sortIndex: 4, photo: wheeler-L3.heic, roomPattern: '^3\d{2}[A-Z]?$' }
+  - { id: L4, displayName: "4", sortIndex: 5, photo: wheeler-L4.heic, roomPattern: '^4\d{2}[A-Z]?$' }
 # Legends differ per placard and are read automatically. Add rules here only when the generic
 # label -> category defaults (pipeline/src/wf/legend.py) get a Wheeler label wrong.
 categoryRules: []

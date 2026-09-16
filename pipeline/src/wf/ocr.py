@@ -44,6 +44,7 @@ def _reader() -> Any:
 def read_text(rgb: np.ndarray, cache_dir: Path, name: str, **params: Any) -> list[TextBox]:
     """OCR an image; results are cached in cache_dir/ocr-<name>.json keyed by image content + params."""
     key = hashlib.sha1(rgb.tobytes() + json.dumps(params, sort_keys=True).encode() + str(rgb.shape).encode()).hexdigest()
+    cache_dir.mkdir(parents=True, exist_ok=True)
     path = cache_dir / f"ocr-{name}.json"
     if path.exists():
         cached = json.loads(path.read_text())

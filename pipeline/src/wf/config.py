@@ -18,6 +18,7 @@ class LevelConfig:
     sort_index: int
     photo: str
     verified: bool
+    room_pattern: str | None = None
 
 
 @dataclass(frozen=True)
@@ -56,6 +57,7 @@ def load_config(building: str) -> BuildingConfig:
                 sort_index=lv["sortIndex"],
                 photo=lv["photo"],
                 verified=lv.get("verified", True),
+                room_pattern=lv.get("roomPattern"),
             )
             for lv in sorted(data["levels"], key=lambda lv: lv["sortIndex"])
         ],

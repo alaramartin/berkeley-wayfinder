@@ -62,6 +62,9 @@
           "verified": {
             "default": true,
             "type": "boolean"
+          },
+          "roomPattern": {
+            "type": "string"
           }
         },
         "required": [

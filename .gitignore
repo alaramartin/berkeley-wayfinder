@@ -33,3 +33,5 @@ data/work/**/labels.png
 data/work/**/corridor.png
 data/work/**/ocr-*.json
 data/work/**/graph.json
+data/work/**/ocr-zoom/
+data/work/**/ocr.json

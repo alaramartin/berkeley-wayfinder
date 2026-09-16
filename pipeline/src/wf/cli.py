@@ -43,6 +43,20 @@ def stages_list() -> None:
 
 
 @app.command()
+def score(building: str) -> None:
+    """Room-number recall/precision per level against golden.yaml (run the pipeline first)."""
+    from wf.score import score_building
+
+    for s in score_building(building):
+        wrong = f" WRONG={s.accepted_wrong}" if s.accepted_wrong else ""
+        wrong += f" DUPLICATES={s.duplicates}" if s.duplicates else ""
+        typer.echo(
+            f"{s.level:3} gold={s.gold:3} accepted={s.accepted_recall:5.0%} found-anywhere={s.any_recall:5.0%}"
+            f" missing={s.missing}{wrong}"
+        )
+
+
+@app.command()
 def serve(port: int = 8765) -> None:
     """Local API for the author tool (implemented in M2)."""
     import uvicorn

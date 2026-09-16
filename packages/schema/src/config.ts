@@ -17,6 +17,8 @@ export const BuildingConfig = z.object({
         sortIndex: z.number().int(),
         photo: z.string(),
         verified: z.boolean().default(true),
+        /** Regex room numbers on this level must match to be auto-accepted, e.g. "^2\\d\\d[A-Z]?$". */
+        roomPattern: z.string().optional(),
       }),
     )
     .min(1),

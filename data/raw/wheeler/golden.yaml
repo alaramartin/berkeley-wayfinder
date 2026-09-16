@@ -1,12 +1,27 @@
-# Hand-typed ground truth from the placard photos, used by pytest to score the pipeline.
-# Only list what is actually legible on each placard.
+# Hand-typed ground truth from the placard photos, used to score the pipeline (`uv run wf score wheeler`).
+# List only numbers legible on each placard photo. Tiny labels that are unreadable even to a human are omitted.
+B:
+  rooms: ["1", "2", "3", "4", "5", "6", "7", "8", "10", "11", "12", "12A", "19", "20", "22", "22A", "22B", "22C",
+          "23", "23A", "24", "30", "31", "31A"]
+M:
+  rooms: ["M12", "M13", "M14", "M15", "M16", "M17", "M18", "M19", "M20", "M21", "M22"]
 L1:
   rooms: ["100", "102", "104", "105", "106", "107", "108", "110", "111", "112", "113", "114", "115", "116",
           "117", "118", "119", "120", "122", "123", "124", "126", "130", "150", "150A", "151"]
-  stairwells: 7          # green regions on the plan (approximate; confirm when reviewing overlays)
-  elevators: 2
-  restrooms: 2
-directory:               # name -> room, from the left panel (all levels)
+L2:
+  rooms: ["200", "202", "204", "206", "208", "209", "210", "211", "212", "212A", "220", "222", "224", "227",
+          "227A", "228", "229", "230", "231", "232", "233", "234", "235", "236", "237"]
+L3:
+  rooms: ["300", "301", "302", "303", "304", "305", "306", "307", "307A", "308", "309", "310", "311", "312",
+          "313", "314", "315", "319", "319A", "319B", "320", "320A", "322", "322B", "323", "323A", "325", "330",
+          "331", "332", "333", "334", "335", "336", "337"]
+L4:
+  rooms: ["400", "401", "402", "403", "404", "405", "406", "407", "408", "409", "410", "411", "412", "413",
+          "414", "415", "416", "417", "418", "419", "420", "421", "422", "423", "424", "425", "426", "427", "430",
+          "431", "432", "433", "434", "435", "436", "437", "440", "441", "442", "443", "444", "445", "450", "451",
+          "452", "453", "454", "455", "456", "457", "461", "462", "463", "464", "471", "472", "473", "474", "475",
+          "476", "477", "478"]
+directory:               # name -> room, from the L1 left panel (all levels)
   "College Writing Programs": "119"
   "Wheeler Auditorium": "150"
   "English Dept. Main Office": "322"
