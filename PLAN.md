@@ -3,9 +3,9 @@
 > **Source of truth for what to build and in what order.** Update the Status block and check off tasks as you go. Append new decisions to the Decision log instead of silently changing course.
 
 ## Status
-- **Current milestone:** M0 — Scaffold (**at review gate**)
-- **Last completed task:** M0 scaffold. TS packages + apps build, 15 vitest + 4 pytest tests pass, `wf run … --to-stage ingest` works on the L1 sample
-- **Blockers / waiting on user:** (1) the remaining Wheeler placard photos in `data/raw/wheeler/` named per `config.yaml` (`wheeler-B.heic`, `wheeler-M.heic`, `wheeler-L2.heic`, `wheeler-L3.heic`, `wheeler-L4.heic`); (2) OK to create the public GitHub repo and push
+- **Current milestone:** M0 — Scaffold (**at review gate**; pushed to https://github.com/alaramartin/berkeley-wayfinder)
+- **Last completed task:** all 6 Wheeler photos in `data/raw/wheeler/` (renamed to lowercase `wheeler-<level>.heic`), ingest runs on every level, all tests pass
+- **Blockers / waiting on user:** user review of M0; go-ahead for M1
 - **Next review gate:** end of M0 (now)
 
 ---
@@ -170,6 +170,15 @@ Each milestone ends with a **review gate**: stop, summarize what was built, list
 - **Review gate M0.** Ask the user to drop all level photos into `data/raw/wheeler/` and confirm creating the public GitHub repo.
 
 ### M1 — Pipeline
+- [ ] **Placard findings from the real photos (handle these first):**
+  - **Legends differ per placard.** L2 has English Dept, Academic Innovation Studio and ETS Computer Classroom. L3 has English Dept Administration, Library, Maude Fife and a red Lactation Room. B has Disabled Students Program. M has CWP and Berkeley Connect. The legend therefore has to be read **per placard**: OCR the labels next to the swatches, then map label → `RoomCategory` with keyword rules in config. A single building-wide `legend` block won't work.
+  - **Placards aren't all drawn the same way up.** L1 is landscape and B looks rotated about 90° relative to L2–L4. Alignment must allow any rotation, and the author tool needs 90° rotate buttons before anchor picking.
+  - **L4's photo is cut off at the right and bottom edges, with glare** and a strong off-axis angle, so it's missing board corners. Rectify must fall back to the plan panel's own border and allow manual `corners.json`.
+  - **M's plan is tiny** (~20% of board width) on a mostly empty board. The crop can't assume the plan fills the panel.
+  - New icons and POIs: **gender-inclusive restroom** (L2–L4), **lactation room** (L3 313). Add them to the schema.
+  - Very small labels (211, 209, 212A, 22C, 446, 457, 307A …) will go to the review queue; that's expected.
+  - Hint for alignment: M's strip (M12–M22 with stairs at both ends and an elevator) most likely sits over L1's west wing (110–119 double row), which suggests M is **between 1 and 2**. Still to confirm on the walk.
+- [ ] `golden.yaml` for every level (type visible room numbers from each photo).
 - [ ] rectify (auto + `corners.json` override). *Done when:* the L1 debug overlay shows a flat, square placard.
 - [ ] crop plan/legend/directory panels (auto + override).
 - [ ] classify from legend swatches → masks. *Done when:* the masks overlay visually matches the placard colors on L1.
@@ -234,7 +243,7 @@ Each milestone ends with a **review gate**: stop, summarize what was built, list
 
 ## 11. Open questions / verify on walk
 - [ ] **Level M**: actual vertical position (between B and 1? between 1 and 2?) and elevation. Initial guess: placard list order.
-- [ ] Does Wheeler have accessible levels beyond B–4 (roof, 5th floor)? Confirm when photos arrive.
+- [x] Levels beyond B–4? Photos cover B, M, 1, 2, 3, 4 only.
 - [ ] Door locations for every room (esp. large rooms: 150 auditorium, 100, 130).
 - [ ] Locked, card-only or hours-restricted doors and entrances.
 - [ ] Real floor-to-floor heights (step counts per flight, per shaft).

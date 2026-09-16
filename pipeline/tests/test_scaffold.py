@@ -25,9 +25,15 @@ def test_schema_rejects_bad_proposal():
         validate("proposal", {"buildingId": "wheeler"})
 
 
-def test_ingest_reads_sample_heic():
-    img = load_photo(raw_dir("wheeler") / "wheeler-L1.heic", max_long_edge=1000)
-    assert isinstance(img, Image.Image)
-    assert max(img.size) == 1000
-    # Sample was shot in portrait; EXIF orientation must be applied.
+def test_every_configured_photo_loads():
+    cfg = load_config("wheeler")
+    for lv in cfg.levels:
+        img = load_photo(raw_dir("wheeler") / lv.photo, max_long_edge=800)
+        assert isinstance(img, Image.Image), lv.id
+        assert max(img.size) == 800, lv.id
+
+
+def test_exif_orientation_is_applied():
+    # iPhone HEICs store sensor-orientation pixels plus an EXIF rotation; B was shot in portrait.
+    img = load_photo(raw_dir("wheeler") / "wheeler-B.heic", max_long_edge=800)
     assert img.height > img.width
