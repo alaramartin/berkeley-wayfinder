@@ -27,7 +27,7 @@ class BuildingConfig:
     default_floor_height_m: float
     riser_height_m: float
     levels: list[LevelConfig]
-    legend: dict[str, str | list[str]]
+    category_rules: list[dict[str, str]]
     raw: dict[str, Any]
 
     def level(self, level_id: str) -> LevelConfig:
@@ -59,6 +59,6 @@ def load_config(building: str) -> BuildingConfig:
             )
             for lv in sorted(data["levels"], key=lambda lv: lv["sortIndex"])
         ],
-        legend=data["legend"],
+        category_rules=data.get("categoryRules", []),
         raw=data,
     )

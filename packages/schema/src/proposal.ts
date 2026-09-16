@@ -19,13 +19,23 @@ export const ProposalRoom = z.object({
   number: z.string().nullable(),
   numberConfidence: Confidence,
   category: RoomCategory,
+  group: z.string().nullable(),
   polygon: Polygon,
   doors: z.array(z.object({ edgeId: Id, t: z.number().min(0).max(1), side: Side, confidence: Confidence })),
   aliases: z.array(z.string()).default([]),
 });
 export const ProposalIcon = z.object({
   id: Id,
-  kind: z.enum(["exit", "accessible", "dwa", "evac-chair", "you-are-here", "restroom-men", "restroom-women"]),
+  kind: z.enum([
+    "exit",
+    "accessible",
+    "gender-inclusive-restroom",
+    "dwa",
+    "evac-chair",
+    "you-are-here",
+    "restroom-men",
+    "restroom-women",
+  ]),
   at: Point,
   confidence: Confidence,
 });
@@ -41,6 +51,10 @@ export const Proposal = z.object({
   edges: z.array(ProposalEdge),
   rooms: z.array(ProposalRoom),
   icons: z.array(ProposalIcon),
+  /** Name -> room number pairs read from a directory panel (e.g. Wheeler L1 lists every level). */
+  directory: z
+    .array(z.object({ name: z.string(), room: z.string(), confidence: Confidence }))
+    .default([]),
 });
 export type Proposal = z.infer<typeof Proposal>;
 

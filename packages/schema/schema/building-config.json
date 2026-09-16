@@ -72,22 +72,22 @@
         ]
       }
     },
-    "legend": {
-      "type": "object",
-      "propertyNames": {
-        "type": "string"
-      },
-      "additionalProperties": {
-        "anyOf": [
-          {
+    "categoryRules": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "match": {
             "type": "string"
           },
-          {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
+          "category": {
+            "type": "string"
           }
+        },
+        "required": [
+          "match",
+          "category"
         ]
       }
     }
@@ -95,7 +95,6 @@
   "required": [
     "id",
     "name",
-    "levels",
-    "legend"
+    "levels"
   ]
 }

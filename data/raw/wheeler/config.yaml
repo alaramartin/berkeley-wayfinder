@@ -12,10 +12,6 @@ levels:                   # order follows the placard list; M's position is UNVE
   - { id: L2, displayName: "2", sortIndex: 3, photo: wheeler-L2.heic }
   - { id: L3, displayName: "3", sortIndex: 4, photo: wheeler-L3.heic }
   - { id: L4, displayName: "4", sortIndex: 5, photo: wheeler-L4.heic }
-legend:                   # pipeline class -> legend label(s) printed on the placard
-  stair: "Stairwells"
-  elevator: "Elevators"
-  restroom: "Restrooms"
-  classroom: "General Assignment Classrooms"
-  office: ["College Writing Programs Office", "College Writing Programs - Faculty Offices"]
-  auditorium: "Cal Performances - Wheeler Auditorium"
+# Legends differ per placard and are read automatically. Add rules here only when the generic
+# label -> category defaults (pipeline/src/wf/legend.py) get a Wheeler label wrong.
+categoryRules: []

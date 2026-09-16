@@ -20,7 +20,10 @@ export const BuildingConfig = z.object({
       }),
     )
     .min(1),
-  /** Pipeline class -> legend label(s) printed on the placard. */
-  legend: z.record(z.string(), z.union([z.string(), z.array(z.string())])),
+  /**
+   * Extra legend-label -> category rules, checked before the pipeline's generic defaults.
+   * Matching is case-insensitive substring. Legends are read per placard, so no per-level config is needed.
+   */
+  categoryRules: z.array(z.object({ match: z.string(), category: z.string() })).default([]),
 });
 export type BuildingConfig = z.infer<typeof BuildingConfig>;

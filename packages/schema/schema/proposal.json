@@ -182,12 +182,23 @@
             "type": "string",
             "enum": [
               "classroom",
+              "computer-lab",
+              "seminar",
+              "library",
               "office",
               "restroom",
+              "lactation",
               "auditorium",
               "stair",
               "elevator",
+              "service",
               "other"
+            ]
+          },
+          "group": {
+            "type": [
+              "string",
+              "null"
             ]
           },
           "polygon": {
@@ -256,6 +267,7 @@
           "number",
           "numberConfidence",
           "category",
+          "group",
           "polygon",
           "doors"
         ]
@@ -275,6 +287,7 @@
             "enum": [
               "exit",
               "accessible",
+              "gender-inclusive-restroom",
               "dwa",
               "evac-chair",
               "you-are-here",
@@ -306,6 +319,31 @@
           "id",
           "kind",
           "at",
+          "confidence"
+        ]
+      }
+    },
+    "directory": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "room": {
+            "type": "string"
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "name",
+          "room",
           "confidence"
         ]
       }

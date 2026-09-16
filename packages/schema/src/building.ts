@@ -38,13 +38,28 @@ export const Door = z.object({
 });
 export type Door = z.infer<typeof Door>;
 
-export const RoomCategory = z.enum(["classroom", "office", "restroom", "auditorium", "stair", "elevator", "other"]);
+export const RoomCategory = z.enum([
+  "classroom",
+  "computer-lab",
+  "seminar",
+  "library",
+  "office",
+  "restroom",
+  "lactation",
+  "auditorium",
+  "stair",
+  "elevator",
+  "service", // gray on placards: mechanical, storage, not publicly accessible
+  "other",
+]);
 export const Room = z.object({
   id: Id,
   number: z.string(),
   name: z.string().optional(),
   aliases: z.array(z.string()).default([]),
   category: RoomCategory,
+  /** Legend label the room's color maps to on the placard, e.g. "English Department Library". */
+  group: z.string().optional(),
   levelId: z.string(),
   polygon: Polygon,
   doors: z.array(Door).default([]),
@@ -72,7 +87,16 @@ export const Entrance = z.object({
 });
 export type Entrance = z.infer<typeof Entrance>;
 
-export const PoiKind = z.enum(["restroom", "accessible-restroom", "elevator", "evac-chair", "dwa", "exit"]);
+export const PoiKind = z.enum([
+  "restroom",
+  "accessible-restroom",
+  "gender-inclusive-restroom",
+  "lactation",
+  "elevator",
+  "evac-chair",
+  "dwa",
+  "exit",
+]);
 export const Poi = z
   .object({
     id: Id,

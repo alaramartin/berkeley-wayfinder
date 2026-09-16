@@ -27,3 +27,8 @@ data/work/**/debug/
 !.env.example
 data/work/**/ingest.json
 data/work/**/rectify.json
+data/work/**/classify.json
+data/work/**/regions.json
+data/work/**/labels.png
+data/work/**/corridor.png
+data/work/**/ocr-*.json

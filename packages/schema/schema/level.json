@@ -239,13 +239,21 @@
             "type": "string",
             "enum": [
               "classroom",
+              "computer-lab",
+              "seminar",
+              "library",
               "office",
               "restroom",
+              "lactation",
               "auditorium",
               "stair",
               "elevator",
+              "service",
               "other"
             ]
+          },
+          "group": {
+            "type": "string"
           },
           "levelId": {
             "type": "string"
@@ -347,6 +355,8 @@
             "enum": [
               "restroom",
               "accessible-restroom",
+              "gender-inclusive-restroom",
+              "lactation",
               "elevator",
               "evac-chair",
               "dwa",
