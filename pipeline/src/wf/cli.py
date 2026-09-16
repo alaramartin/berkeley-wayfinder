@@ -24,6 +24,7 @@ def run(
     cfg = load_config(building)
     levels = [cfg.level(lv) for lv in level] if level else cfg.levels
     names = stages.select(from_stage, to_stage)
+    failures: list[str] = []
     for lv in levels:
         typer.echo(f"{cfg.id} {lv.id}")
         ctx = StageContext(building=cfg, level=lv)
@@ -32,7 +33,15 @@ def run(
             if fn is None:
                 typer.echo(f"  {name}: not implemented yet, stopping")
                 break
-            fn(ctx)
+            try:
+                fn(ctx)
+            except Exception as exc:  # noqa: BLE001 -- one bad photo shouldn't stop the rest of the building
+                typer.echo(f"  {name}: FAILED: {exc}", err=True)
+                failures.append(f"{lv.id}/{name}")
+                break
+    if failures:
+        typer.echo(f"failed: {', '.join(failures)} (fix overrides such as corners.json/crop.json, then re-run with --from-stage)", err=True)
+        raise typer.Exit(1)
 
 
 @app.command()

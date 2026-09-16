@@ -24,6 +24,14 @@ export const ProposalRoom = z.object({
   doors: z.array(z.object({ edgeId: Id, t: z.number().min(0).max(1), side: Side, confidence: Confidence })),
   aliases: z.array(z.string()).default([]),
 });
+export const ProposalEntrance = z.object({
+  id: Id,
+  nodeId: Id,
+  accessible: z.boolean(),
+  /** What suggested it: an exit sign, an accessibility icon, or a corridor reaching the facade. */
+  evidence: z.array(z.enum(["exit-icon", "accessible-icon", "corridor-end"])),
+  confidence: Confidence,
+});
 export const ProposalIcon = z.object({
   id: Id,
   kind: z.enum([
@@ -47,10 +55,13 @@ export const Proposal = z.object({
   generatedAt: z.string(),
   pipelineVersion: z.string(),
   outline: Polygon.nullable(),
+  /** Courtyards and multi-level voids inside the outline. */
+  voids: z.array(Polygon).default([]),
   nodes: z.array(ProposalNode),
   edges: z.array(ProposalEdge),
   rooms: z.array(ProposalRoom),
   icons: z.array(ProposalIcon),
+  entrances: z.array(ProposalEntrance).default([]),
   /** Name -> room number pairs read from a directory panel (e.g. Wheeler L1 lists every level). */
   directory: z
     .array(z.object({ name: z.string(), room: z.string(), confidence: Confidence }))

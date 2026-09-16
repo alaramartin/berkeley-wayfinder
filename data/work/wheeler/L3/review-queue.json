@@ -1,0 +1,37 @@
+{
+  "buildingId": "wheeler",
+  "levelId": "L3",
+  "items": [
+    {
+      "id": "wheeler-L3-g001-num",
+      "kind": "room-number",
+      "crop": "review-crops/wheeler-L3-g001-num.png",
+      "candidates": [],
+      "targetId": "wheeler-L3-g001"
+    },
+    {
+      "id": "wheeler-L3-g024-gender",
+      "kind": "restroom-gender",
+      "crop": "review-crops/wheeler-L3-g024-gender.png",
+      "candidates": [
+        {
+          "value": "men",
+          "confidence": 0.6
+        }
+      ],
+      "targetId": "wheeler-L3-g024"
+    },
+    {
+      "id": "wheeler-L3-g027-gender",
+      "kind": "restroom-gender",
+      "crop": "review-crops/wheeler-L3-g027-gender.png",
+      "candidates": [
+        {
+          "value": "men",
+          "confidence": 0.6
+        }
+      ],
+      "targetId": "wheeler-L3-g027"
+    }
+  ]
+}

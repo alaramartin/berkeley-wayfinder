@@ -1,0 +1,96 @@
+{
+  "buildingId": "wheeler",
+  "levelId": "L4",
+  "items": [
+    {
+      "id": "wheeler-L4-g038-num",
+      "kind": "room-number",
+      "crop": "review-crops/wheeler-L4-g038-num.png",
+      "candidates": [],
+      "targetId": "wheeler-L4-g038"
+    },
+    {
+      "id": "wheeler-L4-g050-num",
+      "kind": "room-number",
+      "crop": "review-crops/wheeler-L4-g050-num.png",
+      "candidates": [],
+      "targetId": "wheeler-L4-g050"
+    },
+    {
+      "id": "wheeler-L4-g058-num",
+      "kind": "room-number",
+      "crop": "review-crops/wheeler-L4-g058-num.png",
+      "candidates": [],
+      "targetId": "wheeler-L4-g058"
+    },
+    {
+      "id": "wheeler-L4-g065-num",
+      "kind": "room-number",
+      "crop": "review-crops/wheeler-L4-g065-num.png",
+      "candidates": [],
+      "targetId": "wheeler-L4-g065"
+    },
+    {
+      "id": "wheeler-L4-g079-num",
+      "kind": "room-number",
+      "crop": "review-crops/wheeler-L4-g079-num.png",
+      "candidates": [],
+      "targetId": "wheeler-L4-g079"
+    },
+    {
+      "id": "wheeler-L4-g088-num",
+      "kind": "room-number",
+      "crop": "review-crops/wheeler-L4-g088-num.png",
+      "candidates": [],
+      "targetId": "wheeler-L4-g088"
+    },
+    {
+      "id": "wheeler-L4-g029-gender",
+      "kind": "restroom-gender",
+      "crop": "review-crops/wheeler-L4-g029-gender.png",
+      "candidates": [
+        {
+          "value": "all",
+          "confidence": 0.2
+        }
+      ],
+      "targetId": "wheeler-L4-g029"
+    },
+    {
+      "id": "wheeler-L4-g086-gender",
+      "kind": "restroom-gender",
+      "crop": "review-crops/wheeler-L4-g086-gender.png",
+      "candidates": [
+        {
+          "value": "men",
+          "confidence": 0.6
+        }
+      ],
+      "targetId": "wheeler-L4-g086"
+    },
+    {
+      "id": "wheeler-L4-g098-gender",
+      "kind": "restroom-gender",
+      "crop": "review-crops/wheeler-L4-g098-gender.png",
+      "candidates": [
+        {
+          "value": "men",
+          "confidence": 0.6
+        }
+      ],
+      "targetId": "wheeler-L4-g098"
+    },
+    {
+      "id": "wheeler-L4-g105-gender",
+      "kind": "restroom-gender",
+      "crop": "review-crops/wheeler-L4-g105-gender.png",
+      "candidates": [
+        {
+          "value": "all",
+          "confidence": 0.2
+        }
+      ],
+      "targetId": "wheeler-L4-g105"
+    }
+  ]
+}

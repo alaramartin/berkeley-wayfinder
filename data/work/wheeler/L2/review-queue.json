@@ -1,0 +1,125 @@
+{
+  "buildingId": "wheeler",
+  "levelId": "L2",
+  "items": [
+    {
+      "id": "wheeler-L2-g008-num",
+      "kind": "room-number",
+      "crop": "review-crops/wheeler-L2-g008-num.png",
+      "candidates": [
+        {
+          "value": "D1A",
+          "confidence": 0.669
+        }
+      ],
+      "targetId": "wheeler-L2-g008"
+    },
+    {
+      "id": "wheeler-L2-g014-num",
+      "kind": "room-number",
+      "crop": "review-crops/wheeler-L2-g014-num.png",
+      "candidates": [],
+      "targetId": "wheeler-L2-g014"
+    },
+    {
+      "id": "wheeler-L2-g015-num",
+      "kind": "room-number",
+      "crop": "review-crops/wheeler-L2-g015-num.png",
+      "candidates": [],
+      "targetId": "wheeler-L2-g015"
+    },
+    {
+      "id": "wheeler-L2-g019-num",
+      "kind": "room-number",
+      "crop": "review-crops/wheeler-L2-g019-num.png",
+      "candidates": [],
+      "targetId": "wheeler-L2-g019"
+    },
+    {
+      "id": "wheeler-L2-g023-num",
+      "kind": "room-number",
+      "crop": "review-crops/wheeler-L2-g023-num.png",
+      "candidates": [],
+      "targetId": "wheeler-L2-g023"
+    },
+    {
+      "id": "wheeler-L2-g030-num",
+      "kind": "room-number",
+      "crop": "review-crops/wheeler-L2-g030-num.png",
+      "candidates": [],
+      "targetId": "wheeler-L2-g030"
+    },
+    {
+      "id": "wheeler-L2-i001-icon",
+      "kind": "icon",
+      "crop": "review-crops/wheeler-L2-i001.png",
+      "candidates": [
+        {
+          "value": "dwa",
+          "confidence": 0.807
+        }
+      ],
+      "targetId": "wheeler-L2-i001"
+    },
+    {
+      "id": "wheeler-L2-i002-icon",
+      "kind": "icon",
+      "crop": "review-crops/wheeler-L2-i002.png",
+      "candidates": [
+        {
+          "value": "dwa",
+          "confidence": 0.799
+        }
+      ],
+      "targetId": "wheeler-L2-i002"
+    },
+    {
+      "id": "wheeler-L2-i003-icon",
+      "kind": "icon",
+      "crop": "review-crops/wheeler-L2-i003.png",
+      "candidates": [
+        {
+          "value": "dwa",
+          "confidence": 0.787
+        }
+      ],
+      "targetId": "wheeler-L2-i003"
+    },
+    {
+      "id": "wheeler-L2-i004-icon",
+      "kind": "icon",
+      "crop": "review-crops/wheeler-L2-i004.png",
+      "candidates": [
+        {
+          "value": "dwa",
+          "confidence": 0.786
+        }
+      ],
+      "targetId": "wheeler-L2-i004"
+    },
+    {
+      "id": "wheeler-L2-g035-gender",
+      "kind": "restroom-gender",
+      "crop": "review-crops/wheeler-L2-g035-gender.png",
+      "candidates": [
+        {
+          "value": "men",
+          "confidence": 0.6
+        }
+      ],
+      "targetId": "wheeler-L2-g035"
+    },
+    {
+      "id": "wheeler-L2-g040-gender",
+      "kind": "restroom-gender",
+      "crop": "review-crops/wheeler-L2-g040-gender.png",
+      "candidates": [
+        {
+          "value": "men",
+          "confidence": 0.6
+        }
+      ],
+      "targetId": "wheeler-L2-g040"
+    }
+  ]
+}

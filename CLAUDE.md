@@ -30,6 +30,7 @@ uv run wf stages-list                     # which stages are implemented
 uv run wf run wheeler --level L1                        # all implemented stages, one level
 uv run wf run wheeler --level L1 --from-stage classify  # resume from a stage
 uv run wf run wheeler                                   # all levels
+uv run wf score wheeler                                 # room-number recall/precision vs data/raw/wheeler/golden.yaml
 uv run wf serve                                         # FastAPI on 127.0.0.1:8765 for the author tool
 uv run pytest
 uv run ruff check src tests
@@ -37,6 +38,8 @@ uv run ruff check src tests
 - Workspace packages are consumed as TS source (no build step); the Next apps list them in `transpilePackages`.
 - Relative TS imports are extensionless (`./building`, not `./building.ts`).
 - New pipeline stage: create `pipeline/src/wf/stages/<name>.py` with `@stage("<name>")`, import it at the bottom of `stages/__init__.py`, and add a test.
+- **Pipeline tuning loop:** change a stage, run `uv run wf run wheeler --from-stage <stage>`, then look at `data/work/wheeler/*/debug/<stage>.png` for **all six levels** (build a contact sheet in the scratchpad) and run `uv run wf score wheeler`. A fix that helps one placard often breaks another (this happened repeatedly in M1). Thresholds are module constants at the top of each stage file; express them relative to plan/board size, never in absolute pixels.
+- OCR results are cached (`ocr-*.json`, `ocr-zoom/`, gitignored). They're keyed by image content + params, so changing upstream stages or OCR params invalidates them automatically. A cold run takes ~5 min.
 
 ## Repo map
 ```
@@ -47,7 +50,7 @@ packages/geometry/ similarity transforms, polygon utils, ENU<->lat/lon. Pure.
 packages/routing/  graph build, A*, nearest-POI, instructions. Pure TS (no DOM, no three).
 pipeline/          Python 3.12 (uv). `wf` CLI stages: ingest → rectify → crop → classify → regions → graph → ocr → icons → connect → emit
 data/raw/<b>/      source photos, config.yaml, golden.yaml                       (committed)
-data/work/<b>/<l>/ intermediates: ingest.png, rectified.png, masks/, debug/     (gitignored)
+data/work/<b>/<l>/ intermediates: *.png, stage *.json, OCR caches, debug/        (gitignored)
                    corners.json, crop.json, proposal.json, review-queue.json, review-crops/ (committed)
 data/buildings/<b>/ canonical data: building.json, levels/<l>.json, osm.json    (committed)
 ```

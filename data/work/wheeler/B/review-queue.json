@@ -1,0 +1,63 @@
+{
+  "buildingId": "wheeler",
+  "levelId": "B",
+  "items": [
+    {
+      "id": "wheeler-B-g001-num",
+      "kind": "room-number",
+      "crop": "review-crops/wheeler-B-g001-num.png",
+      "candidates": [
+        {
+          "value": "4",
+          "confidence": 0.658
+        }
+      ],
+      "targetId": "wheeler-B-g001"
+    },
+    {
+      "id": "wheeler-B-g010-num",
+      "kind": "room-number",
+      "crop": "review-crops/wheeler-B-g010-num.png",
+      "candidates": [],
+      "targetId": "wheeler-B-g010"
+    },
+    {
+      "id": "wheeler-B-g015-num",
+      "kind": "room-number",
+      "crop": "review-crops/wheeler-B-g015-num.png",
+      "candidates": [],
+      "targetId": "wheeler-B-g015"
+    },
+    {
+      "id": "wheeler-B-g033-num",
+      "kind": "room-number",
+      "crop": "review-crops/wheeler-B-g033-num.png",
+      "candidates": [],
+      "targetId": "wheeler-B-g033"
+    },
+    {
+      "id": "wheeler-B-g009-gender",
+      "kind": "restroom-gender",
+      "crop": "review-crops/wheeler-B-g009-gender.png",
+      "candidates": [
+        {
+          "value": "men",
+          "confidence": 0.6
+        }
+      ],
+      "targetId": "wheeler-B-g009"
+    },
+    {
+      "id": "wheeler-B-g012-gender",
+      "kind": "restroom-gender",
+      "crop": "review-crops/wheeler-B-g012-gender.png",
+      "candidates": [
+        {
+          "value": "men",
+          "confidence": 0.6
+        }
+      ],
+      "targetId": "wheeler-B-g012"
+    }
+  ]
+}

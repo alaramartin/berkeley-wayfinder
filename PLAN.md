@@ -3,10 +3,22 @@
 > **Source of truth for what to build and in what order.** Update the Status block and check off tasks as you go. Append new decisions to the Decision log instead of silently changing course.
 
 ## Status
-- **Current milestone:** M0 — Scaffold (**at review gate**; pushed to https://github.com/alaramartin/berkeley-wayfinder)
-- **Last completed task:** all 6 Wheeler photos in `data/raw/wheeler/` (renamed to lowercase `wheeler-<level>.heic`), ingest runs on every level, all tests pass
-- **Blockers / waiting on user:** user review of M0; go-ahead for M1
-- **Next review gate:** end of M0 (now)
+- **Current milestone:** M1 — Pipeline (**at review gate**)
+- **Last completed task:** end-to-end `uv run wf run wheeler` on all 6 levels → schema-valid `proposal.json` + `review-queue.json` per level (~1 min with OCR cache, ~5 min cold)
+- **Blockers / waiting on user:** review of M1 overlays and scores; OK to push M1 commits to GitHub; go-ahead for M2
+- **Next review gate:** end of M1 (now)
+
+### M1 results (per level, before any human review)
+| Level | Room numbers auto-accepted / found anywhere (golden) | Wrong accepts | Rooms | Stairs+elevators linked | Graph components | Entrance candidates | Review items |
+|---|---|---|---|---|---|---|---|
+| B | 83% / 88% (missing 22C, 31, 31A) | 0 | 25 | 8 | 3 | 1 | 6 |
+| M | 100% / 100% | 0 | 11 | 5 | 1 | 0 | 0 |
+| L1 | 92% / 92% (missing 130, 151) | 0 | 29 | 11 | 5 | 3 | 10 |
+| L2 | 96% / 100% | 0 | 32 | 9 | 1 | 0 | 12 |
+| L3 | 97% / 100% | 0 | 37 | 6 | 2 | 0 | 3 |
+| L4 | 98% / 98% (missing 450) | 0 | 71 | 6 | 2 | 0 | 10 |
+
+Overall: 174/183 room numbers auto-accepted (95%), 0 wrong. `uv run wf score wheeler` reproduces the numbers above.
 
 ---
 
@@ -170,27 +182,35 @@ Each milestone ends with a **review gate**: stop, summarize what was built, list
 - **Review gate M0.** Ask the user to drop all level photos into `data/raw/wheeler/` and confirm creating the public GitHub repo.
 
 ### M1 — Pipeline
-- [ ] **Placard findings from the real photos (handle these first):**
-  - **Legends differ per placard.** L2 has English Dept, Academic Innovation Studio and ETS Computer Classroom. L3 has English Dept Administration, Library, Maude Fife and a red Lactation Room. B has Disabled Students Program. M has CWP and Berkeley Connect. The legend therefore has to be read **per placard**: OCR the labels next to the swatches, then map label → `RoomCategory` with keyword rules in config. A single building-wide `legend` block won't work.
-  - **Placards aren't all drawn the same way up.** L1 is landscape and B looks rotated about 90° relative to L2–L4. Alignment must allow any rotation, and the author tool needs 90° rotate buttons before anchor picking.
-  - **L4's photo is cut off at the right and bottom edges, with glare** and a strong off-axis angle, so it's missing board corners. Rectify must fall back to the plan panel's own border and allow manual `corners.json`.
-  - **M's plan is tiny** (~20% of board width) on a mostly empty board. The crop can't assume the plan fills the panel.
-  - New icons and POIs: **gender-inclusive restroom** (L2–L4), **lactation room** (L3 313). Add them to the schema.
-  - Very small labels (211, 209, 212A, 22C, 446, 457, 307A …) will go to the review queue; that's expected.
-  - Hint for alignment: M's strip (M12–M22 with stairs at both ends and an elevator) most likely sits over L1's west wing (110–119 double row), which suggests M is **between 1 and 2**. Still to confirm on the walk.
-- [ ] `golden.yaml` for every level (type visible room numbers from each photo).
-- [ ] rectify (auto + `corners.json` override). *Done when:* the L1 debug overlay shows a flat, square placard.
-- [ ] crop plan/legend/directory panels (auto + override).
-- [ ] classify from legend swatches → masks. *Done when:* the masks overlay visually matches the placard colors on L1.
-- [ ] regions → polygons, axis snapping, building outline.
-- [ ] corridor skeleton → graph (spur pruning, junction clustering, RDP). *Done when:* L1 graph is a single component and traces the ring corridor + west wing.
-- [ ] OCR room numbers + directory aliases → proposal / review queue.
-- [ ] icon template matching → entrances, accessibility, evac chair, DWA.
-- [ ] door + vertical connector proposals.
-- [ ] emit `proposal.json` (schema-valid) + `debug/summary.png`.
-- [ ] golden check in pytest (L1 room recall ≥ 90% before manual review).
-- [ ] run on every level; record per-level results in the Status block.
-- **Review gate M1.** Show debug overlays and golden scores per level.
+- [x] **Placard findings from the real photos:**
+  - [x] Legends differ per placard → legend read per placard (swatches + OCR'd labels → category via generic keyword rules; `categoryRules` in config for overrides). Works on all 6.
+  - [ ] Placards aren't all drawn the same way up → **moved to M2**: alignment allows any rotation; author tool needs 90° rotate buttons before anchor picking.
+  - [x] L4 cut off → line-search quad on board-parallel lines + grow-to-board in rectified space; `corners.json` override still available.
+  - [x] M's tiny plan → crop picks the largest ink blob between rules, independent of size.
+  - [x] Gender-inclusive restroom + lactation room added to the schema.
+  - [x] Small labels → zoomed second OCR pass; leftovers go to review.
+  - [ ] M sits over L1's west wing? → verify in M2 alignment + walk.
+- [x] `golden.yaml` for every level.
+- [x] rectify (auto + `corners.json` override). All 6 flat; aspect from EXIF focal length agrees across same-size placards (0.641–0.648).
+- [x] crop plan/legend/directory panels (auto; `crop.json` with `"source": "manual"` is kept).
+- [x] classify from legend swatches. Neutral classes (paper, light/dark gray, wall) refined per plan.
+- [x] regions → room polygons (axis-snapped), outline, voids (disk opening), corridor mask (glare, facade-strip and courtyard-corner filters).
+- [x] corridor skeleton → graph. *Done-when not fully met:* L1 is 5 components (main ring 33 nodes + east-lobby/stair fragments); M and L2 are single components. Remaining joins are author-tool work.
+- [x] OCR room numbers (two passes, per-level `roomPattern`, duplicate guard) + directory aliases (L1: all 9 pairs correct).
+- [x] icons: strong template matches only (accessible, DWA, evac chair, gender-inclusive) + exit signs by color. Star detection dropped (confused with dark purple fills). **Weakest stage**; entrances rely mostly on exit signs / corridor dead-ends.
+- [x] door + vertical connector + entrance proposals.
+- [x] emit `proposal.json` + `review-queue.json` (both schema-validated) + `debug/summary.png`.
+- [x] golden check in pytest (`test_wheeler_room_number_scores`, skipped when outputs are absent, e.g. CI).
+- [x] run on every level; results in the Status block.
+- **Review gate M1.** ← here
+
+**Known proposal defects for M2 to fix by hand** (the authoring tool must make these fast):
+- Suites merged into one polygon (L3 319/320/322/323 block; B 22/23 block; L4 east column 401–410). One room per number shares the polygon, so they need splitting.
+- Restrooms have no numbers. Name them from gender (review queue) + level.
+- L1 graph fragments around the east lobby and the NW/SW stairs need joining. B's main corridor is broken at the you-are-here star.
+- Few entrances detected (B: 1, L1: 3, others: 0). Upper floors correctly have none, but B/L1/M entrances need confirming or adding.
+- L4 outline includes the glare wedge on the photo's left edge.
+- L2 has 4 low-score "DWA" icon matches in review that are window dashes.
 
 ### M2 — Authoring tool
 - [ ] building overview + pipeline status; `wf serve` integration.
@@ -264,3 +284,10 @@ Each milestone ends with a **review gate**: stop, summarize what was built, list
 | 2026-09-16 | Field edits offline → exported patch JSON → reviewed import | No backend, no secrets |
 | 2026-09-16 | Level M order = placard list (B, M, 1, 2, 3, 4), unverified | Ambiguous placard; settle via step counts |
 | 2026-09-16 | One milestone at a time with a review gate | User choice |
+| 2026-09-16 | Legend read per placard; building config holds only optional `categoryRules` | Every Wheeler placard has a different legend |
+| 2026-09-16 | Rectify via line-search quad + grow-to-board; aspect from EXIF focal length (Zhang & He) | Color thresholds failed on bright walls; L4 is cut off; focal aspect is consistent across placards |
+| 2026-09-16 | Courtyards = paper wider than a disk of 9% plan size (morphological opening), not sealed-wall flood fill | Dashed courtyard walls leak; narrow L4 corridors get sealed by closing |
+| 2026-09-16 | A corridor must touch a colored room/stair/elevator | Removes glare blobs, courtyard corners, facade strips generically |
+| 2026-09-16 | Auto-accept room numbers at ≥0.5 OCR confidence only if they match the level's `roomPattern` (zoom pass ≥0.75); one number per level | Measured: all ≥0.5 readings matching the pattern were correct; pattern catches the rest |
+| 2026-09-16 | Icons: accept template matches ≥0.85, review 0.78–0.85; no star detection | Weak matches were overwhelmingly window dashes/columns |
+| 2026-09-16 | Door side is computed in map orientation (image y flipped) | Canonical frame is y-up; keeps left/right correct after px→m transform |

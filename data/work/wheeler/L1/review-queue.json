@@ -1,0 +1,106 @@
+{
+  "buildingId": "wheeler",
+  "levelId": "L1",
+  "items": [
+    {
+      "id": "wheeler-L1-g000-num",
+      "kind": "room-number",
+      "crop": "review-crops/wheeler-L1-g000-num.png",
+      "candidates": [],
+      "targetId": "wheeler-L1-g000"
+    },
+    {
+      "id": "wheeler-L1-g037-num",
+      "kind": "room-number",
+      "crop": "review-crops/wheeler-L1-g037-num.png",
+      "candidates": [],
+      "targetId": "wheeler-L1-g037"
+    },
+    {
+      "id": "wheeler-L1-g039-num",
+      "kind": "room-number",
+      "crop": "review-crops/wheeler-L1-g039-num.png",
+      "candidates": [],
+      "targetId": "wheeler-L1-g039"
+    },
+    {
+      "id": "wheeler-L1-g049-num",
+      "kind": "room-number",
+      "crop": "review-crops/wheeler-L1-g049-num.png",
+      "candidates": [],
+      "targetId": "wheeler-L1-g049"
+    },
+    {
+      "id": "wheeler-L1-alias00",
+      "kind": "alias",
+      "crop": "",
+      "candidates": [
+        {
+          "value": "English Dept: Main (bavce = 322",
+          "confidence": 0.239
+        }
+      ],
+      "targetId": "wheeler-L1-directory"
+    },
+    {
+      "id": "wheeler-L1-alias01",
+      "kind": "alias",
+      "crop": "",
+      "candidates": [
+        {
+          "value": "English Dept: Advising Office = 319",
+          "confidence": 0.475
+        }
+      ],
+      "targetId": "wheeler-L1-directory"
+    },
+    {
+      "id": "wheeler-L1-alias03",
+      "kind": "alias",
+      "crop": "",
+      "candidates": [
+        {
+          "value": "Maude Fife Seminar Room = 315",
+          "confidence": 0.858
+        }
+      ],
+      "targetId": "wheeler-L1-directory"
+    },
+    {
+      "id": "wheeler-L1-alias04",
+      "kind": "alias",
+      "crop": "",
+      "candidates": [
+        {
+          "value": "ETS Computer Facilities = 210",
+          "confidence": 0.762
+        }
+      ],
+      "targetId": "wheeler-L1-directory"
+    },
+    {
+      "id": "wheeler-L1-alias05",
+      "kind": "alias",
+      "crop": "",
+      "candidates": [
+        {
+          "value": "College Writing Programs = 119",
+          "confidence": 0.694
+        }
+      ],
+      "targetId": "wheeler-L1-directory"
+    },
+    {
+      "id": "wheeler-L1-g044-gender",
+      "kind": "restroom-gender",
+      "crop": "review-crops/wheeler-L1-g044-gender.png",
+      "candidates": [
+        {
+          "value": "all",
+          "confidence": 0.2
+        }
+      ],
+      "targetId": "wheeler-L1-g044"
+    }
+  ]
+}

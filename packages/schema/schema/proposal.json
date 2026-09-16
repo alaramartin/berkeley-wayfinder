@@ -58,6 +58,28 @@
         }
       ]
     },
+    "voids": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "minItems": 3,
+        "type": "array",
+        "items": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        }
+      }
+    },
     "nodes": {
       "type": "array",
       "items": {
@@ -319,6 +341,49 @@
           "id",
           "kind",
           "at",
+          "confidence"
+        ]
+      }
+    },
+    "entrances": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$"
+          },
+          "nodeId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$"
+          },
+          "accessible": {
+            "type": "boolean"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "exit-icon",
+                "accessible-icon",
+                "corridor-end"
+              ]
+            }
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "id",
+          "nodeId",
+          "accessible",
+          "evidence",
           "confidence"
         ]
       }
