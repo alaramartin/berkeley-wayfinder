@@ -59,7 +59,7 @@ def run(ctx: StageContext) -> None:
     inside_paper = ((footprint > 0) & (labels == paper_id)).astype(np.uint8)
     # Courtyards/voids are paper areas far wider than any corridor: an opening with a large disk keeps only
     # them. This is immune to dashed courtyard walls that connect corridors to courtyards.
-    void_radius = int(0.05 * plan_long)
+    void_radius = int(0.09 * plan_long)  # wider than any lobby, narrower than any courtyard
     disk = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * void_radius + 1, 2 * void_radius + 1))
     wide = cv2.morphologyEx(inside_paper, cv2.MORPH_OPEN, disk)
     near_outside = cv2.dilate((footprint == 0).astype(np.uint8), _kernel(seal)) > 0
@@ -89,8 +89,9 @@ def run(ctx: StageContext) -> None:
             continue
         voids.extend(mask_to_polygons(m * 255, min_room_area, eps, (px, py)))
 
-    candidates = inside_paper & (cv2.dilate(void_mask, _kernel(5)) == 0)
-    candidates = cv2.morphologyEx(candidates.astype(np.uint8), cv2.MORPH_OPEN, _kernel(3))
+    candidates = (inside_paper & (cv2.dilate(void_mask, _kernel(5)) == 0)).astype(np.uint8)
+    # Cut thin paper slivers (window dashes, door marks in walls) off the corridors.
+    candidates = cv2.morphologyEx(candidates, cv2.MORPH_OPEN, _kernel(int(0.008 * plan_long)))
     corridor = np.zeros_like(labels, np.uint8)
     n, comp, stats, _ = cv2.connectedComponentsWithStats(candidates)
     for i in range(1, n):
@@ -99,10 +100,12 @@ def run(ctx: StageContext) -> None:
         m = (comp == i).astype(np.uint8)
         if looks_like_glare(m):
             continue
+        near_legend = np.isin(labels[(cv2.dilate(m, wide_ring) > 0) & (m == 0)], legend_ids)
+        if not near_legend.any():
+            continue  # courtyard corners, facade slivers: public corridors always reach a room/stair/elevator
         if outside_fraction(m) > 0.5:
             continue  # strip between the facade and a site boundary line
         corridor[m > 0] = 255
-    cv2.imwrite(str(out / "corridor.png"), corridor)
 
     rooms = []
     for cid, c in classes.items():
@@ -134,6 +137,17 @@ def run(ctx: StageContext) -> None:
                     "area": round(float(cv2.contourArea(poly.astype(np.float32))), 1),
                 }
             )
+
+    # Numbers and icons printed inside rooms are paper too; they are never corridor.
+    room_fill = np.zeros_like(corridor)
+    for r in rooms:
+        cv2.fillPoly(room_fill, [(np.array(r["polygon"]) - (px, py)).round().astype(np.int32)], 255)
+    corridor[room_fill > 0] = 0
+    n, comp, stats, _ = cv2.connectedComponentsWithStats((corridor > 0).astype(np.uint8))
+    for i in range(1, n):
+        if stats[i, cv2.CC_STAT_AREA] < min_room_area:
+            corridor[comp == i] = 0
+    cv2.imwrite(str(out / "corridor.png"), corridor)
 
     # Merge light/dark gray service fragments that share a class id ordering; stable ids by position.
     rooms.sort(key=lambda r: (min(p[1] for p in r["polygon"]), min(p[0] for p in r["polygon"])))

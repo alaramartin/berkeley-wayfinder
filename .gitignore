@@ -32,3 +32,4 @@ data/work/**/regions.json
 data/work/**/labels.png
 data/work/**/corridor.png
 data/work/**/ocr-*.json
+data/work/**/graph.json
