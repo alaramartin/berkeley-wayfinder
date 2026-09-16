@@ -3,16 +3,8 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
 
-from wf.config import BuildingConfig, LevelConfig
-
-
-@dataclass(frozen=True)
-class StageContext:
-    building: BuildingConfig
-    level: LevelConfig
-
+from wf.context import StageContext
 
 Stage = Callable[[StageContext], None]
 
@@ -44,4 +36,4 @@ def select(from_stage: str | None, to_stage: str | None) -> list[str]:
 
 
 # Import stage modules so their @stage decorators register.
-from wf.stages import ingest  # noqa: F401
+from wf.stages import ingest, rectify  # noqa: F401

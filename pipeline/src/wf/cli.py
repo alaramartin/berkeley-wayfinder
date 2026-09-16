@@ -8,6 +8,7 @@ import typer
 
 from wf import stages
 from wf.config import load_config
+from wf.context import StageContext
 
 app = typer.Typer(no_args_is_help=True, add_completion=False)
 
@@ -25,7 +26,7 @@ def run(
     names = stages.select(from_stage, to_stage)
     for lv in levels:
         typer.echo(f"{cfg.id} {lv.id}")
-        ctx = stages.StageContext(building=cfg, level=lv)
+        ctx = StageContext(building=cfg, level=lv)
         for name in names:
             fn = stages.get(name)
             if fn is None:

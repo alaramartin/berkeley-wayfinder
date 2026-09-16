@@ -25,3 +25,5 @@ data/work/**/debug/
 .DS_Store
 .env*
 !.env.example
+data/work/**/ingest.json
+data/work/**/rectify.json
