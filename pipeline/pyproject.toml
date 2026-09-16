@@ -12,6 +12,8 @@ dependencies = [
   "pillow-heif>=0.20",
   "shapely>=2.0",
   "easyocr>=1.7",
+  "torch>=2.5",        # pulled in by easyocr; pinned here so Linux/CI uses CPU wheels (see [tool.uv.sources])
+  "torchvision>=0.20",
   "fastapi>=0.115",
   "uvicorn>=0.32",
   "typer>=0.15",
@@ -24,6 +26,15 @@ wf = "wf.cli:app"
 
 [dependency-groups]
 dev = ["pytest>=8.3", "ruff>=0.8"]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+torchvision = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
 
 [build-system]
 requires = ["hatchling"]
