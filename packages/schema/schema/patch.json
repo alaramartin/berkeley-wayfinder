@@ -1,0 +1,265 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "buildingId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$"
+    },
+    "baseHash": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "author": {
+      "type": "string"
+    },
+    "ops": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "const": "confirmDoor"
+              },
+              "roomId": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$"
+              },
+              "doorIndex": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "op",
+              "roomId",
+              "doorIndex"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "const": "moveDoor"
+              },
+              "roomId": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$"
+              },
+              "doorIndex": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "edgeId": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$"
+              },
+              "t": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "side": {
+                "type": "string",
+                "enum": [
+                  "left",
+                  "right"
+                ]
+              }
+            },
+            "required": [
+              "op",
+              "roomId",
+              "doorIndex",
+              "edgeId",
+              "t",
+              "side"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "const": "addDoor"
+              },
+              "roomId": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$"
+              },
+              "edgeId": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$"
+              },
+              "t": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "side": {
+                "type": "string",
+                "enum": [
+                  "left",
+                  "right"
+                ]
+              }
+            },
+            "required": [
+              "op",
+              "roomId",
+              "edgeId",
+              "t",
+              "side"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "const": "setRoomNumber"
+              },
+              "roomId": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$"
+              },
+              "number": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "op",
+              "roomId",
+              "number"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "const": "setEdgeAccess"
+              },
+              "edgeId": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$"
+              },
+              "access": {
+                "type": "string",
+                "enum": [
+                  "open",
+                  "card",
+                  "hours",
+                  "locked"
+                ]
+              }
+            },
+            "required": [
+              "op",
+              "edgeId",
+              "access"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "const": "setStepCount"
+              },
+              "shaftId": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$"
+              },
+              "index": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "steps": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "op",
+              "shaftId",
+              "index",
+              "steps"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "const": "confirmEntrance"
+              },
+              "entranceId": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$"
+              },
+              "accessible": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "op",
+              "entranceId",
+              "accessible"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "const": "note"
+              },
+              "levelId": {
+                "type": "string"
+              },
+              "at": {
+                "type": "array",
+                "prefixItems": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "items": false,
+                "minItems": 2,
+                "maxItems": 2
+              },
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "op",
+              "levelId",
+              "text"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "required": [
+    "buildingId",
+    "baseHash",
+    "createdAt",
+    "ops"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "@wf/schema",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "test": "vitest run",
+    "gen:jsonschema": "tsx scripts/gen-jsonschema.ts"
+  },
+  "dependencies": { "zod": "^4.6.5" },
+  "devDependencies": { "typescript": "^7.0.2", "vitest": "^5.0.1", "tsx": "^4.23.13", "@types/node": "^22.20.3" }
+}

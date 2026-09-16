@@ -1,0 +1,390 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "buildingId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$"
+    },
+    "sortIndex": {
+      "type": "integer",
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991
+    },
+    "displayName": {
+      "type": "string"
+    },
+    "elevationM": {
+      "type": "number"
+    },
+    "heightM": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "heightSource": {
+      "type": "string",
+      "enum": [
+        "default",
+        "stair-count",
+        "measured"
+      ]
+    },
+    "verified": {
+      "default": false,
+      "type": "boolean"
+    },
+    "outline": {
+      "minItems": 3,
+      "type": "array",
+      "items": {
+        "type": "array",
+        "prefixItems": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "number"
+          }
+        ],
+        "items": false,
+        "minItems": 2,
+        "maxItems": 2
+      }
+    },
+    "voids": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "minItems": 3,
+        "type": "array",
+        "items": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        }
+      }
+    },
+    "imageTransform": {
+      "type": "object",
+      "properties": {
+        "scale": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "rotation": {
+          "type": "number"
+        },
+        "tx": {
+          "type": "number"
+        },
+        "ty": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "scale",
+        "rotation",
+        "tx",
+        "ty"
+      ]
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$"
+          },
+          "levelId": {
+            "type": "string"
+          },
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "junction",
+              "door",
+              "stair",
+              "elevator",
+              "entrance"
+            ]
+          },
+          "verified": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "levelId",
+          "x",
+          "y",
+          "kind"
+        ]
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$"
+          },
+          "a": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$"
+          },
+          "b": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "corridor",
+              "stair",
+              "elevator",
+              "outdoor"
+            ]
+          },
+          "polyline": {
+            "minItems": 2,
+            "type": "array",
+            "items": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "accessible": {
+            "type": "boolean"
+          },
+          "access": {
+            "default": "open",
+            "type": "string",
+            "enum": [
+              "open",
+              "card",
+              "hours",
+              "locked"
+            ]
+          },
+          "verified": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "a",
+          "b",
+          "kind",
+          "accessible"
+        ]
+      }
+    },
+    "rooms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$"
+          },
+          "number": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "aliases": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "classroom",
+              "office",
+              "restroom",
+              "auditorium",
+              "stair",
+              "elevator",
+              "other"
+            ]
+          },
+          "levelId": {
+            "type": "string"
+          },
+          "polygon": {
+            "minItems": 3,
+            "type": "array",
+            "items": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "doors": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "edgeId": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$"
+                },
+                "t": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "side": {
+                  "type": "string",
+                  "enum": [
+                    "left",
+                    "right"
+                  ]
+                },
+                "verified": {
+                  "default": false,
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "edgeId",
+                "t",
+                "side"
+              ]
+            }
+          },
+          "restroom": {
+            "type": "object",
+            "properties": {
+              "gender": {
+                "type": "string",
+                "enum": [
+                  "men",
+                  "women",
+                  "all"
+                ]
+              },
+              "accessible": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "gender",
+              "accessible"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "category",
+          "levelId",
+          "polygon"
+        ]
+      }
+    },
+    "pois": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "restroom",
+              "accessible-restroom",
+              "elevator",
+              "evac-chair",
+              "dwa",
+              "exit"
+            ]
+          },
+          "levelId": {
+            "type": "string"
+          },
+          "nodeId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$"
+          },
+          "roomId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "levelId"
+        ]
+      }
+    }
+  },
+  "required": [
+    "id",
+    "buildingId",
+    "sortIndex",
+    "displayName",
+    "elevationM",
+    "heightM",
+    "heightSource",
+    "outline",
+    "imageTransform",
+    "nodes",
+    "edges",
+    "rooms"
+  ]
+}

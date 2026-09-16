@@ -1,0 +1,18 @@
+# Hand-typed ground truth from the placard photos, used by pytest to score the pipeline.
+# Only list what is actually legible on each placard.
+L1:
+  rooms: ["100", "102", "104", "105", "106", "107", "108", "110", "111", "112", "113", "114", "115", "116",
+          "117", "118", "119", "120", "122", "123", "124", "126", "130", "150", "150A", "151"]
+  stairwells: 7          # green regions on the plan (approximate; confirm when reviewing overlays)
+  elevators: 2
+  restrooms: 2
+directory:               # name -> room, from the left panel (all levels)
+  "College Writing Programs": "119"
+  "Wheeler Auditorium": "150"
+  "English Dept. Main Office": "322"
+  "English Dept. Advising Office": "319"
+  "English Dept. Library": "311"
+  "Maude Fife Seminar Room": "315"
+  "ETS Computer Facilities": "210"
+  "Berkeley Connect": "M13"
+  "Disabled Students Program Office": "22"

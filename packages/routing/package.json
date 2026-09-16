@@ -1,0 +1,10 @@
+{
+  "name": "@wf/routing",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "typecheck": "tsc -p .", "test": "vitest run" },
+  "dependencies": { "@wf/schema": "workspace:*", "@wf/geometry": "workspace:*" },
+  "devDependencies": { "typescript": "^7.0.2", "vitest": "^5.0.1" }
+}

@@ -1,0 +1,27 @@
+# deps / builds
+node_modules/
+.next/
+out/
+dist/
+*.tsbuildinfo
+.turbo/
+.vercel/
+coverage/
+
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# pipeline intermediates (regenerable). Proposals, overrides and review queues ARE committed.
+data/work/**/ingest.png
+data/work/**/rectified.png
+data/work/**/masks/
+data/work/**/debug/
+
+# os / editor
+.DS_Store
+.env*
+!.env.example

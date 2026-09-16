@@ -1,0 +1,21 @@
+# Wheeler Hall. Building-specific pipeline knobs live here, never in code.
+id: wheeler
+name: Wheeler Hall
+aliases: [Wheeler]
+osmWayId: null            # looked up via Overpass in M2
+defaultFloorHeightM: 4.5
+riserHeightM: 0.17
+levels:                   # order follows the placard list; M's position is UNVERIFIED (see PLAN.md §11)
+  - { id: B,  displayName: "B", sortIndex: 0, photo: wheeler-B.heic }
+  - { id: M,  displayName: "M", sortIndex: 1, photo: wheeler-M.heic, verified: false }
+  - { id: L1, displayName: "1", sortIndex: 2, photo: wheeler-L1.heic }
+  - { id: L2, displayName: "2", sortIndex: 3, photo: wheeler-L2.heic }
+  - { id: L3, displayName: "3", sortIndex: 4, photo: wheeler-L3.heic }
+  - { id: L4, displayName: "4", sortIndex: 5, photo: wheeler-L4.heic }
+legend:                   # pipeline class -> legend label(s) printed on the placard
+  stair: "Stairwells"
+  elevator: "Elevators"
+  restroom: "Restrooms"
+  classroom: "General Assignment Classrooms"
+  office: ["College Writing Programs Office", "College Writing Programs - Faculty Offices"]
+  auditorium: "Cal Performances - Wheeler Auditorium"
