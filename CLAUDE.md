@@ -18,7 +18,7 @@ Indoor wayfinding for UC Berkeley buildings, shown as a 3D building model with t
 ```bash
 pnpm install                              # all TS workspaces (Node >= 22.12, pnpm 10)
 pnpm dev:nav                              # nav app  → http://localhost:3000
-pnpm dev:author                           # author tool → http://localhost:3001 (local only)
+pnpm dev:author                           # author tool → http://localhost:3001/b/wheeler (local only)
 pnpm typecheck                            # tsc across workspaces (TypeScript 7)
 pnpm test                                 # vitest across workspaces
 pnpm --filter @wf/nav build               # production build (what Vercel runs)
@@ -36,6 +36,10 @@ uv run pytest
 uv run ruff check src tests
 ```
 - Workspace packages are consumed as TS source (no build step); the Next apps list them in `transpilePackages`.
+- **Testing the author tool: never click through it against the real `data/`.** Edits autosave. Copy data to the scratchpad and run
+  `WF_REPO_ROOT=<scratch> npx next dev --port 3002` (in `apps/author`) plus `WF_DATA_DIR=<scratch>/data uv run wf serve`.
+  Next 16 allows only one dev server per app directory, so stop any other one first.
+- Author tool pure logic (graph edits, review answers, split, accept, shafts, alignment) lives in `apps/author/lib/*.ts` with tests in `lib/lib.test.ts`. Keep UI components thin.
 - Relative TS imports are extensionless (`./building`, not `./building.ts`).
 - New pipeline stage: create `pipeline/src/wf/stages/<name>.py` with `@stage("<name>")`, import it at the bottom of `stages/__init__.py`, and add a test.
 - **Pipeline tuning loop:** change a stage, run `uv run wf run wheeler --from-stage <stage>`, then look at `data/work/wheeler/*/debug/<stage>.png` for **all six levels** (build a contact sheet in the scratchpad) and run `uv run wf score wheeler`. A fix that helps one placard often breaks another (this happened repeatedly in M1). Thresholds are module constants at the top of each stage file; express them relative to plan/board size, never in absolute pixels.
@@ -44,7 +48,7 @@ uv run ruff check src tests
 ## Repo map
 ```
 apps/nav/          public Next.js app (routes /, /[building], /field). Deployed to Vercel.
-apps/author/       local-only Next.js desk tool. Reads/writes data/ via route handlers. NEVER deployed.
+apps/author/       local-only Next.js desk tool. Reads/writes data/ via route handlers (lib/server/data.ts). NEVER deployed.
 packages/schema/   zod schemas + types + generated JSON Schema. SINGLE SOURCE OF TRUTH for data shapes.
 packages/geometry/ similarity transforms, polygon utils, ENU<->lat/lon. Pure.
 packages/routing/  graph build, A*, nearest-POI, instructions. Pure TS (no DOM, no three).
@@ -52,12 +56,13 @@ pipeline/          Python 3.12 (uv). `wf` CLI stages: ingest → rectify → cro
 data/raw/<b>/      source photos, config.yaml, golden.yaml                       (committed)
 data/work/<b>/<l>/ intermediates: *.png, stage *.json, OCR caches, debug/        (gitignored)
                    corners.json, crop.json, proposal.json, review-queue.json, review-crops/ (committed)
+data/work/<b>/alignment.json  per-level alignment to the reference level + OSM fit (committed)
 data/buildings/<b>/ canonical data: building.json, levels/<l>.json, osm.json    (committed)
 ```
 
 ## Invariants (don't break these)
 - **Schema first.** To change a data shape, edit `packages/schema` (zod), run `gen:jsonschema`, then update the Python pipeline and the apps. Python validates against the generated JSON Schema, never against hand-copied shapes.
-- **Pipeline output is a proposal.** The pipeline writes only to `data/work/`. Only the author tool, through an explicit human accept, writes `data/buildings/`.
+- **Pipeline output is a proposal.** The pipeline writes only to `data/work/`. Only the author tool, through an explicit human accept, writes `data/buildings/`. Once a proposal has `editedAt`, the pipeline writes `proposal.auto.json` instead and never overwrites hand edits.
 - **Coordinates:** `data/work` uses image pixels. `data/buildings` uses **meters in the building-local frame** (x east, y north, origin at footprint centroid). Convert with the level's `imageTransform`, never ad hoc.
 - **Rooms** have a `polygon` (for rendering) and `doors` placed on corridor edges with `t` and `side` (for routing). Routing never goes through room polygons.
 - **Low-confidence OCR or icon results go to `review-queue.json`**, never silently into the proposal.

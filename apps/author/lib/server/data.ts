@@ -229,7 +229,7 @@ export async function levelSummaries(b: string): Promise<LevelSummary[]> {
 
 /** Files the UI may load from a level work dir (images for display and review crops). */
 export async function workFile(b: string, l: string, rel: string[]): Promise<{ data: Buffer; type: string }> {
-  const allowedTop = new Set(["rectified.png", "rectified.jpg", "ingest.png", "review-crops", "debug"]);
+  const allowedTop = new Set(["rectified.png", "rectified.jpg", "ingest.png", "ingest.jpg", "review-crops", "debug"]);
   if (!rel.length || !allowedTop.has(rel[0]!)) throw new BadRequest("file not allowed");
   const cleaned = rel.map((s) => {
     if (!/^[A-Za-z0-9_.-]+$/.test(s) || s.includes("..")) throw new BadRequest("bad file path");

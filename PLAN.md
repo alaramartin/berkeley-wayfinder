@@ -11,10 +11,10 @@
 - [ ] **M5 — Field mode + verification walk**
 
 ## Status
-- **Current milestone:** M2 — Authoring tool (in progress)
-- **Last completed task:** M1 approved and pushed
-- **Blockers / waiting on user:** none
-- **Next review gate:** end of M2 (user works through review queues, fixes and accepts all levels in the tool)
+- **Current milestone:** M2 — Authoring tool (**at review gate**: the tool is built; the review itself is yours)
+- **Last completed task:** full author flow verified on a scratch copy of the data (review → edit → align → OSM fit → accept → shafts)
+- **Blockers / waiting on user:** work through Wheeler in the tool (see "M2 review: how to do it" below); OK to push M2 commits
+- **Next review gate:** end of M2, when all six levels are accepted and shafts are saved
 
 ### M1 results (per level, before any human review)
 | Level | Room numbers auto-accepted / found anywhere (golden) | Wrong accepts | Rooms | Stairs+elevators linked | Graph components | Entrance candidates | Review items |
@@ -230,19 +230,37 @@ Design (decided at M2 start, see Decision log):
 - Pure logic (review application, accept conversion, polygon split, shaft proposals, graph checks) lives in `apps/author/lib/` with vitest tests. UI state is a history stack of proposal snapshots (undo/redo), autosaved.
 
 Tasks:
-- [ ] Schema: `Proposal.editedAt`, `ProposalRoom.regionId`, `ProposalRoom.restroom`, `ProposalEntrance.name`; canonical `Room.number` nullable + name rule; `Alignment` schema; emit respects `editedAt`. *Done when:* schema tests + pytest pass.
-- [ ] Data API (route handlers): list buildings/levels with status, read/write proposal + review queue + alignment, serve work images, proxy `wf serve` runs. *Done when:* vitest on lib + curl smoke tests.
-- [ ] `wf serve`: `POST /run`, `GET /status`. *Done when:* the author tool can re-run a level from a stage.
-- [ ] Building overview page (levels, status, open review counts, components, accepted?).
-- [ ] Level editor: pan/zoom over rectified photo; layers; select/move nodes; add/split/delete nodes and edges; room inspector (number, name, category, restroom); room split and draw; door placement; entrance marking; undo/redo; autosave; connectivity warnings. *Done when:* in the browser, L1's fragments can be joined and a merged suite split, and the result validates.
-- [ ] Review queue UI (keyboard: Enter accept, type to correct, Tab skip, X reject). *Done when:* all item kinds apply correctly (vitest) and one level's queue clears in the browser.
-- [ ] Rectify corner editor (drag 4 corners on the original photo → `corners.json` → re-run).
-- [ ] Align: side-by-side/onion-skin with a 90° rotate helper, anchor pairs, residuals, auto-suggest from outline. *Done when:* L2 overlays L1 with low residual.
-- [ ] OSM: Overpass fetch + cache, L1 ↔ footprint anchors, origin. *Done when:* the L1 outline overlays the footprint.
-- [ ] Accept: proposal → canonical `building.json` + `levels/<id>.json`, schema-validated.
-- [ ] Shafts & heights: propose stair/elevator chains across levels (world distance), confirm, default elevations (M halfway, unverified).
-- [ ] Browser verification of the whole flow with Chrome automation; tests green; PLAN/CLAUDE updated.
-- [ ] **Review gate M2.** User works through all review queues, fixes each level, aligns, fits OSM and accepts all levels.
+- [x] Schema: `editedAt`, `regionId`, `labelAt`, `restroom`, entrance `name`; canonical `Room.number` nullable with a name rule; `Alignment` schema; config `referenceLevel` + per-level `elevationM`; emit writes `proposal.auto.json` when edited.
+- [x] Data API route handlers (buildings, proposal, review, files, run proxy, reset, corners, alignment, OSM fetch, accept, canonical). Path-traversal safe; typed 400/404 errors.
+- [x] `wf serve`: `POST /run`, `GET /status`; `WF_DATA_DIR` lets it run against a scratch copy.
+- [x] Building overview page (per-level rooms, review progress, corridor pieces, blockers, aligned/accepted).
+- [x] Level editor: pan/zoom over the placard photo; select/move nodes; add, split and delete nodes and corridors; room inspector (number, name, category, restroom, doors); label-aware suite split; draw room; door placement; entrance marking; undo/redo; autosave; corridor-piece list; blockers. *Verified in browser:* joined an L1 fragment, split the 111–119 suite (rooms landed on the correct halves), undo.
+- [x] Review queue UI (Enter accept, typing corrects, Tab skip, ⇧Enter reject; W/M/A for restrooms). Duplicate numbers are refused with an explanation instead of being silently ignored. *Verified in browser* on L1.
+- [x] Corners page (drag 4 corners → `corners.json` → re-run from rectify). *Verified* via API on scratch (L4 re-ran in ~34 s).
+- [x] Align page: auto-align (ICP from 4 quarter-turn starts; close alternatives offered), ±90° rotate, click anchor pairs with residuals, onion skin, stair/elevator overlap markers. *Verified:* B auto-aligned; M aligned by 2 anchors over L1's west wing.
+- [x] OSM page: Overpass fetch (Wheeler = way 1410826203) + cache, auto-fit + alternatives, anchors snapping to footprint vertices. *Verified:* L1 fits at 0.048 m/px, 0.9 m error.
+- [x] Accept: proposals → `building.json` + `levels/<id>.json` (schema-validated), directory aliases applied across levels, entrances carried over, existing shafts kept.
+- [x] Shafts & heights page: proposes stair/elevator chains (skipping a partial level), plan view of all levels, editable elevations/heights. *Verified* on scratch (8 shafts saved).
+- [x] Tests: author lib 12 (graph edits, split assignment, review answers, accept, shafts, alignment), geometry 9, schema 8, pipeline 22. Typecheck, lint and author build are clean.
+- [ ] **Review gate M2.** The user does the Wheeler review below.
+
+#### M2 review: how to do it
+Run these in two terminals, then open http://localhost:3001/b/wheeler
+```bash
+pnpm dev:author                      # the tool
+cd pipeline && uv run wf serve       # only needed for the Corners page (re-running the pipeline)
+```
+1. **Per level, Review first** (Review link): answer every card. Merged restrooms (e.g. L1 women+men in one outline): press Tab to skip, split them in the editor, then come back.
+2. **Per level, then Edit** until the sidebar says "Ready to accept":
+   - **Merged suites:** select → **S** → click a line between two numbers. Each room keeps the half its number is printed in. Known cases: L1 west wing 110–119, L1 north row 102/104/106, L3 319/320/322/323, B 22/23, L4 east column.
+   - **Corridor pieces:** use **E** to click from a piece's end node to the main corridor. Delete fake spurs with Delete.
+   - **Rooms without a number:** type it in the inspector, give it a name (restrooms get one from their gender), or delete it if it isn't a room.
+   - **Doors:** select a room → **D** → click the corridor at its real door (guesses are yellow squares).
+   - **Entrances:** select the node where a corridor meets an outside door → **X**, give it a name, and tick "accessible" if step-free.
+3. **Align** (overview → Open alignment): Auto-align B, L2, L3, L4 and check that the stair squares sit on the stair circles. M needs anchors: click an M stairwell on the overlay, then the matching L1 stairwell, twice. The auto result for M is wrong on purpose (partial floor).
+4. **OSM fit:** Auto-fit, then **check orientation**. Wheeler's footprint is nearly symmetric, and the 270° fit (0.90 m) barely beats the 90° one (0.97 m). Pick the one that puts the colonnade/main entrance on the correct side of the building.
+5. **Accept all ready levels** on the overview, then **Shafts & heights**: Propose, untick wrong links, Save.
+If something looks wrong in the photo-to-plan conversion itself, use Corners (needs `wf serve`).
 
 ### M3 — Routing + complete Wheeler data
 - [ ] graph build with virtual door nodes.
@@ -283,7 +301,7 @@ Tasks:
 - After M5: importing a sample patch flips door `verified` flags and updates level elevations.
 
 ## 11. Open questions / verify on walk
-- [ ] **Level M**: actual vertical position (between B and 1? between 1 and 2?) and elevation. Initial guess: placard list order.
+- [ ] **Level M**: actual vertical position and elevation. Initial guess: placard list order. *M2 finding:* aligning by stairwells puts M's office strip exactly over L1's west wing (110–119, also College Writing Programs) and M's elevator on L1's, so M is a mezzanine over the west wing. Height still unverified.
 - [x] Levels beyond B–4? Photos cover B, M, 1, 2, 3, 4 only.
 - [ ] Door locations for every room (esp. large rooms: 150 auditorium, 100, 130).
 - [ ] Locked, card-only or hours-restricted doors and entrances.
@@ -315,3 +333,7 @@ Tasks:
 | 2026-09-16 | Pipeline never overwrites a hand-edited proposal (`editedAt` → writes `proposal.auto.json`) | Re-running after a corner fix must not destroy review work |
 | 2026-09-16 | `imageTransform` applies to (x, −y); alignment + OSM fit stored in `data/work/<b>/alignment.json` | Similarity has no reflection; alignment is authoring state, not canonical data |
 | 2026-09-16 | Canonical rooms may have no number if they have a name (restrooms) | Placards don't number restrooms |
+| 2026-09-16 | Auto-align = ICP on outlines from 4 quarter-turn starts; show runner-up fits when close | Placards are drawn in different orientations; Wheeler's footprint is nearly symmetric (270° vs 90° within 8%) |
+| 2026-09-16 | Rooms store `labelAt` (OCR position); suite splits assign pieces by it | Merged suites are the most common defect; makes splitting two clicks |
+| 2026-09-16 | Author tool displays JPEG copies (`rectified.jpg`, `ingest.jpg`) | 10 MB PNGs inside SVG decoded too slowly |
+| 2026-09-16 | Test the author tool only against a scratch copy (`WF_REPO_ROOT` for Next, `WF_DATA_DIR` for `wf serve`) | Clicking through the tool writes data; the real review is the user's |

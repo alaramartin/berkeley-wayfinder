@@ -48,6 +48,7 @@ def run(ctx: StageContext) -> None:
     img = load_photo(src)
     out = wdir(ctx)
     img.save(out / "ingest.png")
+    img.save(out / "ingest.jpg", quality=85)  # display copy for the author tool
     focal = focal_length_px(src, img.size)
     write_json(out / "ingest.json", {"source": src.name, "size": list(img.size), "focalPx": focal})
     arr = np.asarray(img)

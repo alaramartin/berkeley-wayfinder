@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-DATA = REPO_ROOT / "data"
+# WF_DATA_DIR points the pipeline at another data folder (e.g. a scratch copy for testing the author tool).
+DATA = Path(os.environ["WF_DATA_DIR"]) if os.environ.get("WF_DATA_DIR") else REPO_ROOT / "data"
 SCHEMA_DIR = REPO_ROOT / "packages" / "schema" / "schema"
 
 

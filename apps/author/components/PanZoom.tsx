@@ -100,7 +100,7 @@ export const PanZoom = forwardRef<PanZoomHandle, Props>(function PanZoom(
       if (!ctm) return;
       const p = pt.matrixTransform(ctm.inverse());
       setView((v) => {
-        const w = Math.min(Math.max(v.w * factor, 20), width * 20 + 1000);
+        const w = Math.min(Math.max(v.w * factor, width / 200), width * 20 + 1000);
         const h = (v.h * w) / v.w;
         return { x: p.x - ((p.x - v.x) * w) / v.w, y: p.y - ((p.y - v.y) * h) / v.h, w, h };
       });

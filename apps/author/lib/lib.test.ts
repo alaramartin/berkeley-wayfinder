@@ -202,3 +202,30 @@ describe("suite split assignment", () => {
     expect(split[1]!.number).toBeNull();
   });
 });
+
+describe("alignment", () => {
+  it("recovers a rotated, scaled, shifted L-shaped outline", async () => {
+    const { autoAlign, fromAnchors, residuals, svgMatrix } = await import("./align");
+    const { apply } = await import("@wf/geometry");
+    const dst: [number, number][] = [[0, 0], [400, 0], [400, 150], [150, 150], [150, 300], [0, 300]];
+    const truth = { scale: 0.5, rotation: -Math.PI / 2, tx: 900, ty: 100 };
+    // src is dst mapped by the inverse of truth, so truth maps src -> dst.
+    const inv = { scale: 2, rotation: Math.PI / 2, tx: 0, ty: 0 };
+    const src = dst.map((p) => {
+      const q = apply(inv, [p[0] - 900, p[1] - 100]);
+      return q;
+    });
+    const r = autoAlign(src, dst);
+    expect(r.error).toBeLessThan(2);
+    const check = apply(r.transform, src[1]!);
+    expect(check[0]).toBeCloseTo(dst[1]![0], 0);
+    expect(check[1]).toBeCloseTo(dst[1]![1], 0);
+    expect(truth.scale).toBeCloseTo(r.transform.scale, 2);
+
+    const anchors = [0, 2, 4].map((i) => ({ src: src[i]!, dst: dst[i]! }));
+    const fit = fromAnchors(anchors)!;
+    expect(fit.rms).toBeLessThan(1e-6);
+    expect(Math.max(...residuals(anchors, fit.transform))).toBeLessThan(1e-6);
+    expect(svgMatrix({ scale: 1, rotation: 0, tx: 5, ty: 6 })).toBe("matrix(1 0 0 1 5 6)");
+  });
+});
