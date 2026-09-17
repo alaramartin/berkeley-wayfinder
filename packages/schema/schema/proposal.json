@@ -30,6 +30,9 @@
     "generatedAt": {
       "type": "string"
     },
+    "editedAt": {
+      "type": "string"
+    },
     "pipelineVersion": {
       "type": "string"
     },
@@ -189,11 +192,18 @@
             "type": "string",
             "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$"
           },
+          "regionId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$"
+          },
           "number": {
             "type": [
               "string",
               "null"
             ]
+          },
+          "name": {
+            "type": "string"
           },
           "numberConfidence": {
             "type": "number",
@@ -282,6 +292,26 @@
             "items": {
               "type": "string"
             }
+          },
+          "restroom": {
+            "type": "object",
+            "properties": {
+              "gender": {
+                "type": "string",
+                "enum": [
+                  "men",
+                  "women",
+                  "all"
+                ]
+              },
+              "accessible": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "gender",
+              "accessible"
+            ]
           }
         },
         "required": [
@@ -358,6 +388,9 @@
           "nodeId": {
             "type": "string",
             "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9]$"
+          },
+          "name": {
+            "type": "string"
           },
           "accessible": {
             "type": "boolean"

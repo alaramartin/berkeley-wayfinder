@@ -37,3 +37,4 @@ data/work/**/ocr-zoom/
 data/work/**/ocr.json
 data/work/**/icons.json
 data/work/**/connect.json
+data/work/**/*.auto.json

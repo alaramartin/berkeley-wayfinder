@@ -25,7 +25,11 @@ dependencies = [
 wf = "wf.cli:app"
 
 [dependency-groups]
-dev = ["pytest>=8.3", "ruff>=0.8"]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=8.3",
+    "ruff>=0.8",
+]
 
 [[tool.uv.index]]
 name = "pytorch-cpu"

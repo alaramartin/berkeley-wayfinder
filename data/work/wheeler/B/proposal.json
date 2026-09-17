@@ -5,7 +5,7 @@
     1873,
     3000
   ],
-  "generatedAt": "2026-09-17T04:42:35+00:00",
+  "generatedAt": "2026-09-17T04:47:08+00:00",
   "pipelineVersion": "0.1.0",
   "outline": [
     [
@@ -1038,6 +1038,7 @@
   "rooms": [
     {
       "id": "wheeler-B-r30",
+      "regionId": "wheeler-B-g002",
       "number": "30",
       "numberConfidence": 1.0,
       "category": "classroom",
@@ -1104,6 +1105,7 @@
     },
     {
       "id": "wheeler-B-r12",
+      "regionId": "wheeler-B-g008",
       "number": "12",
       "numberConfidence": 1.0,
       "category": "service",
@@ -1866,6 +1868,7 @@
     },
     {
       "id": "wheeler-B-g009",
+      "regionId": "wheeler-B-g009",
       "number": null,
       "numberConfidence": 0.0,
       "category": "restroom",
@@ -1984,6 +1987,7 @@
     },
     {
       "id": "wheeler-B-g010",
+      "regionId": "wheeler-B-g010",
       "number": null,
       "numberConfidence": 0.0,
       "category": "classroom",
@@ -2022,6 +2026,7 @@
     },
     {
       "id": "wheeler-B-g012",
+      "regionId": "wheeler-B-g012",
       "number": null,
       "numberConfidence": 0.0,
       "category": "restroom",
@@ -2088,6 +2093,7 @@
     },
     {
       "id": "wheeler-B-r24",
+      "regionId": "wheeler-B-g014",
       "number": "24",
       "numberConfidence": 0.911,
       "category": "classroom",
@@ -2142,6 +2148,7 @@
     },
     {
       "id": "wheeler-B-g015",
+      "regionId": "wheeler-B-g015",
       "number": null,
       "numberConfidence": 0.0,
       "category": "classroom",
@@ -2184,6 +2191,7 @@
     },
     {
       "id": "wheeler-B-r22",
+      "regionId": "wheeler-B-g016",
       "number": "22",
       "numberConfidence": 1.0,
       "category": "office",
@@ -2278,6 +2286,7 @@
     },
     {
       "id": "wheeler-B-r23",
+      "regionId": "wheeler-B-g016",
       "number": "23",
       "numberConfidence": 1.0,
       "category": "office",
@@ -2372,6 +2381,7 @@
     },
     {
       "id": "wheeler-B-r22A",
+      "regionId": "wheeler-B-g016",
       "number": "22A",
       "numberConfidence": 0.946,
       "category": "office",
@@ -2466,6 +2476,7 @@
     },
     {
       "id": "wheeler-B-r22B",
+      "regionId": "wheeler-B-g016",
       "number": "22B",
       "numberConfidence": 0.829,
       "category": "office",
@@ -2560,6 +2571,7 @@
     },
     {
       "id": "wheeler-B-r23A",
+      "regionId": "wheeler-B-g016",
       "number": "23A",
       "numberConfidence": 0.932,
       "category": "office",
@@ -2654,6 +2666,7 @@
     },
     {
       "id": "wheeler-B-r11",
+      "regionId": "wheeler-B-g019",
       "number": "11",
       "numberConfidence": 0.945,
       "category": "office",
@@ -2696,6 +2709,7 @@
     },
     {
       "id": "wheeler-B-r10",
+      "regionId": "wheeler-B-g023",
       "number": "10",
       "numberConfidence": 0.542,
       "category": "service",
@@ -2802,6 +2816,7 @@
     },
     {
       "id": "wheeler-B-r4",
+      "regionId": "wheeler-B-g024",
       "number": "4",
       "numberConfidence": 1.0,
       "category": "office",
@@ -2888,6 +2903,7 @@
     },
     {
       "id": "wheeler-B-r6",
+      "regionId": "wheeler-B-g024",
       "number": "6",
       "numberConfidence": 1.0,
       "category": "office",
@@ -2974,6 +2990,7 @@
     },
     {
       "id": "wheeler-B-r8",
+      "regionId": "wheeler-B-g024",
       "number": "8",
       "numberConfidence": 0.78,
       "category": "office",
@@ -3060,6 +3077,7 @@
     },
     {
       "id": "wheeler-B-r2",
+      "regionId": "wheeler-B-g024",
       "number": "2",
       "numberConfidence": 1.0,
       "category": "office",
@@ -3146,6 +3164,7 @@
     },
     {
       "id": "wheeler-B-r20",
+      "regionId": "wheeler-B-g026",
       "number": "20",
       "numberConfidence": 1.0,
       "category": "classroom",
@@ -3192,6 +3211,7 @@
     },
     {
       "id": "wheeler-B-r19",
+      "regionId": "wheeler-B-g030",
       "number": "19",
       "numberConfidence": 0.96,
       "category": "service",
@@ -3234,6 +3254,7 @@
     },
     {
       "id": "wheeler-B-r3",
+      "regionId": "wheeler-B-g031",
       "number": "3",
       "numberConfidence": 0.92,
       "category": "office",
@@ -3296,6 +3317,7 @@
     },
     {
       "id": "wheeler-B-r5",
+      "regionId": "wheeler-B-g031",
       "number": "5",
       "numberConfidence": 1.0,
       "category": "office",
@@ -3358,6 +3380,7 @@
     },
     {
       "id": "wheeler-B-r1",
+      "regionId": "wheeler-B-g031",
       "number": "1",
       "numberConfidence": 1.0,
       "category": "office",
@@ -3420,6 +3443,7 @@
     },
     {
       "id": "wheeler-B-r7",
+      "regionId": "wheeler-B-g031",
       "number": "7",
       "numberConfidence": 1.0,
       "category": "office",
@@ -3482,6 +3506,7 @@
     },
     {
       "id": "wheeler-B-g033",
+      "regionId": "wheeler-B-g033",
       "number": null,
       "numberConfidence": 0.0,
       "category": "office",

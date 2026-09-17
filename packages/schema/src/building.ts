@@ -52,19 +52,24 @@ export const RoomCategory = z.enum([
   "service", // gray on placards: mechanical, storage, not publicly accessible
   "other",
 ]);
-export const Room = z.object({
-  id: Id,
-  number: z.string(),
-  name: z.string().optional(),
-  aliases: z.array(z.string()).default([]),
-  category: RoomCategory,
-  /** Legend label the room's color maps to on the placard, e.g. "English Department Library". */
-  group: z.string().optional(),
-  levelId: z.string(),
-  polygon: Polygon,
-  doors: z.array(Door).default([]),
-  restroom: z.object({ gender: z.enum(["men", "women", "all"]), accessible: z.boolean() }).optional(),
-});
+export const Restroom = z.object({ gender: z.enum(["men", "women", "all"]), accessible: z.boolean() });
+
+export const Room = z
+  .object({
+    id: Id,
+    /** Null for rooms placards don't number (restrooms); those need a name. */
+    number: z.string().nullable(),
+    name: z.string().optional(),
+    aliases: z.array(z.string()).default([]),
+    category: RoomCategory,
+    /** Legend label the room's color maps to on the placard, e.g. "English Department Library". */
+    group: z.string().optional(),
+    levelId: z.string(),
+    polygon: Polygon,
+    doors: z.array(Door).default([]),
+    restroom: Restroom.optional(),
+  })
+  .refine((r) => r.number !== null || (r.name !== undefined && r.name.length > 0), "a room needs a number or a name");
 export type Room = z.infer<typeof Room>;
 
 export const Shaft = z.object({

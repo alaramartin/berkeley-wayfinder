@@ -5,7 +5,7 @@
     1935,
     3000
   ],
-  "generatedAt": "2026-09-17T04:42:39+00:00",
+  "generatedAt": "2026-09-17T04:47:08+00:00",
   "pipelineVersion": "0.1.0",
   "outline": [
     [
@@ -572,6 +572,7 @@
   "rooms": [
     {
       "id": "wheeler-M-rM21",
+      "regionId": "wheeler-M-g003",
       "number": "M21",
       "numberConfidence": 0.993,
       "category": "office",
@@ -630,6 +631,7 @@
     },
     {
       "id": "wheeler-M-rM19",
+      "regionId": "wheeler-M-g004",
       "number": "M19",
       "numberConfidence": 0.657,
       "category": "office",
@@ -684,6 +686,7 @@
     },
     {
       "id": "wheeler-M-rM13",
+      "regionId": "wheeler-M-g005",
       "number": "M13",
       "numberConfidence": 1.0,
       "category": "other",
@@ -738,6 +741,7 @@
     },
     {
       "id": "wheeler-M-rM15",
+      "regionId": "wheeler-M-g006",
       "number": "M15",
       "numberConfidence": 0.98,
       "category": "office",
@@ -788,6 +792,7 @@
     },
     {
       "id": "wheeler-M-rM17",
+      "regionId": "wheeler-M-g007",
       "number": "M17",
       "numberConfidence": 0.999,
       "category": "office",
@@ -830,6 +835,7 @@
     },
     {
       "id": "wheeler-M-rM12",
+      "regionId": "wheeler-M-g014",
       "number": "M12",
       "numberConfidence": 0.999,
       "category": "office",
@@ -916,6 +922,7 @@
     },
     {
       "id": "wheeler-M-rM14",
+      "regionId": "wheeler-M-g015",
       "number": "M14",
       "numberConfidence": 1.0,
       "category": "office",
@@ -966,6 +973,7 @@
     },
     {
       "id": "wheeler-M-rM16",
+      "regionId": "wheeler-M-g016",
       "number": "M16",
       "numberConfidence": 1.0,
       "category": "office",
@@ -1024,6 +1032,7 @@
     },
     {
       "id": "wheeler-M-rM18",
+      "regionId": "wheeler-M-g018",
       "number": "M18",
       "numberConfidence": 1.0,
       "category": "office",
@@ -1062,6 +1071,7 @@
     },
     {
       "id": "wheeler-M-rM22",
+      "regionId": "wheeler-M-g019",
       "number": "M22",
       "numberConfidence": 0.997,
       "category": "office",
@@ -1136,6 +1146,7 @@
     },
     {
       "id": "wheeler-M-rM20",
+      "regionId": "wheeler-M-g021",
       "number": "M20",
       "numberConfidence": 0.989,
       "category": "office",

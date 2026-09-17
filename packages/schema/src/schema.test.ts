@@ -81,3 +81,24 @@ describe("schema", () => {
     ).toBe(true);
   });
 });
+
+describe("authoring schema", () => {
+  it("allows unnumbered rooms only with a name", async () => {
+    const { Room } = await import("./index");
+    const base = { id: "wheeler-L1-g010", category: "restroom", levelId: "L1", polygon: [[0, 0], [1, 0], [1, 1]] };
+    expect(Room.safeParse({ ...base, number: null }).success).toBe(false);
+    expect(Room.safeParse({ ...base, number: null, name: "Women's restroom" }).success).toBe(true);
+  });
+
+  it("parses an alignment file", async () => {
+    const { Alignment } = await import("./index");
+    const a = Alignment.parse({
+      buildingId: "wheeler",
+      referenceLevel: "L1",
+      levels: { L1: { transform: { scale: 1, rotation: 0, tx: 0, ty: 0 }, rms: 0 }, L2: { rotationHint: 90, transform: null, rms: null } },
+      osm: { wayId: null, origin: null, transform: null, rms: null },
+    });
+    expect(a.levels.L2?.rotationHint).toBe(90);
+    expect(a.levels.L1?.anchors).toEqual([]);
+  });
+});

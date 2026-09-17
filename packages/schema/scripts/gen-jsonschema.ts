@@ -3,12 +3,12 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
-import { Building, BuildingConfig, Level, Patch, Proposal, ReviewQueue } from "../src/index";
+import { Alignment, Building, BuildingConfig, Level, Patch, Proposal, ReviewQueue } from "../src/index";
 
 const outDir = join(dirname(fileURLToPath(import.meta.url)), "..", "schema");
 mkdirSync(outDir, { recursive: true });
 
-const shapes = { building: Building, level: Level, proposal: Proposal, "review-queue": ReviewQueue, patch: Patch, "building-config": BuildingConfig };
+const shapes = { building: Building, level: Level, proposal: Proposal, "review-queue": ReviewQueue, patch: Patch, "building-config": BuildingConfig, alignment: Alignment };
 for (const [name, schema] of Object.entries(shapes)) {
   const json = z.toJSONSchema(schema, { io: "input", unrepresentable: "any" });
   writeFileSync(join(outDir, `${name}.json`), JSON.stringify(json, null, 2) + "\n");

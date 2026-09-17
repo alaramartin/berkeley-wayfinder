@@ -9,7 +9,7 @@ import numpy as np
 
 from wf import __version__
 from wf.context import StageContext
-from wf.io import read_json, read_rgb, wdir, write_debug, write_json
+from wf.io import read_json, read_json_optional, read_rgb, wdir, write_debug, write_json
 from wf.schema import validate
 from wf.stages import stage
 
@@ -51,6 +51,7 @@ def run(ctx: StageContext) -> None:
         "rooms": [
             {
                 "id": r["id"],
+                "regionId": r["regionId"],
                 "number": r["number"],
                 "numberConfidence": r["numberConfidence"],
                 "category": r["category"],
@@ -69,11 +70,19 @@ def run(ctx: StageContext) -> None:
         "directory": directory,
     }
     validate("proposal", proposal)
-    write_json(out / "proposal.json", proposal)
-
     queue = {"buildingId": ctx.building.id, "levelId": ctx.level.id, "items": ocr["review"] + icons["review"]}
     validate("review-queue", queue)
-    write_json(out / "review-queue.json", queue)
+
+    existing = read_json_optional(out / "proposal.json")
+    if existing and existing.get("editedAt"):
+        # Never clobber hand edits: the author tool offers a compare/reset against these files.
+        write_json(out / "proposal.auto.json", proposal)
+        write_json(out / "review-queue.auto.json", queue)
+        target = "proposal.auto.json (proposal.json has hand edits)"
+    else:
+        write_json(out / "proposal.json", proposal)
+        write_json(out / "review-queue.json", queue)
+        target = "proposal.json"
 
     rgb = read_rgb(out / "rectified.png")
     px, py, pw, ph = regions["planBox"]
@@ -102,4 +111,4 @@ def run(ctx: StageContext) -> None:
             c = poly.mean(axis=0)
             cv2.putText(dbg, r["number"], (int(c[0]) - 20, int(c[1]) + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 90, 0), 2)
     write_debug(ctx, "summary", dbg[max(0, py - 20) : py + ph + 20, max(0, px - 20) : px + pw + 20], max_long_edge=2400)
-    print(f"  emit: proposal.json ({len(proposal['rooms'])} rooms, {len(proposal['nodes'])} nodes, {len(proposal['edges'])} edges), review-queue.json ({len(queue['items'])} items)")
+    print(f"  emit: {target} ({len(proposal['rooms'])} rooms, {len(proposal['nodes'])} nodes, {len(proposal['edges'])} edges), review-queue.json ({len(queue['items'])} items)")

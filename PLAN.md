@@ -221,15 +221,28 @@ Each milestone ends with a **review gate**: stop, summarize what was built, list
 - L2 has 4 low-score "DWA" icon matches in review that are window dashes.
 
 ### M2 — Authoring tool
-- [ ] building overview + pipeline status; `wf serve` integration.
-- [ ] rectify/crop corner editor.
-- [ ] level editor (layers, tools, undo/redo, autosave).
-- [ ] review queue UI.
-- [ ] accept level → canonical JSON (validated).
-- [ ] align levels to L1 (anchor pairs, residuals).
-- [ ] OSM footprint fetch + L1 fit → local meters + origin.
-- [ ] shaft proposal/confirm + level heights editor.
-- **Review gate M2.** User works through the review queue and accepts all levels.
+Design (decided at M2 start, see Decision log):
+- **Hand edits are never clobbered.** Once the tool saves a proposal it sets `editedAt`. After that, `emit` writes `proposal.auto.json` instead, and the tool offers "compare / reset from pipeline".
+- **Workflow per building:** fix each level in pixel space (editor + review queue) → align every level to the reference level (L1) → fit L1 to the OSM footprint → accept all levels (px → meters) → link shafts and set heights on canonical data.
+- **`data/work/<b>/alignment.json`** (committed) holds per-level anchor pairs + transform to reference pixels, plus the OSM fit (anchor pairs, transform, lat/lon origin, way id).
+- **px → meters:** `imageTransform` is a similarity applied to `(x, −y)`, since image y points down and world y points up. Helper in `@wf/geometry`.
+- **Canonical rooms may lack a number** (restrooms) but must then have a `name`. Accept is blocked while review items are unresolved or a level has more than one graph component (unless the extra pieces are explicitly allowed).
+- Pure logic (review application, accept conversion, polygon split, shaft proposals, graph checks) lives in `apps/author/lib/` with vitest tests. UI state is a history stack of proposal snapshots (undo/redo), autosaved.
+
+Tasks:
+- [ ] Schema: `Proposal.editedAt`, `ProposalRoom.regionId`, `ProposalRoom.restroom`, `ProposalEntrance.name`; canonical `Room.number` nullable + name rule; `Alignment` schema; emit respects `editedAt`. *Done when:* schema tests + pytest pass.
+- [ ] Data API (route handlers): list buildings/levels with status, read/write proposal + review queue + alignment, serve work images, proxy `wf serve` runs. *Done when:* vitest on lib + curl smoke tests.
+- [ ] `wf serve`: `POST /run`, `GET /status`. *Done when:* the author tool can re-run a level from a stage.
+- [ ] Building overview page (levels, status, open review counts, components, accepted?).
+- [ ] Level editor: pan/zoom over rectified photo; layers; select/move nodes; add/split/delete nodes and edges; room inspector (number, name, category, restroom); room split and draw; door placement; entrance marking; undo/redo; autosave; connectivity warnings. *Done when:* in the browser, L1's fragments can be joined and a merged suite split, and the result validates.
+- [ ] Review queue UI (keyboard: Enter accept, type to correct, Tab skip, X reject). *Done when:* all item kinds apply correctly (vitest) and one level's queue clears in the browser.
+- [ ] Rectify corner editor (drag 4 corners on the original photo → `corners.json` → re-run).
+- [ ] Align: side-by-side/onion-skin with a 90° rotate helper, anchor pairs, residuals, auto-suggest from outline. *Done when:* L2 overlays L1 with low residual.
+- [ ] OSM: Overpass fetch + cache, L1 ↔ footprint anchors, origin. *Done when:* the L1 outline overlays the footprint.
+- [ ] Accept: proposal → canonical `building.json` + `levels/<id>.json`, schema-validated.
+- [ ] Shafts & heights: propose stair/elevator chains across levels (world distance), confirm, default elevations (M halfway, unverified).
+- [ ] Browser verification of the whole flow with Chrome automation; tests green; PLAN/CLAUDE updated.
+- [ ] **Review gate M2.** User works through all review queues, fixes each level, aligns, fits OSM and accepts all levels.
 
 ### M3 — Routing + complete Wheeler data
 - [ ] graph build with virtual door nodes.
@@ -299,3 +312,6 @@ Each milestone ends with a **review gate**: stop, summarize what was built, list
 | 2026-09-16 | Auto-accept room numbers at ≥0.5 OCR confidence only if they match the level's `roomPattern` (zoom pass ≥0.75); one number per level | Measured: all ≥0.5 readings matching the pattern were correct; pattern catches the rest |
 | 2026-09-16 | Icons: accept template matches ≥0.85, review 0.78–0.85; no star detection | Weak matches were overwhelmingly window dashes/columns |
 | 2026-09-16 | Door side is computed in map orientation (image y flipped) | Canonical frame is y-up; keeps left/right correct after px→m transform |
+| 2026-09-16 | Pipeline never overwrites a hand-edited proposal (`editedAt` → writes `proposal.auto.json`) | Re-running after a corner fix must not destroy review work |
+| 2026-09-16 | `imageTransform` applies to (x, −y); alignment + OSM fit stored in `data/work/<b>/alignment.json` | Similarity has no reflection; alignment is authoring state, not canonical data |
+| 2026-09-16 | Canonical rooms may have no number if they have a name (restrooms) | Placards don't number restrooms |

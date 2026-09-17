@@ -37,3 +37,13 @@ def test_exif_orientation_is_applied():
     # iPhone HEICs store sensor-orientation pixels plus an EXIF rotation; B was shot in portrait.
     img = load_photo(raw_dir("wheeler") / "wheeler-B.heic", max_long_edge=800)
     assert img.height > img.width
+
+
+def test_server_status_and_bad_request():
+    from fastapi.testclient import TestClient
+
+    from wf.server import api
+
+    client = TestClient(api)
+    assert client.get("/status").json()["stages"]["emit"] is True
+    assert client.post("/run", json={"building": "wheeler", "level": "L9"}).status_code == 400
