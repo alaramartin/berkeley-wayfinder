@@ -5,7 +5,7 @@ Indoor wayfinding for UC Berkeley buildings, shown as a 3D building model with t
 ## Start every session here
 1. Read the **Status** block at the top of `PLAN.md`. It says which milestone is active and what's blocked.
 2. Work only on the current milestone's unchecked tasks, in order.
-3. Check off each task in `PLAN.md` when its "done when" condition is verified, and update Status.
+3. Check off each task in `PLAN.md` when its "done when" condition is verified, and update Status. When the user approves a review gate, check the milestone in the **Milestones** list at the top of `PLAN.md` and add ✅ to its heading.
 4. New or changed decisions go in the **Decision log** in `PLAN.md` (date, decision, why). Don't reopen logged decisions unless the user does.
 
 ## Workflow rules

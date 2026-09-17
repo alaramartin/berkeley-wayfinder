@@ -2,11 +2,19 @@
 
 > **Source of truth for what to build and in what order.** Update the Status block and check off tasks as you go. Append new decisions to the Decision log instead of silently changing course.
 
+## Milestones
+- [x] **M0 — Scaffold** (done 2026-09-16)
+- [x] **M1 — Pipeline** (done 2026-09-16)
+- [ ] **M2 — Authoring tool** ← current
+- [ ] **M3 — Routing + complete Wheeler data**
+- [ ] **M4 — Nav app + deploy**
+- [ ] **M5 — Field mode + verification walk**
+
 ## Status
-- **Current milestone:** M1 — Pipeline (**at review gate**)
-- **Last completed task:** end-to-end `uv run wf run wheeler` on all 6 levels → schema-valid `proposal.json` + `review-queue.json` per level (~1 min with OCR cache, ~5 min cold)
-- **Blockers / waiting on user:** review of M1 overlays and scores; OK to push M1 commits to GitHub; go-ahead for M2
-- **Next review gate:** end of M1 (now)
+- **Current milestone:** M2 — Authoring tool (in progress)
+- **Last completed task:** M1 approved and pushed
+- **Blockers / waiting on user:** none
+- **Next review gate:** end of M2 (user works through review queues, fixes and accepts all levels in the tool)
 
 ### M1 results (per level, before any human review)
 | Level | Room numbers auto-accepted / found anywhere (golden) | Wrong accepts | Rooms | Stairs+elevators linked | Graph components | Entrance candidates | Review items |
@@ -168,7 +176,7 @@ CLI: `uv run wf run <building> [--level L1] [--from-stage rectify] [--to-stage o
 ## 9. Milestones & tasks
 Each milestone ends with a **review gate**: stop, summarize what was built, list exactly what the user should run and look at, and wait.
 
-### M0 — Scaffold
+### M0 — Scaffold ✅
 - [x] `git init`, `.gitignore` (node_modules, .next, .venv, `data/work/**/{ingest.png,rectified.png,masks,debug}`), MIT `LICENSE`, README stub. *Done when:* `git status` is clean after the first commit.
 - [x] pnpm workspace root (`pnpm-workspace.yaml`, root `package.json` scripts: `dev:nav`, `dev:author`, `build`, `typecheck`, `test`), shared `tsconfig.base.json` (strict). *Done when:* `pnpm install` succeeds.
 - [x] `packages/schema`: zod schemas from §4, inferred types, `gen:jsonschema` script writing `schema/*.json`, round-trip tests. *Done when:* `pnpm --filter @wf/schema test` passes.
@@ -179,9 +187,9 @@ Each milestone ends with a **review gate**: stop, summarize what was built, list
 - [x] `data/raw/wheeler/config.yaml` (§3), `golden.yaml` (L1 from sample), sample photo copied as `wheeler-L1.heic`.
 - [x] GitHub Actions CI: pnpm typecheck + test, uv pytest. (The workflow file only; the repo gets pushed after confirming with the user.)
 - [x] CLAUDE.md commands section verified against reality.
-- **Review gate M0.** Ask the user to drop all level photos into `data/raw/wheeler/` and confirm creating the public GitHub repo.
+- [x] **Review gate M0.** Photos added, repo created and pushed.
 
-### M1 — Pipeline
+### M1 — Pipeline ✅
 - [x] **Placard findings from the real photos:**
   - [x] Legends differ per placard → legend read per placard (swatches + OCR'd labels → category via generic keyword rules; `categoryRules` in config for overrides). Works on all 6.
   - [ ] Placards aren't all drawn the same way up → **moved to M2**: alignment allows any rotation; author tool needs 90° rotate buttons before anchor picking.
@@ -202,7 +210,7 @@ Each milestone ends with a **review gate**: stop, summarize what was built, list
 - [x] emit `proposal.json` + `review-queue.json` (both schema-validated) + `debug/summary.png`.
 - [x] golden check in pytest (`test_wheeler_room_number_scores`, skipped when outputs are absent, e.g. CI).
 - [x] run on every level; results in the Status block.
-- **Review gate M1.** ← here
+- [x] **Review gate M1.** Approved by user 2026-09-16; pushed.
 
 **Known proposal defects for M2 to fix by hand** (the authoring tool must make these fast):
 - Suites merged into one polygon (L3 319/320/322/323 block; B 22/23 block; L4 east column 401–410). One room per number shares the polygon, so they need splitting.
