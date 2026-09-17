@@ -73,3 +73,17 @@ describe("geo", () => {
     expect(back.lon).toBeCloseTo(-122.2587, 9);
   });
 });
+
+describe("image <-> world", () => {
+  it("chains level -> reference -> world through the y flip", async () => {
+    const { levelImageTransform, imageToWorld, worldToImage } = await import("./index");
+    const toRef = { scale: 1.1, rotation: Math.PI / 2, tx: 40, ty: -15 };
+    const refToWorld = { scale: 0.02, rotation: 0.4, tx: -30, ty: 12 };
+    const p: Point = [812, 455];
+    const viaRef = apply(toRef, p);
+    const expected = apply(refToWorld, [viaRef[0], -viaRef[1]]);
+    const t = levelImageTransform(toRef, refToWorld);
+    close(imageToWorld(t, p), expected, 1e-6);
+    close(worldToImage(t, expected), p, 1e-6);
+  });
+});

@@ -53,6 +53,7 @@ def run(ctx: StageContext) -> None:
                 "id": r["id"],
                 "regionId": r["regionId"],
                 "number": r["number"],
+                **({"labelAt": r["labelAt"]} if r.get("labelAt") else {}),
                 "numberConfidence": r["numberConfidence"],
                 "category": r["category"],
                 "group": r["group"],

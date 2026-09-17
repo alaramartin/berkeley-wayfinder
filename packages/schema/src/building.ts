@@ -54,6 +54,11 @@ export const RoomCategory = z.enum([
 ]);
 export const Restroom = z.object({ gender: z.enum(["men", "women", "all"]), accessible: z.boolean() });
 
+export type RoomCategory = z.infer<typeof RoomCategory>;
+export type NodeKind = z.infer<typeof NodeKind>;
+export type EdgeKind = z.infer<typeof EdgeKind>;
+export type Restroom = z.infer<typeof Restroom>;
+
 export const Room = z
   .object({
     id: Id,

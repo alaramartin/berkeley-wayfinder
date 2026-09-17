@@ -66,3 +66,29 @@ export function fitSimilarity(src: Point[], dst: Point[]): SimilarityFit {
 export function distance(a: Point, b: Point): number {
   return Math.hypot(a[0] - b[0], a[1] - b[1]);
 }
+
+/**
+ * Image coordinates have y pointing down; the building frame has y pointing up. A similarity that operates in
+ * image coordinates, expressed on y-flipped coordinates: F∘t∘F where F(x, y) = (x, -y).
+ */
+export function flipSimilarity(t: Similarity): Similarity {
+  return { scale: t.scale, rotation: -t.rotation, tx: t.tx, ty: -t.ty };
+}
+
+/** Apply a level's imageTransform (defined on (x, -y) of image pixels) to an image point. */
+export function imageToWorld(t: Similarity, [x, y]: Point): Point {
+  return apply(t, [x, -y]);
+}
+
+export function worldToImage(t: Similarity, p: Point): Point {
+  const [x, y] = apply(invert(t), p);
+  return [x, -y];
+}
+
+/**
+ * imageTransform for a level: first align its pixels to the reference level (image-space similarity),
+ * then map reference pixels to world meters (similarity on flipped reference pixels).
+ */
+export function levelImageTransform(toReference: Similarity, referenceToWorld: Similarity): Similarity {
+  return compose(flipSimilarity(toReference), referenceToWorld);
+}

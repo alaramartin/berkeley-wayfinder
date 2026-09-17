@@ -5,7 +5,7 @@
     1873,
     3000
   ],
-  "generatedAt": "2026-09-17T04:47:08+00:00",
+  "generatedAt": "2026-09-17T05:05:25+00:00",
   "pipelineVersion": "0.1.0",
   "outline": [
     [
@@ -1040,6 +1040,10 @@
       "id": "wheeler-B-r30",
       "regionId": "wheeler-B-g002",
       "number": "30",
+      "labelAt": [
+        1565.0,
+        570.0
+      ],
       "numberConfidence": 1.0,
       "category": "classroom",
       "group": "General Assignment Classrooms",
@@ -1107,6 +1111,10 @@
       "id": "wheeler-B-r12",
       "regionId": "wheeler-B-g008",
       "number": "12",
+      "labelAt": [
+        595.0,
+        1306.5
+      ],
       "numberConfidence": 1.0,
       "category": "service",
       "group": null,
@@ -2095,6 +2103,10 @@
       "id": "wheeler-B-r24",
       "regionId": "wheeler-B-g014",
       "number": "24",
+      "labelAt": [
+        1531.0,
+        1082.5
+      ],
       "numberConfidence": 0.911,
       "category": "classroom",
       "group": "General Assignment Classrooms",
@@ -2193,6 +2205,10 @@
       "id": "wheeler-B-r22",
       "regionId": "wheeler-B-g016",
       "number": "22",
+      "labelAt": [
+        1528.5,
+        1365.5
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "Disabled Students Program Offices",
@@ -2288,6 +2304,10 @@
       "id": "wheeler-B-r23",
       "regionId": "wheeler-B-g016",
       "number": "23",
+      "labelAt": [
+        1486.0,
+        1244.5
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "Disabled Students Program Offices",
@@ -2383,6 +2403,10 @@
       "id": "wheeler-B-r22A",
       "regionId": "wheeler-B-g016",
       "number": "22A",
+      "labelAt": [
+        1571.0,
+        1480.0
+      ],
       "numberConfidence": 0.946,
       "category": "office",
       "group": "Disabled Students Program Offices",
@@ -2478,6 +2502,10 @@
       "id": "wheeler-B-r22B",
       "regionId": "wheeler-B-g016",
       "number": "22B",
+      "labelAt": [
+        1497.0,
+        1492.0
+      ],
       "numberConfidence": 0.829,
       "category": "office",
       "group": "Disabled Students Program Offices",
@@ -2573,6 +2601,10 @@
       "id": "wheeler-B-r23A",
       "regionId": "wheeler-B-g016",
       "number": "23A",
+      "labelAt": [
+        1576.5,
+        1227.0
+      ],
       "numberConfidence": 0.932,
       "category": "office",
       "group": "Disabled Students Program Offices",
@@ -2668,6 +2700,10 @@
       "id": "wheeler-B-r11",
       "regionId": "wheeler-B-g019",
       "number": "11",
+      "labelAt": [
+        615.5,
+        1387.0
+      ],
       "numberConfidence": 0.945,
       "category": "office",
       "group": "Disabled Students Program Offices",
@@ -2711,6 +2747,10 @@
       "id": "wheeler-B-r10",
       "regionId": "wheeler-B-g023",
       "number": "10",
+      "labelAt": [
+        793.5,
+        1659.0
+      ],
       "numberConfidence": 0.542,
       "category": "service",
       "group": null,
@@ -2818,6 +2858,10 @@
       "id": "wheeler-B-r4",
       "regionId": "wheeler-B-g024",
       "number": "4",
+      "labelAt": [
+        1108.0,
+        1577.0
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "Disabled Students Program Offices",
@@ -2905,6 +2949,10 @@
       "id": "wheeler-B-r6",
       "regionId": "wheeler-B-g024",
       "number": "6",
+      "labelAt": [
+        1012.5,
+        1574.5
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "Disabled Students Program Offices",
@@ -2992,6 +3040,10 @@
       "id": "wheeler-B-r8",
       "regionId": "wheeler-B-g024",
       "number": "8",
+      "labelAt": [
+        930.5,
+        1570.0
+      ],
       "numberConfidence": 0.78,
       "category": "office",
       "group": "Disabled Students Program Offices",
@@ -3079,6 +3131,10 @@
       "id": "wheeler-B-r2",
       "regionId": "wheeler-B-g024",
       "number": "2",
+      "labelAt": [
+        1202.5,
+        1577.0
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "Disabled Students Program Offices",
@@ -3166,6 +3222,10 @@
       "id": "wheeler-B-r20",
       "regionId": "wheeler-B-g026",
       "number": "20",
+      "labelAt": [
+        1560.0,
+        1692.0
+      ],
       "numberConfidence": 1.0,
       "category": "classroom",
       "group": "General Assignment Classrooms",
@@ -3213,6 +3273,10 @@
       "id": "wheeler-B-r19",
       "regionId": "wheeler-B-g030",
       "number": "19",
+      "labelAt": [
+        1285.0,
+        1701.5
+      ],
       "numberConfidence": 0.96,
       "category": "service",
       "group": null,
@@ -3256,6 +3320,10 @@
       "id": "wheeler-B-r3",
       "regionId": "wheeler-B-g031",
       "number": "3",
+      "labelAt": [
+        1110.0,
+        1737.5
+      ],
       "numberConfidence": 0.92,
       "category": "office",
       "group": "Disabled Students Program Offices",
@@ -3319,6 +3387,10 @@
       "id": "wheeler-B-r5",
       "regionId": "wheeler-B-g031",
       "number": "5",
+      "labelAt": [
+        1010.5,
+        1736.5
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "Disabled Students Program Offices",
@@ -3382,6 +3454,10 @@
       "id": "wheeler-B-r1",
       "regionId": "wheeler-B-g031",
       "number": "1",
+      "labelAt": [
+        1185.5,
+        1742.0
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "Disabled Students Program Offices",
@@ -3445,6 +3521,10 @@
       "id": "wheeler-B-r7",
       "regionId": "wheeler-B-g031",
       "number": "7",
+      "labelAt": [
+        932.5,
+        1731.0
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "Disabled Students Program Offices",

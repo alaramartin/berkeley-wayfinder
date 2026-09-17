@@ -290,6 +290,8 @@ def run(ctx: StageContext) -> None:
     warped = cv2.warpPerspective(rgb, homography, (out_w, out_h), flags=cv2.INTER_CUBIC, borderValue=(255, 255, 255))
     flat = flatten_lighting(warped)
     write_rgb(out_dir / "rectified.png", flat)
+    # Browsers decode a ~10 MB PNG slowly inside SVG; the author tool displays this instead.
+    cv2.imwrite(str(out_dir / "rectified.jpg"), cv2.cvtColor(flat, cv2.COLOR_RGB2BGR), [cv2.IMWRITE_JPEG_QUALITY, 85])
 
     write_json(
         out_dir / "rectify.json",

@@ -121,6 +121,7 @@ def run(ctx: StageContext) -> None:
                     "id": f"{prefix}-r{number}" if number else r["id"],
                     "regionId": r["id"],
                     "number": number,
+                    "labelAt": [round(entry["box"][0] + entry["box"][2] / 2, 1), round(entry["box"][1] + entry["box"][3] / 2, 1)] if number else None,
                     "numberConfidence": entry["confidence"],
                     "category": r["category"],
                     "group": r["group"],

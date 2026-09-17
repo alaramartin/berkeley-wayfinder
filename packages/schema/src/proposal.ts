@@ -20,6 +20,8 @@ export const ProposalRoom = z.object({
   regionId: Id.optional(),
   number: z.string().nullable(),
   name: z.string().optional(),
+  /** Where the number is printed on the placard (px); used to split merged suites sensibly. */
+  labelAt: Point.optional(),
   numberConfidence: Confidence,
   category: RoomCategory,
   group: z.string().nullable(),

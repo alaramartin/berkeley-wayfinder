@@ -5,7 +5,7 @@
     3000,
     2343
   ],
-  "generatedAt": "2026-09-17T04:47:09+00:00",
+  "generatedAt": "2026-09-17T05:05:52+00:00",
   "pipelineVersion": "0.1.0",
   "outline": [
     [
@@ -2173,6 +2173,10 @@
       "id": "wheeler-L1-r108",
       "regionId": "wheeler-L1-g001",
       "number": "108",
+      "labelAt": [
+        1836.0,
+        416.0
+      ],
       "numberConfidence": 1.0,
       "category": "classroom",
       "group": "General Assignment Classrooms",
@@ -2220,6 +2224,10 @@
       "id": "wheeler-L1-r104",
       "regionId": "wheeler-L1-g002",
       "number": "104",
+      "labelAt": [
+        2240.5,
+        447.5
+      ],
       "numberConfidence": 0.869,
       "category": "classroom",
       "group": "General Assignment Classrooms",
@@ -2359,6 +2367,10 @@
       "id": "wheeler-L1-r102",
       "regionId": "wheeler-L1-g002",
       "number": "102",
+      "labelAt": [
+        2492.5,
+        446.5
+      ],
       "numberConfidence": 0.646,
       "category": "classroom",
       "group": "General Assignment Classrooms",
@@ -2498,6 +2510,10 @@
       "id": "wheeler-L1-r106",
       "regionId": "wheeler-L1-g002",
       "number": "106",
+      "labelAt": [
+        2045.5,
+        449.0
+      ],
       "numberConfidence": 1.0,
       "category": "classroom",
       "group": "General Assignment Classrooms",
@@ -2637,6 +2653,10 @@
       "id": "wheeler-L1-r100",
       "regionId": "wheeler-L1-g004",
       "number": "100",
+      "labelAt": [
+        2765.0,
+        403.0
+      ],
       "numberConfidence": 1.0,
       "category": "service",
       "group": null,
@@ -2692,6 +2712,10 @@
       "id": "wheeler-L1-r105",
       "regionId": "wheeler-L1-g011",
       "number": "105",
+      "labelAt": [
+        2093.5,
+        645.5
+      ],
       "numberConfidence": 1.0,
       "category": "service",
       "group": null,
@@ -2771,6 +2795,10 @@
       "id": "wheeler-L1-r150",
       "regionId": "wheeler-L1-g013",
       "number": "150",
+      "labelAt": [
+        2327.5,
+        940.0
+      ],
       "numberConfidence": 1.0,
       "category": "auditorium",
       "group": "Cal Performances Wheeler Auditorium",
@@ -2900,6 +2928,10 @@
       "id": "wheeler-L1-r107",
       "regionId": "wheeler-L1-g018",
       "number": "107",
+      "labelAt": [
+        2073.5,
+        712.5
+      ],
       "numberConfidence": 1.0,
       "category": "service",
       "group": null,
@@ -2951,6 +2983,10 @@
       "id": "wheeler-L1-r116",
       "regionId": "wheeler-L1-g019",
       "number": "116",
+      "labelAt": [
+        1920.0,
+        864.0
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "College Writing Programs",
@@ -3018,6 +3054,10 @@
       "id": "wheeler-L1-r114",
       "regionId": "wheeler-L1-g019",
       "number": "114",
+      "labelAt": [
+        1918.0,
+        995.0
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "College Writing Programs",
@@ -3085,6 +3125,10 @@
       "id": "wheeler-L1-r110",
       "regionId": "wheeler-L1-g019",
       "number": "110",
+      "labelAt": [
+        1912.5,
+        1187.0
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "College Writing Programs",
@@ -3152,6 +3196,10 @@
       "id": "wheeler-L1-r112",
       "regionId": "wheeler-L1-g019",
       "number": "112",
+      "labelAt": [
+        1915.5,
+        1114.0
+      ],
       "numberConfidence": 0.587,
       "category": "office",
       "group": "College Writing Programs",
@@ -3219,6 +3267,10 @@
       "id": "wheeler-L1-r118",
       "regionId": "wheeler-L1-g019",
       "number": "118",
+      "labelAt": [
+        1923.0,
+        783.0
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "College Writing Programs",
@@ -3286,6 +3338,10 @@
       "id": "wheeler-L1-r119",
       "regionId": "wheeler-L1-g020",
       "number": "119",
+      "labelAt": [
+        1787.0,
+        781.0
+      ],
       "numberConfidence": 0.999,
       "category": "office",
       "group": "College Writing Programs Office",
@@ -3325,6 +3381,10 @@
       "id": "wheeler-L1-r150A",
       "regionId": "wheeler-L1-g021",
       "number": "150A",
+      "labelAt": [
+        2599.0,
+        951.5
+      ],
       "numberConfidence": 0.924,
       "category": "service",
       "group": null,
@@ -3544,6 +3604,10 @@
       "id": "wheeler-L1-r115",
       "regionId": "wheeler-L1-g022",
       "number": "115",
+      "labelAt": [
+        1782.5,
+        950.0
+      ],
       "numberConfidence": 0.995,
       "category": "office",
       "group": "College Writing Programs",
@@ -3595,6 +3659,10 @@
       "id": "wheeler-L1-r117",
       "regionId": "wheeler-L1-g022",
       "number": "117",
+      "labelAt": [
+        1784.0,
+        868.5
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "College Writing Programs",
@@ -3646,6 +3714,10 @@
       "id": "wheeler-L1-r113",
       "regionId": "wheeler-L1-g022",
       "number": "113",
+      "labelAt": [
+        1783.0,
+        1036.5
+      ],
       "numberConfidence": 0.747,
       "category": "office",
       "group": "College Writing Programs",
@@ -3697,6 +3769,10 @@
       "id": "wheeler-L1-r111",
       "regionId": "wheeler-L1-g022",
       "number": "111",
+      "labelAt": [
+        1782.5,
+        1117.0
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "College Writing Programs",
@@ -3748,6 +3824,10 @@
       "id": "wheeler-L1-r123",
       "regionId": "wheeler-L1-g031",
       "number": "123",
+      "labelAt": [
+        2114.0,
+        1243.5
+      ],
       "numberConfidence": 0.996,
       "category": "service",
       "group": null,
@@ -3865,6 +3945,10 @@
       "id": "wheeler-L1-r122",
       "regionId": "wheeler-L1-g041",
       "number": "122",
+      "labelAt": [
+        1989.0,
+        1452.5
+      ],
       "numberConfidence": 0.752,
       "category": "classroom",
       "group": "General Assignment Classrooms",
@@ -3916,6 +4000,10 @@
       "id": "wheeler-L1-r124",
       "regionId": "wheeler-L1-g043",
       "number": "124",
+      "labelAt": [
+        2122.5,
+        1453.0
+      ],
       "numberConfidence": 1.0,
       "category": "classroom",
       "group": "General Assignment Classrooms",
@@ -4106,6 +4194,10 @@
       "id": "wheeler-L1-r126",
       "regionId": "wheeler-L1-g046",
       "number": "126",
+      "labelAt": [
+        2316.5,
+        1454.0
+      ],
       "numberConfidence": 1.0,
       "category": "classroom",
       "group": "General Assignment Classrooms",
@@ -4161,6 +4253,10 @@
       "id": "wheeler-L1-r120",
       "regionId": "wheeler-L1-g047",
       "number": "120",
+      "labelAt": [
+        1832.5,
+        1483.0
+      ],
       "numberConfidence": 1.0,
       "category": "classroom",
       "group": "General Assignment Classrooms",

@@ -53,11 +53,14 @@ def parse_directory(boxes: list[TextBox]) -> list[dict]:
         if not row:
             continue
         name = max(row, key=lambda n: n.x + n.w)
+        x0, y0 = min(name.x, num.x), min(name.y, num.y)
+        x1, y1 = max(name.x + name.w, num.x + num.w), max(name.y + name.h, num.y + num.h)
         out.append(
             {
                 "name": re.sub(r"\s+", " ", name.text).strip(" -"),
                 "room": normalize_number(num.text),
                 "confidence": round(min(name.confidence, num.confidence), 3),
+                "box": [x0, y0, x1 - x0, y1 - y0],
             }
         )
     return out
@@ -188,12 +191,17 @@ def run(ctx: StageContext) -> None:
         dir_boxes = read_text(rgb[dy : dy + dh, dx : dx + dw], out, "directory")
         directory = parse_directory(dir_boxes)
         for i, d in enumerate(directory):
+            bx, by, bw, bh = d.pop("box")
             if d["confidence"] < ALIAS_CONFIDENCE:
+                item_id = f"{ctx.building.id}-{ctx.level.id}-alias{i:02d}"
+                m = int(bh)
+                rel = f"review-crops/{item_id}.png"
+                write_rgb(out / rel, rgb[max(0, int(dy + by) - m) : int(dy + by + bh) + m, max(0, int(dx + bx) - m) : int(dx + bx + bw) + m])
                 review.append(
                     {
-                        "id": f"{ctx.building.id}-{ctx.level.id}-alias{i:02d}",
+                        "id": item_id,
                         "kind": "alias",
-                        "crop": "",
+                        "crop": rel,
                         "candidates": [{"value": f"{d['name']} = {d['room']}", "confidence": d["confidence"]}],
                         "targetId": f"{ctx.building.id}-{ctx.level.id}-directory",
                     }

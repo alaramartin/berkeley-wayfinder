@@ -5,7 +5,7 @@
     1935,
     3000
   ],
-  "generatedAt": "2026-09-17T04:47:08+00:00",
+  "generatedAt": "2026-09-17T05:05:25+00:00",
   "pipelineVersion": "0.1.0",
   "outline": [
     [
@@ -574,6 +574,10 @@
       "id": "wheeler-M-rM21",
       "regionId": "wheeler-M-g003",
       "number": "M21",
+      "labelAt": [
+        1101.0,
+        1006.5
+      ],
       "numberConfidence": 0.993,
       "category": "office",
       "group": "College Writing Programs",
@@ -633,6 +637,10 @@
       "id": "wheeler-M-rM19",
       "regionId": "wheeler-M-g004",
       "number": "M19",
+      "labelAt": [
+        991.0,
+        1007.5
+      ],
       "numberConfidence": 0.657,
       "category": "office",
       "group": "College Writing Programs",
@@ -688,6 +696,10 @@
       "id": "wheeler-M-rM13",
       "regionId": "wheeler-M-g005",
       "number": "M13",
+      "labelAt": [
+        663.0,
+        1007.0
+      ],
       "numberConfidence": 1.0,
       "category": "other",
       "group": "Berkeley Connect",
@@ -743,6 +755,10 @@
       "id": "wheeler-M-rM15",
       "regionId": "wheeler-M-g006",
       "number": "M15",
+      "labelAt": [
+        776.5,
+        1008.0
+      ],
       "numberConfidence": 0.98,
       "category": "office",
       "group": "College Writing Programs",
@@ -794,6 +810,10 @@
       "id": "wheeler-M-rM17",
       "regionId": "wheeler-M-g007",
       "number": "M17",
+      "labelAt": [
+        879.0,
+        1008.5
+      ],
       "numberConfidence": 0.999,
       "category": "office",
       "group": "College Writing Programs",
@@ -837,6 +857,10 @@
       "id": "wheeler-M-rM12",
       "regionId": "wheeler-M-g014",
       "number": "M12",
+      "labelAt": [
+        568.5,
+        1188.5
+      ],
       "numberConfidence": 0.999,
       "category": "office",
       "group": "College Writing Programs",
@@ -924,6 +948,10 @@
       "id": "wheeler-M-rM14",
       "regionId": "wheeler-M-g015",
       "number": "M14",
+      "labelAt": [
+        666.0,
+        1189.5
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "College Writing Programs",
@@ -975,6 +1003,10 @@
       "id": "wheeler-M-rM16",
       "regionId": "wheeler-M-g016",
       "number": "M16",
+      "labelAt": [
+        773.5,
+        1193.5
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "College Writing Programs",
@@ -1034,6 +1066,10 @@
       "id": "wheeler-M-rM18",
       "regionId": "wheeler-M-g018",
       "number": "M18",
+      "labelAt": [
+        880.0,
+        1196.0
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "College Writing Programs",
@@ -1073,6 +1109,10 @@
       "id": "wheeler-M-rM22",
       "regionId": "wheeler-M-g019",
       "number": "M22",
+      "labelAt": [
+        1094.5,
+        1197.5
+      ],
       "numberConfidence": 0.997,
       "category": "office",
       "group": "College Writing Programs",
@@ -1148,6 +1188,10 @@
       "id": "wheeler-M-rM20",
       "regionId": "wheeler-M-g021",
       "number": "M20",
+      "labelAt": [
+        987.5,
+        1196.5
+      ],
       "numberConfidence": 0.989,
       "category": "office",
       "group": "College Writing Programs",

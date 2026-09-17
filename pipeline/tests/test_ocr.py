@@ -21,7 +21,9 @@ def test_parse_directory_pairs_rows():
         TextBox("Maude Fife Seminar Room", 0.8, 0, 60, 190, 14),
         TextBox("315", 0.99, 260, 61, 30, 15),
     ]
-    pairs = {(d["name"], d["room"]) for d in parse_directory(boxes)}
+    parsed = parse_directory(boxes)
+    assert all(len(d["box"]) == 4 for d in parsed)
+    pairs = {(d["name"], d["room"]) for d in parsed}
     assert pairs == {("English Dept. Main Office", "322"), ("Maude Fife Seminar Room", "315")}
 
 

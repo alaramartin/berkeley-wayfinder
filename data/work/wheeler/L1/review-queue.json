@@ -33,7 +33,7 @@
     {
       "id": "wheeler-L1-alias00",
       "kind": "alias",
-      "crop": "",
+      "crop": "review-crops/wheeler-L1-alias00.png",
       "candidates": [
         {
           "value": "English Dept: Main (bavce = 322",
@@ -45,7 +45,7 @@
     {
       "id": "wheeler-L1-alias01",
       "kind": "alias",
-      "crop": "",
+      "crop": "review-crops/wheeler-L1-alias01.png",
       "candidates": [
         {
           "value": "English Dept: Advising Office = 319",
@@ -57,7 +57,7 @@
     {
       "id": "wheeler-L1-alias03",
       "kind": "alias",
-      "crop": "",
+      "crop": "review-crops/wheeler-L1-alias03.png",
       "candidates": [
         {
           "value": "Maude Fife Seminar Room = 315",
@@ -69,7 +69,7 @@
     {
       "id": "wheeler-L1-alias04",
       "kind": "alias",
-      "crop": "",
+      "crop": "review-crops/wheeler-L1-alias04.png",
       "candidates": [
         {
           "value": "ETS Computer Facilities = 210",
@@ -81,7 +81,7 @@
     {
       "id": "wheeler-L1-alias05",
       "kind": "alias",
-      "crop": "",
+      "crop": "review-crops/wheeler-L1-alias05.png",
       "candidates": [
         {
           "value": "College Writing Programs = 119",

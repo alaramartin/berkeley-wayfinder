@@ -39,6 +39,9 @@
       "type": "number",
       "exclusiveMinimum": 0
     },
+    "referenceLevel": {
+      "type": "string"
+    },
     "levels": {
       "minItems": 1,
       "type": "array",
@@ -65,6 +68,9 @@
           },
           "roomPattern": {
             "type": "string"
+          },
+          "elevationM": {
+            "type": "number"
           }
         },
         "required": [

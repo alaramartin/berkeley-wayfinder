@@ -5,7 +5,7 @@
     1943,
     3000
   ],
-  "generatedAt": "2026-09-17T04:47:09+00:00",
+  "generatedAt": "2026-09-17T05:05:26+00:00",
   "pipelineVersion": "0.1.0",
   "outline": [
     [
@@ -1170,6 +1170,10 @@
       "id": "wheeler-L2-r220",
       "regionId": "wheeler-L2-g001",
       "number": "220",
+      "labelAt": [
+        281.0,
+        612.5
+      ],
       "numberConfidence": 1.0,
       "category": "service",
       "group": null,
@@ -1449,6 +1453,10 @@
       "id": "wheeler-L2-r222",
       "regionId": "wheeler-L2-g001",
       "number": "222",
+      "labelAt": [
+        356.5,
+        942.0
+      ],
       "numberConfidence": 1.0,
       "category": "service",
       "group": null,
@@ -1728,6 +1736,10 @@
       "id": "wheeler-L2-r210",
       "regionId": "wheeler-L2-g003",
       "number": "210",
+      "labelAt": [
+        1626.0,
+        608.5
+      ],
       "numberConfidence": 1.0,
       "category": "computer-lab",
       "group": "ETS Computer Classroom",
@@ -1791,6 +1803,10 @@
       "id": "wheeler-L2-r212",
       "regionId": "wheeler-L2-g004",
       "number": "212",
+      "labelAt": [
+        971.5,
+        653.5
+      ],
       "numberConfidence": 0.985,
       "category": "classroom",
       "group": "General Assignment Classrooms",
@@ -2209,6 +2225,10 @@
       "id": "wheeler-L2-r208",
       "regionId": "wheeler-L2-g013",
       "number": "208",
+      "labelAt": [
+        1587.5,
+        812.5
+      ],
       "numberConfidence": 1.0,
       "category": "other",
       "group": "Academic Innovation Studio @ Wheeler",
@@ -2566,6 +2586,10 @@
       "id": "wheeler-L2-r211",
       "regionId": "wheeler-L2-g016",
       "number": "211",
+      "labelAt": [
+        1264.0,
+        910.5
+      ],
       "numberConfidence": 0.619,
       "category": "classroom",
       "group": "General Assignment Classrooms",
@@ -2609,6 +2633,10 @@
       "id": "wheeler-L2-r206",
       "regionId": "wheeler-L2-g017",
       "number": "206",
+      "labelAt": [
+        1584.0,
+        942.5
+      ],
       "numberConfidence": 1.0,
       "category": "other",
       "group": "Academic Innovation Studio @ Wheeler",
@@ -2979,6 +3007,10 @@
       "id": "wheeler-L2-r209",
       "regionId": "wheeler-L2-g021",
       "number": "209",
+      "labelAt": [
+        1334.0,
+        911.0
+      ],
       "numberConfidence": 1.0,
       "category": "classroom",
       "group": "General Assignment Classrooms",
@@ -3125,6 +3157,10 @@
       "id": "wheeler-L2-r204",
       "regionId": "wheeler-L2-g027",
       "number": "204",
+      "labelAt": [
+        1589.0,
+        1179.5
+      ],
       "numberConfidence": 1.0,
       "category": "classroom",
       "group": "General Assignment Classrooms",
@@ -3168,6 +3204,10 @@
       "id": "wheeler-L2-r224",
       "regionId": "wheeler-L2-g029",
       "number": "224",
+      "labelAt": [
+        354.0,
+        1233.0
+      ],
       "numberConfidence": 1.0,
       "category": "service",
       "group": null,
@@ -3422,6 +3462,10 @@
       "id": "wheeler-L2-r202",
       "regionId": "wheeler-L2-g033",
       "number": "202",
+      "labelAt": [
+        1589.0,
+        1453.5
+      ],
       "numberConfidence": 1.0,
       "category": "classroom",
       "group": "General Assignment Classrooms",
@@ -3563,6 +3607,10 @@
       "id": "wheeler-L2-r227",
       "regionId": "wheeler-L2-g044",
       "number": "227",
+      "labelAt": [
+        365.0,
+        1673.0
+      ],
       "numberConfidence": 0.95,
       "category": "office",
       "group": "English Department",
@@ -3690,6 +3738,10 @@
       "id": "wheeler-L2-r228",
       "regionId": "wheeler-L2-g044",
       "number": "228",
+      "labelAt": [
+        246.5,
+        1694.5
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "English Department",
@@ -3817,6 +3869,10 @@
       "id": "wheeler-L2-r229",
       "regionId": "wheeler-L2-g044",
       "number": "229",
+      "labelAt": [
+        260.5,
+        1785.5
+      ],
       "numberConfidence": 0.809,
       "category": "office",
       "group": "English Department",
@@ -3944,6 +4000,10 @@
       "id": "wheeler-L2-r230",
       "regionId": "wheeler-L2-g044",
       "number": "230",
+      "labelAt": [
+        386.0,
+        1786.5
+      ],
       "numberConfidence": 0.573,
       "category": "office",
       "group": "English Department",
@@ -4071,6 +4131,10 @@
       "id": "wheeler-L2-r227A",
       "regionId": "wheeler-L2-g044",
       "number": "227A",
+      "labelAt": [
+        246.5,
+        1624.0
+      ],
       "numberConfidence": 0.998,
       "category": "office",
       "group": "English Department",
@@ -4198,6 +4262,10 @@
       "id": "wheeler-L2-r200",
       "regionId": "wheeler-L2-g045",
       "number": "200",
+      "labelAt": [
+        1645.5,
+        1729.5
+      ],
       "numberConfidence": 0.664,
       "category": "classroom",
       "group": "General Assignment Classrooms",
@@ -4249,6 +4317,10 @@
       "id": "wheeler-L2-r232",
       "regionId": "wheeler-L2-g051",
       "number": "232",
+      "labelAt": [
+        768.5,
+        1761.5
+      ],
       "numberConfidence": 0.999,
       "category": "office",
       "group": "English Department",
@@ -4284,6 +4356,10 @@
       "id": "wheeler-L2-r231",
       "regionId": "wheeler-L2-g052",
       "number": "231",
+      "labelAt": [
+        643.5,
+        1765.0
+      ],
       "numberConfidence": 0.563,
       "category": "office",
       "group": "English Department",
@@ -4319,6 +4395,10 @@
       "id": "wheeler-L2-r233",
       "regionId": "wheeler-L2-g053",
       "number": "233",
+      "labelAt": [
+        875.0,
+        1762.0
+      ],
       "numberConfidence": 0.535,
       "category": "office",
       "group": "English Department",
@@ -4354,6 +4434,10 @@
       "id": "wheeler-L2-r234",
       "regionId": "wheeler-L2-g054",
       "number": "234",
+      "labelAt": [
+        974.0,
+        1763.5
+      ],
       "numberConfidence": 0.714,
       "category": "office",
       "group": "English Department",
@@ -4389,6 +4473,10 @@
       "id": "wheeler-L2-r236",
       "regionId": "wheeler-L2-g055",
       "number": "236",
+      "labelAt": [
+        1183.5,
+        1761.5
+      ],
       "numberConfidence": 0.976,
       "category": "office",
       "group": "English Department",
@@ -4424,6 +4512,10 @@
       "id": "wheeler-L2-r235",
       "regionId": "wheeler-L2-g056",
       "number": "235",
+      "labelAt": [
+        1085.0,
+        1764.0
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "English Department",
@@ -4459,6 +4551,10 @@
       "id": "wheeler-L2-r237",
       "regionId": "wheeler-L2-g057",
       "number": "237",
+      "labelAt": [
+        1299.5,
+        1759.0
+      ],
       "numberConfidence": 0.677,
       "category": "office",
       "group": "English Department",

@@ -38,3 +38,4 @@ data/work/**/ocr.json
 data/work/**/icons.json
 data/work/**/connect.json
 data/work/**/*.auto.json
+data/work/**/rectified.jpg

@@ -5,7 +5,7 @@
     1922,
     3000
   ],
-  "generatedAt": "2026-09-17T04:47:09+00:00",
+  "generatedAt": "2026-09-17T05:05:26+00:00",
   "pipelineVersion": "0.1.0",
   "outline": [
     [
@@ -1048,6 +1048,10 @@
       "id": "wheeler-L3-r319",
       "regionId": "wheeler-L3-g002",
       "number": "319",
+      "labelAt": [
+        289.0,
+        631.5
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "English Department Administration",
@@ -1367,6 +1371,10 @@
       "id": "wheeler-L3-r322",
       "regionId": "wheeler-L3-g002",
       "number": "322",
+      "labelAt": [
+        376.0,
+        1076.0
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "English Department Administration",
@@ -1686,6 +1694,10 @@
       "id": "wheeler-L3-r323A",
       "regionId": "wheeler-L3-g002",
       "number": "323A",
+      "labelAt": [
+        281.0,
+        1264.0
+      ],
       "numberConfidence": 0.967,
       "category": "office",
       "group": "English Department Administration",
@@ -2005,6 +2017,10 @@
       "id": "wheeler-L3-r319B",
       "regionId": "wheeler-L3-g002",
       "number": "319B",
+      "labelAt": [
+        314.0,
+        516.5
+      ],
       "numberConfidence": 0.942,
       "category": "office",
       "group": "English Department Administration",
@@ -2324,6 +2340,10 @@
       "id": "wheeler-L3-r322B",
       "regionId": "wheeler-L3-g002",
       "number": "322B",
+      "labelAt": [
+        279.5,
+        899.5
+      ],
       "numberConfidence": 0.838,
       "category": "office",
       "group": "English Department Administration",
@@ -2643,6 +2663,10 @@
       "id": "wheeler-L3-r320A",
       "regionId": "wheeler-L3-g002",
       "number": "320A",
+      "labelAt": [
+        281.0,
+        786.0
+      ],
       "numberConfidence": 0.947,
       "category": "office",
       "group": "English Department Administration",
@@ -2962,6 +2986,10 @@
       "id": "wheeler-L3-r323",
       "regionId": "wheeler-L3-g002",
       "number": "323",
+      "labelAt": [
+        373.5,
+        1256.5
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "English Department Administration",
@@ -3281,6 +3309,10 @@
       "id": "wheeler-L3-r320",
       "regionId": "wheeler-L3-g002",
       "number": "320",
+      "labelAt": [
+        382.5,
+        788.5
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "English Department Administration",
@@ -3600,6 +3632,10 @@
       "id": "wheeler-L3-r307",
       "regionId": "wheeler-L3-g003",
       "number": "307",
+      "labelAt": [
+        1601.5,
+        630.5
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "English Department",
@@ -3731,6 +3767,10 @@
       "id": "wheeler-L3-r310",
       "regionId": "wheeler-L3-g003",
       "number": "310",
+      "labelAt": [
+        1582.0,
+        507.5
+      ],
       "numberConfidence": 0.763,
       "category": "office",
       "group": "English Department",
@@ -3862,6 +3902,10 @@
       "id": "wheeler-L3-r308",
       "regionId": "wheeler-L3-g003",
       "number": "308",
+      "labelAt": [
+        1732.0,
+        594.5
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "English Department",
@@ -3993,6 +4037,10 @@
       "id": "wheeler-L3-r309",
       "regionId": "wheeler-L3-g003",
       "number": "309",
+      "labelAt": [
+        1719.5,
+        499.0
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "English Department",
@@ -4124,6 +4172,10 @@
       "id": "wheeler-L3-r307A",
       "regionId": "wheeler-L3-g003",
       "number": "307A",
+      "labelAt": [
+        1731.5,
+        673.0
+      ],
       "numberConfidence": 0.987,
       "category": "office",
       "group": "English Department",
@@ -4255,6 +4307,10 @@
       "id": "wheeler-L3-r315",
       "regionId": "wheeler-L3-g005",
       "number": "315",
+      "labelAt": [
+        785.5,
+        607.5
+      ],
       "numberConfidence": 0.661,
       "category": "seminar",
       "group": "Maude Fife Seminar Room",
@@ -4290,6 +4346,10 @@
       "id": "wheeler-L3-r311",
       "regionId": "wheeler-L3-g006",
       "number": "311",
+      "labelAt": [
+        1154.0,
+        602.5
+      ],
       "numberConfidence": 0.856,
       "category": "library",
       "group": "English Department Library",
@@ -4333,6 +4393,10 @@
       "id": "wheeler-L3-r312",
       "regionId": "wheeler-L3-g010",
       "number": "312",
+      "labelAt": [
+        1356.0,
+        713.5
+      ],
       "numberConfidence": 0.662,
       "category": "service",
       "group": null,
@@ -4376,6 +4440,10 @@
       "id": "wheeler-L3-r306",
       "regionId": "wheeler-L3-g013",
       "number": "306",
+      "labelAt": [
+        1604.0,
+        783.0
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "English Department",
@@ -4411,6 +4479,10 @@
       "id": "wheeler-L3-r314",
       "regionId": "wheeler-L3-g014",
       "number": "314",
+      "labelAt": [
+        1277.5,
+        888.0
+      ],
       "numberConfidence": 0.963,
       "category": "service",
       "group": null,
@@ -4462,6 +4534,10 @@
       "id": "wheeler-L3-r305",
       "regionId": "wheeler-L3-g016",
       "number": "305",
+      "labelAt": [
+        1604.5,
+        918.5
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "English Department",
@@ -4497,6 +4573,10 @@
       "id": "wheeler-L3-r313",
       "regionId": "wheeler-L3-g018",
       "number": "313",
+      "labelAt": [
+        1349.0,
+        945.5
+      ],
       "numberConfidence": 0.573,
       "category": "lactation",
       "group": "Lactation Room",
@@ -4532,6 +4612,10 @@
       "id": "wheeler-L3-r325",
       "regionId": "wheeler-L3-g019",
       "number": "325",
+      "labelAt": [
+        597.5,
+        946.5
+      ],
       "numberConfidence": 1.0,
       "category": "service",
       "group": null,
@@ -4591,6 +4675,10 @@
       "id": "wheeler-L3-r304",
       "regionId": "wheeler-L3-g020",
       "number": "304",
+      "labelAt": [
+        1603.5,
+        1048.5
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "English Department",
@@ -4626,6 +4714,10 @@
       "id": "wheeler-L3-r303",
       "regionId": "wheeler-L3-g021",
       "number": "303",
+      "labelAt": [
+        1601.0,
+        1215.5
+      ],
       "numberConfidence": 0.616,
       "category": "office",
       "group": "English Department",
@@ -4669,6 +4761,10 @@
       "id": "wheeler-L3-r302",
       "regionId": "wheeler-L3-g022",
       "number": "302",
+      "labelAt": [
+        1603.5,
+        1388.5
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "English Department",
@@ -4751,6 +4847,10 @@
       "id": "wheeler-L3-r301",
       "regionId": "wheeler-L3-g026",
       "number": "301",
+      "labelAt": [
+        1606.0,
+        1521.5
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "English Department",
@@ -4865,6 +4965,10 @@
       "id": "wheeler-L3-r330",
       "regionId": "wheeler-L3-g029",
       "number": "330",
+      "labelAt": [
+        297.5,
+        1727.5
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "English Department",
@@ -4900,6 +5004,10 @@
       "id": "wheeler-L3-r300",
       "regionId": "wheeler-L3-g030",
       "number": "300",
+      "labelAt": [
+        1647.5,
+        1715.5
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "English Department",
@@ -4943,6 +5051,10 @@
       "id": "wheeler-L3-r331",
       "regionId": "wheeler-L3-g035",
       "number": "331",
+      "labelAt": [
+        631.5,
+        1765.5
+      ],
       "numberConfidence": 0.5,
       "category": "office",
       "group": "English Department",
@@ -4978,6 +5090,10 @@
       "id": "wheeler-L3-r333",
       "regionId": "wheeler-L3-g036",
       "number": "333",
+      "labelAt": [
+        874.0,
+        1766.5
+      ],
       "numberConfidence": 0.633,
       "category": "office",
       "group": "English Department",
@@ -5013,6 +5129,10 @@
       "id": "wheeler-L3-r332",
       "regionId": "wheeler-L3-g037",
       "number": "332",
+      "labelAt": [
+        762.5,
+        1762.5
+      ],
       "numberConfidence": 0.784,
       "category": "office",
       "group": "English Department",
@@ -5048,6 +5168,10 @@
       "id": "wheeler-L3-r334",
       "regionId": "wheeler-L3-g038",
       "number": "334",
+      "labelAt": [
+        982.5,
+        1765.0
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "English Department",
@@ -5083,6 +5207,10 @@
       "id": "wheeler-L3-r335",
       "regionId": "wheeler-L3-g039",
       "number": "335",
+      "labelAt": [
+        1081.5,
+        1762.5
+      ],
       "numberConfidence": 0.826,
       "category": "office",
       "group": "English Department",
@@ -5118,6 +5246,10 @@
       "id": "wheeler-L3-r336",
       "regionId": "wheeler-L3-g040",
       "number": "336",
+      "labelAt": [
+        1190.5,
+        1759.5
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "English Department",
@@ -5153,6 +5285,10 @@
       "id": "wheeler-L3-r337",
       "regionId": "wheeler-L3-g041",
       "number": "337",
+      "labelAt": [
+        1310.5,
+        1762.0
+      ],
       "numberConfidence": 1.0,
       "category": "office",
       "group": "English Department",

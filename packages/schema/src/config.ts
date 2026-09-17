@@ -9,6 +9,8 @@ export const BuildingConfig = z.object({
   osmWayId: z.number().int().nullable().default(null),
   defaultFloorHeightM: z.number().positive().default(4.5),
   riserHeightM: z.number().positive().default(0.17),
+  /** Level every other level is aligned to (usually the main entrance floor). */
+  referenceLevel: z.string().optional(),
   levels: z
     .array(
       z.object({
@@ -19,6 +21,8 @@ export const BuildingConfig = z.object({
         verified: z.boolean().default(true),
         /** Regex room numbers on this level must match to be auto-accepted, e.g. "^2\\d\\d[A-Z]?$". */
         roomPattern: z.string().optional(),
+        /** Starting elevation before stair counts refine it; defaults to sortIndex x defaultFloorHeightM. */
+        elevationM: z.number().optional(),
       }),
     )
     .min(1),
