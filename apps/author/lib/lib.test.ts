@@ -97,6 +97,9 @@ describe("review answers", () => {
     expect(b.rooms.filter((r) => r.regionId === "test-L1-g001").map((r) => r.number).sort()).toEqual(["101", "101A"]);
     const dup = applyAnswer(p, item("room-number", "test-L1-g002"), { value: "101" });
     expect(dup.conflict).toMatch(/already exists/);
+    const missing = applyAnswer(p, item("room-number", "test-L1-g999"), { value: "31" });
+    expect(missing.conflict).toMatch(/no room/);
+    expect(missing.item.resolved).toBeUndefined();
     expect(dup.item.resolved).toBeUndefined();
     const c = applyAnswer(p, item("room-number", "test-L1-g002"), { value: null });
     expect(c.proposal.rooms).toHaveLength(1);

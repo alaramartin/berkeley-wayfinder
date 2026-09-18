@@ -45,7 +45,9 @@ export function applyAnswer(p: Proposal, item: ReviewItem, answer: Answer, now =
       }
       const unnumbered = targets.find((r) => r.number === null);
       const template = unnumbered ?? targets[0];
-      if (!template) break;
+      if (!template) {
+        return { proposal: p, item, conflict: `This outline has no room in the proposal. Skip this card and draw room ${number} in the editor.` };
+      }
       if (targets.some((r) => r.number === number)) break;
       const room: ProposalRoom = { ...template, id: roomIdForNumber(p, number), number, numberConfidence: 1, regionId: template.regionId ?? item.targetId };
       proposal = unnumbered ? { ...p, rooms: p.rooms.map((r) => (r === unnumbered ? room : r)) } : { ...p, rooms: [...p.rooms, room] };

@@ -104,8 +104,8 @@ def run(ctx: StageContext) -> None:
             continue
         found = numbers.get(r["id"], {"numbers": [], "candidates": []})
         accepted = found["numbers"]
-        if r["category"] == "service" and not accepted:
-            continue  # unlabeled gray areas are not destinations
+        if r["category"] == "service" and not accepted and not found["candidates"]:
+            continue  # unlabeled gray areas are not destinations; ones with a doubtful number stay for their review card
         poly = np.array(r["polygon"], float)
         doors = []
         if edges:
