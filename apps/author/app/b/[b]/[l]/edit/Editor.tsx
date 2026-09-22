@@ -32,11 +32,12 @@ import {
 } from "@/lib/graph";
 import { nextId, roomIdForNumber } from "@/lib/ids";
 import { centroid, splitPolygon } from "@/lib/polygon";
-import { assignSplit } from "@/lib/split";
+import { applySuiteSplit, assignSplit } from "@/lib/split";
 import { useHistory } from "@/lib/useHistory";
 import { PanZoom, type PanZoomHandle } from "@/components/PanZoom";
 
-type Tool = "select" | "node" | "edge" | "door" | "split" | "room";
+// "seed" is not in the toolbar: the suite auto-split enters it to ask where an unlabelled room is.
+type Tool = "select" | "node" | "edge" | "door" | "split" | "room" | "seed";
 type Selection = { type: "node" | "edge" | "room"; id: string } | null;
 type Target = { type: "node" | "edge" | "room"; id: string } | null;
 
@@ -55,10 +56,11 @@ export function Editor({ building, level }: { building: string; level: string })
   const history = useHistory<Proposal | null>(null);
   const p = history.present;
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [tool, setTool] = useState<Tool>("select");
   const [selection, setSelection] = useState<Selection>(null);
-  const [pending, setPending] = useState<{ edgeFrom?: string; splitFrom?: Point; roomPoints?: Point[]; doorIndex?: number }>({});
+  const [pending, setPending] = useState<{ edgeFrom?: string; splitFrom?: Point; roomPoints?: Point[]; doorIndex?: number; seedFor?: { roomIds: string[]; seeds: (Point | null)[] } }>({});
   const [cursor, setCursor] = useState<Point | null>(null);
   const [layers, setLayers] = useState({ photo: true, rooms: true, labels: true, corridors: true, doors: true, icons: false });
   const [upp, setUpp] = useState(2);
@@ -175,6 +177,19 @@ export function Editor({ building, level }: { building: string; level: string })
           setPending({});
           return;
         }
+        case "seed": {
+          const q = pending.seedFor;
+          if (!q) return setTool("select");
+          const seeds = [...q.seeds];
+          const next = seeds.findIndex((x) => x === null);
+          if (next < 0) return setTool("select");
+          seeds[next] = at;
+          if (seeds.some((x) => x === null)) return setPending({ seedFor: { ...q, seeds } });
+          setPending({});
+          setTool("select");
+          void runSuiteSplit(q.roomIds, seeds as Point[]);
+          return;
+        }
         case "split": {
           if (!selectedRoom) return setError("Select a room first, then click two points across it.");
           if (!pending.splitFrom) return setPending({ splitFrom: at });
@@ -196,6 +211,35 @@ export function Editor({ building, level }: { building: string; level: string })
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [p, tool, pending, selectedRoom, nodeAt, commit, upp],
   );
+
+  /** Ask the pipeline to cut a suite along its printed walls, then give each room its piece. */
+  async function runSuiteSplit(roomIds: string[], seeds: Point[]) {
+    if (!p) return;
+    const first = p.rooms.find((r) => r.id === roomIds[0]);
+    if (!first) return;
+    setBusy("Splitting the suite along its walls…");
+    try {
+      const { polygons } = await api.suiteSplit(building, level, first.polygon, seeds);
+      const { proposal, missed } = applySuiteSplit(p, roomIds, polygons);
+      commit(proposal);
+      const names = missed.map((id) => p.rooms.find((r) => r.id === id)?.number ?? id);
+      setError(missed.length ? `No piece found for ${names.join(", ")} — split those by hand with S.` : null);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  /** Suite rooms in a stable order, and where each one's number is printed (null = we must be told). */
+  function startSuiteSplit(room: ProposalRoom, suite: ProposalRoom[]) {
+    const rooms = [room, ...suite];
+    const seeds = rooms.map((r) => (r.labelAt ? ([r.labelAt[0], r.labelAt[1]] as Point) : null));
+    const roomIds = rooms.map((r) => r.id);
+    if (seeds.every((x) => x !== null)) return void runSuiteSplit(roomIds, seeds as Point[]);
+    setPending({ seedFor: { roomIds, seeds } });
+    setTool("seed");
+  }
 
   function finishRoom(pts: Point[]) {
     if (!p || pts.length < 3) return;
@@ -452,6 +496,12 @@ export function Editor({ building, level }: { building: string; level: string })
               {error} (click to dismiss)
             </p>
           )}
+          {busy && <p className="rounded bg-blue-50 p-2 text-xs text-blue-900">{busy}</p>}
+          {tool === "seed" && pending.seedFor && (
+            <p className="rounded bg-amber-50 p-2 text-xs text-amber-900">
+              Click where <strong>{seedPrompt(p, pending.seedFor)}</strong> is on the plan (it has no printed number to go by). Esc cancels.
+            </p>
+          )}
           {hasAuto && (
             <div className="rounded bg-blue-50 p-2 text-xs text-blue-900">
               The pipeline produced newer output for this level. Your edits are kept in proposal.json.
@@ -539,6 +589,17 @@ export function Editor({ building, level }: { building: string; level: string })
                 setPending({ doorIndex: i });
               }}
               rooms={p.rooms}
+              onAutoSplit={() =>
+                startSuiteSplit(
+                  selectedRoom,
+                  p.rooms.filter(
+                    (x) =>
+                      x !== selectedRoom &&
+                      x.polygon.length === selectedRoom.polygon.length &&
+                      x.polygon.every((q, i) => q[0] === selectedRoom.polygon[i]![0] && q[1] === selectedRoom.polygon[i]![1]),
+                  ),
+                )
+              }
               onDelete={deleteSelection}
             />
           )}
@@ -636,6 +697,7 @@ function RoomInspector(props: {
   onAddDoor: () => void;
   onMoveDoor: (i: number) => void;
   rooms: ProposalRoom[];
+  onAutoSplit: () => void;
   onDelete: () => void;
 }) {
   const { room } = props;
@@ -717,6 +779,13 @@ function RoomInspector(props: {
       </div>
       {props.suite.length > 0 && (
         <p className="text-xs">
+          <button className="text-blue-700 hover:underline" onClick={() => props.onAutoSplit()}>
+            Auto-split along the printed walls
+          </button>
+        </p>
+      )}
+      {props.suite.length > 0 && (
+        <p className="text-xs">
           Shares its outline with{" "}
           {props.suite.map((s) => (
             <button key={s.id} className="mr-1 text-blue-700 hover:underline" onClick={() => props.onSelect(s.id)}>
@@ -746,3 +815,10 @@ function round(poly: Point[]): Point[] {
   return poly.map(([x, y]) => [Math.round(x * 10) / 10, Math.round(y * 10) / 10]);
 }
 
+
+/** The room the seed-click step is currently waiting for. */
+function seedPrompt(p: Proposal | null, q: { roomIds: string[]; seeds: (Point | null)[] }): string {
+  const i = q.seeds.findIndex((x) => x === null);
+  const room = p?.rooms.find((r) => r.id === q.roomIds[i]);
+  return room?.number ?? room?.name ?? "this room";
+}

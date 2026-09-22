@@ -205,6 +205,28 @@ function exists(p: string): boolean {
   }
 }
 
+describe("suite auto-split", () => {
+  it("gives each room its piece, keeps the shared outline for empty ones, and separates regions", async () => {
+    const { applySuiteSplit } = await import("./split");
+    const p = tiny();
+    const shared = p.rooms[0]!;
+    const twin = { ...shared, id: "test-L1-g500", number: "101B" };
+    const before = { ...p, rooms: [...p.rooms, twin] };
+    const piece: [number, number][] = [
+      [0, 0],
+      [10, 0],
+      [10, 10],
+      [0, 10],
+    ];
+    const { proposal, missed } = applySuiteSplit(before, [shared.id, twin.id], [piece, []]);
+    expect(missed).toEqual([twin.id]);
+    const got = proposal.rooms.find((r) => r.id === shared.id)!;
+    expect(got.polygon).toEqual(piece);
+    expect(got.regionId).toBe(shared.id);
+    expect(proposal.rooms.find((r) => r.id === twin.id)!.polygon).toEqual(shared.polygon);
+  });
+});
+
 describe("suite split assignment", () => {
   it("gives each room the piece containing its printed number", async () => {
     const { assignSplit } = await import("./split");

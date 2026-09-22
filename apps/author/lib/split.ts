@@ -36,3 +36,23 @@ export function assignSplit(p: Proposal, selected: ProposalRoom, pieces: [Point[
   }
   return rooms;
 }
+
+/**
+ * Apply the pipeline's per-number pieces to a suite: each room in `roomIds` takes the polygon at the
+ * same index. A room whose piece came back empty keeps the shared outline, and the caller reports it.
+ */
+export function applySuiteSplit(p: Proposal, roomIds: string[], polygons: Point[][]): { proposal: Proposal; missed: string[] } {
+  const missed: string[] = [];
+  const byId = new Map<string, Point[]>();
+  roomIds.forEach((id, i) => {
+    const poly = polygons[i];
+    if (poly && poly.length >= 3) byId.set(id, round(poly));
+    else missed.push(id);
+  });
+  const rooms = p.rooms.map((r) => {
+    const poly = byId.get(r.id);
+    // Each piece is its own region now, so later edits (and splits) treat the rooms separately.
+    return poly ? { ...r, polygon: poly, regionId: r.id } : r;
+  });
+  return { proposal: { ...p, rooms }, missed };
+}

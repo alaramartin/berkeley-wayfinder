@@ -1,5 +1,5 @@
 "use client";
-import type { Alignment, Building, BuildingConfig, Level, Proposal, ReviewQueue } from "@wf/schema";
+import type { Alignment, Building, BuildingConfig, Level, Point, Proposal, ReviewQueue } from "@wf/schema";
 import type { LevelSummary, OsmFootprint } from "./server/data";
 
 export type { LevelSummary, OsmFootprint };
@@ -25,6 +25,8 @@ export const api = {
   saveCorners: (b: string, l: string, corners: [number, number][]) => call(`${lvl(b, l)}/corners`, { method: "PUT", body: JSON.stringify({ corners }) }),
   run: (b: string, l: string, fromStage?: string, toStage?: string) =>
     call<{ ok: boolean; ran: string[]; log: string; error?: string; failedStage?: string }>(`${lvl(b, l)}/run`, { method: "POST", body: JSON.stringify({ fromStage, toStage }) }),
+  suiteSplit: (b: string, l: string, polygon: Point[], seeds: Point[]) =>
+    call<{ polygons: Point[][] }>(`${lvl(b, l)}/suite-split`, { method: "POST", body: JSON.stringify({ polygon, seeds }) }),
   alignment: (b: string) => call<Alignment>(`/api/b/${b}/alignment`),
   saveAlignment: (b: string, a: Alignment) => call<Alignment>(`/api/b/${b}/alignment`, { method: "PUT", body: JSON.stringify(a) }),
   fetchOsm: (b: string) => call<OsmFootprint>(`/api/b/${b}/osm`, { method: "POST" }),

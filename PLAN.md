@@ -252,7 +252,7 @@ cd pipeline && uv run wf serve       # only needed for the Corners page (re-runn
 ```
 1. **Per level, Review first** (Review link): answer every card. Merged restrooms (e.g. L1 women+men in one outline): press Tab to skip, split them in the editor, then come back.
 2. **Per level, then Edit** until the sidebar says "Ready to accept":
-   - **Merged suites:** select → **S** → click a line between two numbers. Each room keeps the half its number is printed in. Known cases: L1 west wing 110–119, L1 north row 102/104/106, L3 319/320/322/323, B 22/23, L4 east column.
+   - **Merged suites:** select → **Auto-split along the printed walls** in the inspector (needs `wf serve`), which cuts the suite into one room per printed number. For a room whose number you typed yourself, the tool asks you to click where it is. Fall back to **S** → click a line between two numbers. Each room keeps the half its number is printed in. Known cases: L1 west wing 110–119, L1 north row 102/104/106, L3 319/320/322/323, B 22/23, L4 east column.
    - **Corridor pieces:** use **E** to click from a piece's end node to the main corridor. Delete fake spurs with Delete.
    - **Rooms without a number:** type it in the inspector, give it a name (restrooms get one from their gender), or delete it if it isn't a room.
    - **Doors:** select a room → **D** → click the corridor at its real door (guesses are yellow squares).
@@ -337,5 +337,6 @@ If something looks wrong in the photo-to-plan conversion itself, use Corners (ne
 | 2026-09-16 | Auto-align = ICP on outlines from 4 quarter-turn starts; show runner-up fits when close | Placards are drawn in different orientations; Wheeler's footprint is nearly symmetric (270° vs 90° within 8%) |
 | 2026-09-16 | Rooms store `labelAt` (OCR position); suite splits assign pieces by it | Merged suites are the most common defect; makes splitting two clicks |
 | 2026-09-16 | Author tool displays JPEG copies (`rectified.jpg`, `ingest.jpg`) | 10 MB PNGs inside SVG decoded too slowly |
+| 2026-09-22 | Merged suites are cut by a watershed on the placard's wall pixels, seeded by each printed number, on demand from the author tool (`POST /suite-split`) | Colored areas merge through doorway gaps, so 15 suites (~60 rooms) shared one outline; an on-demand split keeps hand edits instead of forcing a pipeline re-run |
 | 2026-09-22 | Rooms entered through another room carry `enteredVia`; at accept they inherit that room's doors | Inner rooms (B 31A) have no corridor door; routing needs a door, directions should say "through 31" |
 | 2026-09-22 | Test the author tool only against a scratch copy (`WF_REPO_ROOT` for Next, `WF_DATA_DIR` for `wf serve`) | Clicking through the tool writes data; the real review is the user's |

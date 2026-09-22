@@ -9,12 +9,15 @@ import io
 import threading
 from contextlib import redirect_stdout
 
+import cv2
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from wf import __version__, stages
 from wf.config import load_config
 from wf.context import StageContext
+from wf.io import read_json, wdir
+from wf.suite import split_region
 
 api = FastAPI(title="wayfinder pipeline", version=__version__)
 _lock = threading.Lock()
@@ -25,6 +28,35 @@ class RunRequest(BaseModel):
     level: str
     fromStage: str | None = None
     toStage: str | None = None
+
+
+class SuiteSplitRequest(BaseModel):
+    building: str
+    level: str
+    """Region outline and the position of each printed number, in rectified-board pixels."""
+    polygon: list[list[float]]
+    seeds: list[list[float]]
+
+
+@api.post("/suite-split")
+def suite_split(req: SuiteSplitRequest) -> dict[str, object]:
+    """Cut one merged suite along its printed walls; the author tool sends the outline it currently has."""
+    if len(req.seeds) < 2 or len(req.polygon) < 3:
+        raise HTTPException(status_code=400, detail="need a polygon and at least two seeds")
+    try:
+        cfg = load_config(req.building)
+        ctx = StageContext(cfg, cfg.level(req.level))
+        out = wdir(ctx)
+        labels = cv2.imread(str(out / "labels.png"), cv2.IMREAD_GRAYSCALE)
+        meta = read_json(out / "classify.json")
+    except (FileNotFoundError, KeyError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if labels is None:
+        raise HTTPException(status_code=400, detail="run the classify stage for this level first")
+    by_name = {c["name"]: c["id"] for c in meta["classes"]}
+    px, py = meta["planBox"][0], meta["planBox"][1]
+    polygons = split_region(labels, by_name["wall"], req.polygon, [(s[0], s[1]) for s in req.seeds], (px, py))
+    return {"polygons": polygons}
 
 
 @api.get("/status")
