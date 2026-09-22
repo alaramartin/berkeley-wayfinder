@@ -44,7 +44,7 @@ const TOOLS: { id: Tool; key: string; label: string; icon: React.ReactNode; hint
   { id: "select", key: "v", label: "Select", icon: <CursorClick />, hint: "Click to select, drag nodes. Drag empty space to pan." },
   { id: "node", key: "n", label: "Node", icon: <GitBranch />, hint: "Click a corridor to split it, or empty space to add a node." },
   { id: "edge", key: "e", label: "Corridor", icon: <LineSegment />, hint: "Click nodes (or empty space) in sequence to draw corridors. Esc to finish." },
-  { id: "door", key: "d", label: "Door", icon: <Door />, hint: "With a room selected, click the corridor where its door is." },
+  { id: "door", key: "d", label: "Door", icon: <Door />, hint: "With a room selected, click the corridor where its door is. \u21e7D adds another door." },
   { id: "split", key: "s", label: "Split room", icon: <Scissors />, hint: "With a room selected, click two points on the dividing line." },
   { id: "room", key: "r", label: "Draw room", icon: <PolygonIcon />, hint: "Click corners; click the first corner or press Enter to close." },
 ];
@@ -58,7 +58,7 @@ export function Editor({ building, level }: { building: string; level: string })
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [tool, setTool] = useState<Tool>("select");
   const [selection, setSelection] = useState<Selection>(null);
-  const [pending, setPending] = useState<{ edgeFrom?: string; splitFrom?: Point; roomPoints?: Point[] }>({});
+  const [pending, setPending] = useState<{ edgeFrom?: string; splitFrom?: Point; roomPoints?: Point[]; doorIndex?: number }>({});
   const [cursor, setCursor] = useState<Point | null>(null);
   const [layers, setLayers] = useState({ photo: true, rooms: true, labels: true, corridors: true, doors: true, icons: false });
   const [upp, setUpp] = useState(2);
@@ -170,8 +170,9 @@ export function Editor({ building, level }: { building: string; level: string })
         }
         case "door": {
           if (!selectedRoom) return setError("Select a room first, then place its door.");
-          commit(setDoor(p, selectedRoom.id, at, 0));
+          commit(setDoor(p, selectedRoom.id, at, pending.doorIndex ?? 0));
           setTool("select");
+          setPending({});
           return;
         }
         case "split": {
@@ -264,7 +265,8 @@ export function Editor({ building, level }: { building: string; level: string })
       const t = TOOLS.find((x) => x.key === e.key.toLowerCase());
       if (t) {
         setTool(t.id);
-        setPending({});
+        // Shift+D adds another door to the selected room instead of moving its first one.
+        setPending(t.id === "door" && e.shiftKey && selectedRoom ? { doorIndex: selectedRoom.doors.length } : {});
         return;
       }
       if (e.key === "Escape") {
@@ -280,7 +282,7 @@ export function Editor({ building, level }: { building: string; level: string })
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [history, tool, pending, deleteSelection, selectedNode, toggleEntrance]);
+  }, [history, tool, pending, deleteSelection, selectedNode, selectedRoom, toggleEntrance]);
 
   // Start zoomed to the building rather than the whole placard.
   const fitted = useRef(false);
@@ -528,6 +530,14 @@ export function Editor({ building, level }: { building: string; level: string })
                 setPending({});
               }}
               onRemoveDoor={(i) => updateRoom(selectedRoom.id, { doors: selectedRoom.doors.filter((_, j) => j !== i) })}
+              onAddDoor={() => {
+                setTool("door");
+                setPending({ doorIndex: selectedRoom.doors.length });
+              }}
+              onMoveDoor={(i) => {
+                setTool("door");
+                setPending({ doorIndex: i });
+              }}
               onDelete={deleteSelection}
             />
           )}
@@ -622,6 +632,8 @@ function RoomInspector(props: {
   onSelect: (id: string) => void;
   onTool: (t: Tool) => void;
   onRemoveDoor: (i: number) => void;
+  onAddDoor: () => void;
+  onMoveDoor: (i: number) => void;
   onDelete: () => void;
 }) {
   const { room } = props;
@@ -668,12 +680,20 @@ function RoomInspector(props: {
           <button className="ml-auto text-blue-700 hover:underline" onClick={() => props.onTool("door")}>
             {room.doors.length ? "Move door (D)" : "Place door (D)"}
           </button>
+          {room.doors.length > 0 && (
+            <button className="ml-3 text-blue-700 hover:underline" onClick={() => props.onAddDoor()}>
+              Add another (⇧D)
+            </button>
+          )}
         </div>
         <ul className="text-xs text-neutral-600">
           {room.doors.map((d, i) => (
             <li key={i} className="flex gap-2">
               {d.edgeId} t={d.t.toFixed(2)} {d.side} {d.confidence < 1 ? "(guess)" : "(set)"}
-              <button className="ml-auto text-red-700" onClick={() => props.onRemoveDoor(i)}>
+              <button className="ml-auto text-blue-700" onClick={() => props.onMoveDoor(i)}>
+                move
+              </button>
+              <button className="text-red-700" onClick={() => props.onRemoveDoor(i)}>
                 remove
               </button>
             </li>
