@@ -269,6 +269,7 @@ If something looks wrong in the photo-to-plan conversion itself, use Corners (ne
 - [ ] instruction generation with landmarks.
 - [ ] tests on fixtures and **real Wheeler data**: same-floor, multi-floor, accessible (must use the elevator), entrance→room, nearest restroom, unreachable → clear error.
 - [ ] all Wheeler levels accepted, aligned, shafts linked; the building validates end to end.
+- [ ] instructions mention `enteredVia` ("room 31A is inside 31").
 - **Review gate M3.** Print sample routes as text for the user to sanity-check.
 
 ### M4 — Nav app + deploy
@@ -336,4 +337,5 @@ If something looks wrong in the photo-to-plan conversion itself, use Corners (ne
 | 2026-09-16 | Auto-align = ICP on outlines from 4 quarter-turn starts; show runner-up fits when close | Placards are drawn in different orientations; Wheeler's footprint is nearly symmetric (270° vs 90° within 8%) |
 | 2026-09-16 | Rooms store `labelAt` (OCR position); suite splits assign pieces by it | Merged suites are the most common defect; makes splitting two clicks |
 | 2026-09-16 | Author tool displays JPEG copies (`rectified.jpg`, `ingest.jpg`) | 10 MB PNGs inside SVG decoded too slowly |
-| 2026-09-16 | Test the author tool only against a scratch copy (`WF_REPO_ROOT` for Next, `WF_DATA_DIR` for `wf serve`) | Clicking through the tool writes data; the real review is the user's |
+| 2026-09-22 | Rooms entered through another room carry `enteredVia`; at accept they inherit that room's doors | Inner rooms (B 31A) have no corridor door; routing needs a door, directions should say "through 31" |
+| 2026-09-22 | Test the author tool only against a scratch copy (`WF_REPO_ROOT` for Next, `WF_DATA_DIR` for `wf serve`) | Clicking through the tool writes data; the real review is the user's |

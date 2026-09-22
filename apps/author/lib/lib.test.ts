@@ -137,6 +137,27 @@ describe("accept", () => {
     expect(level.pois.map((x) => x.kind).sort()).toEqual(["dwa", "gender-inclusive-restroom"]);
   });
 
+  it("lets a room be entered through another one, and gives it that room's door", () => {
+    let p = tiny();
+    p = addEdge(p, "test-L1-n002", "test-L1-n003");
+    p = setDoor(p, "test-L1-g002", [700, 530]);
+    p = { ...p, rooms: p.rooms.map((r) => (r.id === "test-L1-g002" ? { ...r, number: "31" } : r)) };
+    const host = p.rooms.find((r) => r.id === "test-L1-g002")!;
+    const inner = { ...host, id: "test-L1-g090", regionId: "test-L1-g090", number: "31A", doors: [], enteredVia: host.id };
+    p = { ...p, rooms: [...p.rooms, inner] };
+
+    // No door of its own is fine, as long as its host has one; a dangling reference is not.
+    expect(acceptBlockers(p, []).join("\n")).not.toMatch(/without a valid door/);
+    const bad = { ...p, rooms: p.rooms.map((r) => (r.id === inner.id ? { ...r, enteredVia: "test-L1-nope" } : r)) };
+    expect(acceptBlockers(bad, []).join("\n")).toMatch(/entered via a room that isn't on this level/);
+
+    const level = proposalToLevel(p, { sortIndex: 2, displayName: "1", elevationM: 4.5, heightM: 4.5, heightSource: "default", verified: true }, { scale: 0.05, rotation: 0, tx: -25, ty: 25 });
+    const room = level.rooms.find((r) => r.number === "31A")!;
+    expect(room.enteredVia).toBe(host.id);
+    expect(room.doors).toEqual(level.rooms.find((r) => r.id === host.id)!.doors);
+    expect(room.doors.length).toBe(1);
+  });
+
   function item(kind: ReviewItem["kind"], targetId: string): ReviewItem {
     return { id: `${targetId}-x`, kind, crop: "", candidates: [], targetId };
   }

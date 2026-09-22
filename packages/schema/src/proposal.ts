@@ -28,6 +28,8 @@ export const ProposalRoom = z.object({
   polygon: Polygon,
   doors: z.array(z.object({ edgeId: Id, t: z.number().min(0).max(1), side: Side, confidence: Confidence })),
   aliases: z.array(z.string()).default([]),
+  /** Room this one is entered through (its `id`), when it has no door of its own onto a corridor. */
+  enteredVia: Id.optional(),
   restroom: Restroom.optional(),
 });
 export type ProposalRoom = z.infer<typeof ProposalRoom>;

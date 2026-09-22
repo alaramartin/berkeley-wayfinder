@@ -72,6 +72,8 @@ export const Room = z
     levelId: z.string(),
     polygon: Polygon,
     doors: z.array(Door).default([]),
+    /** Room this one is entered through (its `id`), when it has no door of its own onto a corridor. */
+    enteredVia: Id.optional(),
     restroom: Restroom.optional(),
   })
   .refine((r) => r.number !== null || (r.name !== undefined && r.name.length > 0), "a room needs a number or a name");

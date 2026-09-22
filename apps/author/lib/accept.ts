@@ -5,6 +5,7 @@ import {
   type Point,
   type Poi,
   type Proposal,
+  type ProposalRoom,
   type ReviewItem,
   type Similarity,
 } from "@wf/schema";
@@ -35,7 +36,16 @@ export function acceptBlockers(p: Proposal, queue: ReviewItem[], opts: { allowCo
   const comps = components(p).length;
   if (comps > (opts.allowComponents ?? 1)) out.push(`corridor graph has ${comps} disconnected pieces`);
   const edgeIds = new Set(p.edges.map((e) => e.id));
-  const doorless = p.rooms.filter((r) => NEEDS_IDENTITY.has(r.category) && !r.doors.some((d) => edgeIds.has(d.edgeId)));
+  const byId = new Map(p.rooms.map((r) => [r.id, r]));
+  const hasDoor = (r: ProposalRoom): boolean => r.doors.some((d) => edgeIds.has(d.edgeId));
+  const dangling = p.rooms.filter((r) => r.enteredVia && !byId.has(r.enteredVia));
+  if (dangling.length) out.push(`${dangling.length} room(s) entered via a room that isn't on this level: ${dangling.slice(0, 5).map((r) => r.number ?? r.id).join(", ")}`);
+  // A room entered through another one needs no door of its own, as long as its host has one.
+  const doorless = p.rooms.filter((r) => {
+    if (!NEEDS_IDENTITY.has(r.category) || hasDoor(r)) return false;
+    const via = r.enteredVia ? byId.get(r.enteredVia) : undefined;
+    return !(via && hasDoor(via));
+  });
   if (doorless.length) out.push(`${doorless.length} room(s) without a valid door: ${doorless.slice(0, 5).map((r) => r.number ?? r.id).join(", ")}`);
   return out;
 }
@@ -69,7 +79,14 @@ export function proposalToLevel(p: Proposal, meta: LevelMeta, imageTransform: Si
     ...(r.group ? { group: r.group } : {}),
     levelId: p.levelId,
     polygon: r.polygon.map(w),
-    doors: r.doors.map((d) => ({ edgeId: d.edgeId, t: d.t, side: d.side, verified: false })),
+    // An inner room with no door of its own arrives at its host's door.
+    doors: (r.doors.length ? r.doors : (r.enteredVia ? p.rooms.find((x) => x.id === r.enteredVia)?.doors ?? [] : [])).map((d) => ({
+      edgeId: d.edgeId,
+      t: d.t,
+      side: d.side,
+      verified: false,
+    })),
+    ...(r.enteredVia ? { enteredVia: r.enteredVia } : {}),
     ...(r.restroom ? { restroom: r.restroom } : {}),
   }));
 

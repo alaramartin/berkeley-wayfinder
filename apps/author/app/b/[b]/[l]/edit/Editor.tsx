@@ -538,6 +538,7 @@ export function Editor({ building, level }: { building: string; level: string })
                 setTool("door");
                 setPending({ doorIndex: i });
               }}
+              rooms={p.rooms}
               onDelete={deleteSelection}
             />
           )}
@@ -634,6 +635,7 @@ function RoomInspector(props: {
   onRemoveDoor: (i: number) => void;
   onAddDoor: () => void;
   onMoveDoor: (i: number) => void;
+  rooms: ProposalRoom[];
   onDelete: () => void;
 }) {
   const { room } = props;
@@ -655,6 +657,19 @@ function RoomInspector(props: {
           {CATEGORIES.map((c) => (
             <option key={c}>{c}</option>
           ))}
+        </select>
+      </label>
+      <label className="flex items-center gap-2">
+        <span className="w-16">Entered via</span>
+        <select className="flex-1 rounded border px-1" value={room.enteredVia ?? ""} onChange={(e) => props.onChange({ enteredVia: e.target.value || undefined })}>
+          <option value="">the corridor</option>
+          {props.rooms
+            .filter((x) => x.id !== room.id && x.enteredVia !== room.id)
+            .map((x) => (
+              <option key={x.id} value={x.id}>
+                {x.number ?? x.name ?? x.id}
+              </option>
+            ))}
         </select>
       </label>
       {room.group && <p className="text-xs text-neutral-500">Legend: {room.group}</p>}
