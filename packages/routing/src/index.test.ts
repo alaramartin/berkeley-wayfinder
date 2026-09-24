@@ -202,6 +202,20 @@ describe("instruction wording", () => {
     expect(text.filter((t) => /Take the stairs/.test(t))).toHaveLength(1);
   });
 
+  it("says which way to face, and never uses compass directions", () => {
+    const r = route(graph, { type: "room", id: "r101" }, { type: "room", id: "r201" }, { accessible: true });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    const text = instructions(graph, r.route)
+      .map((s) => s.text)
+      .join("\n");
+    // Leaving a room we know which way you face, so the first move is a turn.
+    expect(text).toMatch(/Leave 101 and (turn|bear) (left|right)|Leave 101 and walk straight ahead/);
+    // Stepping out of a lift there is no such reference, so point at something instead.
+    expect(text).toMatch(/Leave the elevator and walk/);
+    expect(text).not.toMatch(/north|south|east|west/i);
+  });
+
   it("asking for a restroom also finds the accessible and all-gender ones", () => {
     // Wheeler's restrooms are tagged accessible-restroom, which a plain "restroom" search must still find.
     const tagged = levels.map((l) =>

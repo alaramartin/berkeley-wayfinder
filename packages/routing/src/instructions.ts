@@ -141,11 +141,24 @@ function legsOf(graph: RouteGraph, route: Route): { legs: Leg[]; verticals: Map<
   return { legs, verticals };
 }
 
+interface LegContext {
+  /** First leg of the whole route. */
+  isFirst: boolean;
+  /** Which way you face when the leg starts, when that is knowable (leaving a room through its door). */
+  facing: number | null;
+  /** "120", "the elevator", "the stairwell" — what you are stepping out of. */
+  leaving: string | null;
+  /** A room you walk towards, for legs where left/right can't be worked out. */
+  towards: string | null;
+}
+
 /** Sentences for one leg: simplify, then merge consecutive straight segments. */
-function legInstructions(leg: Leg, isFirst: boolean): Instruction[] {
+function legInstructions(leg: Leg, ctx: LegContext): Instruction[] {
   const simplified = simplify(leg.points, SIMPLIFY_TOLERANCE_M);
   const out: Instruction[] = [];
   let heading: number | null = null;
+  /** Bearing the leg opens with, for the "which way do I face" sentence. */
+  let runBearing0 = 0;
   /** The turn that started the run being accumulated. */
   let runTurn: TurnKind = "straight";
   let meters = 0;
@@ -154,11 +167,14 @@ function legInstructions(leg: Leg, isFirst: boolean): Instruction[] {
 
   const emit = () => {
     if (meters <= 0) return;
+    const opening = out.length === 0;
+    const lead = opening ? openingLead(ctx, runBearing0, meters) : `${TURN_TEXT[runTurn]}, then walk ${approxDistance(meters)}`;
     const seen = leg.passed
       .filter((p) => p.at > runStart && p.at <= travelled)
+      // The room the opening sentence already points at is not repeated as a landmark.
+      .filter((p) => !(opening && roomLabel(p.room) === ctx.towards && lead.includes(`towards ${ctx.towards}`)))
       .slice(0, 2)
       .map((p) => `${roomLabel(p.room)} on your ${p.side}`);
-    const lead = out.length === 0 && isFirst ? `Walk ${approxDistance(meters)}` : `${TURN_TEXT[runTurn]}, then walk ${approxDistance(meters)}`;
     // The node closest to where this run ends, so the app can highlight it.
     const mark = leg.marks.filter((m) => m.at <= travelled + 0.01).at(-1);
     out.push({
@@ -177,6 +193,7 @@ function legInstructions(leg: Leg, isFirst: boolean): Instruction[] {
     const b = simplified[i]!;
     const segment = distance(a, b);
     const bearing = Math.atan2(b[1] - a[1], b[0] - a[0]);
+    if (heading === null) runBearing0 = bearing;
     if (heading !== null) {
       const turn = turnFrom(heading, bearing);
       if (turn !== "straight") {
@@ -190,6 +207,24 @@ function legInstructions(leg: Leg, isFirst: boolean): Instruction[] {
   }
   emit();
   return out;
+}
+
+/**
+ * The first sentence of a leg has to say which way to face: there is no previous heading to turn from.
+ * Leaving a room we know which way you are facing, so it can be "turn left". Stepping out of a lift or
+ * stairwell we don't, so point at the first room passed instead — never a compass direction, which
+ * nobody can follow indoors.
+ */
+function openingLead(ctx: LegContext, bearing: number, meters: number): string {
+  const distance = approxDistance(meters);
+  if (ctx.facing !== null && ctx.leaving) {
+    const turn = turnFrom(ctx.facing, bearing);
+    if (turn === "straight") return `Leave ${ctx.leaving} and walk straight ahead ${distance}`;
+    return `Leave ${ctx.leaving} and ${TURN_TEXT[turn].toLowerCase()}, then walk ${distance}`;
+  }
+  const towards = ctx.towards ? ` towards ${ctx.towards}` : "";
+  if (ctx.leaving) return `Leave ${ctx.leaving} and walk ${distance}${towards}`;
+  return `Walk ${distance}${towards}`;
 }
 
 function levelName(graph: RouteGraph, levelId: string): string {
@@ -211,6 +246,15 @@ export function instructions(graph: RouteGraph, route: Route): Instruction[] {
   });
 
   const { legs, verticals } = legsOf(graph, route);
+
+  /** Facing when leaving a room: from the middle of the room out through its door. */
+  const facingOutOf = (room: Room | undefined, door: Point | undefined): number | null => {
+    if (!room || !door) return null;
+    const cx = room.polygon.reduce((sum, p) => sum + p[0], 0) / room.polygon.length;
+    const cy = room.polygon.reduce((sum, p) => sum + p[1], 0) / room.polygon.length;
+    const d = Math.hypot(door[0] - cx, door[1] - cy);
+    return d < 0.5 ? null : Math.atan2(door[1] - cy, door[0] - cx);
+  };
   const emitVerticals = (index: number) => {
     const steps = verticals.get(index);
     if (!steps?.length) return;
@@ -229,7 +273,16 @@ export function instructions(graph: RouteGraph, route: Route): Instruction[] {
 
   legs.forEach((leg, i) => {
     emitVerticals(i);
-    for (const step of legInstructions(leg, out.length === 1)) out.push(step);
+    const isFirst = i === 0;
+    const cameByLift = verticals.get(i)?.[0]?.edge.kind;
+    const ctx: LegContext = {
+      isFirst,
+      facing: isFirst ? facingOutOf(startRoom, leg.points[0]) : null,
+      leaving: isFirst ? (startRoom ? roomLabel(startRoom) : entrance ? entrance.name : null) : cameByLift === "elevator" ? "the elevator" : cameByLift === "stair" ? "the stairwell" : null,
+      // Only useful when we can't say left or right.
+      towards: leg.passed[0] ? roomLabel(leg.passed[0].room) : null,
+    };
+    for (const step of legInstructions(leg, ctx)) out.push(step);
   });
   emitVerticals(legs.length);
 
