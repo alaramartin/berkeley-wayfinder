@@ -12,7 +12,8 @@
 
 ## Status
 - **Current milestone:** M3 — Routing + complete Wheeler data
-- **Last completed task:** M2 review gate passed — six levels accepted (188 rooms), aligned + OSM-fitted, 11 shafts (9 stairs, 2 elevators), 4 entrances; all canonical files validate
+- **Last completed task:** M3 built — routing graph, A*, accessible mode, nearest-POI, instructions; 14 routing tests including real Wheeler data; `pnpm routes wheeler` prints samples
+- **Previously:** M2 review gate passed — six levels accepted (188 rooms), aligned + OSM-fitted, 11 shafts (9 stairs, 2 elevators), 4 entrances; all canonical files validate
 - **Blockers / waiting on user:** none
 - **Next review gate:** end of M3, with sample routes printed as text to sanity-check
 
@@ -263,13 +264,14 @@ cd pipeline && uv run wf serve       # only needed for the Corners page (re-runn
 If something looks wrong in the photo-to-plan conversion itself, use Corners (needs `wf serve`).
 
 ### M3 — Routing + complete Wheeler data
-- [ ] graph build with virtual door nodes.
-- [ ] A* + accessible mode + access filtering.
-- [ ] nearest-POI.
-- [ ] instruction generation with landmarks.
-- [ ] tests on fixtures and **real Wheeler data**: same-floor, multi-floor, accessible (must use the elevator), entrance→room, nearest restroom, unreachable → clear error.
-- [ ] all Wheeler levels accepted, aligned, shafts linked; the building validates end to end.
-- [ ] instructions mention `enteredVia` ("room 31A is inside 31").
+- [x] graph build with virtual door nodes (`packages/routing/src/graph.ts`): doors split their corridor edge at `t`, rooms get a node reached through their doors, shafts become vertical edges.
+- [x] A* + accessible mode + access filtering (`route.ts`). Costs in seconds; `locked` always excluded, `card` opt-in.
+- [x] nearest-POI (`nearest.ts`). Asking for a restroom also matches accessible and all-gender ones.
+- [x] instruction generation with landmarks (`instructions.ts`). Legs are simplified (RDP, 2 m) before turns are read, so skeleton wobble doesn't become a turn; flights in one shaft merge into a single step.
+- [x] tests on fixtures and **real Wheeler data**: same-floor, multi-floor, accessible (must use the elevator), entrance→room, nearest restroom, unreachable → clear error. 14 tests.
+- [x] all Wheeler levels accepted, aligned, shafts linked; the building validates end to end.
+- [x] instructions mention `enteredVia` ("room 31A is inside 31").
+- [x] `pnpm routes wheeler` prints sample routes as text (`--from`/`--to`/`--accessible`).
 - **Review gate M3.** Print sample routes as text for the user to sanity-check.
 
 ### M4 — Nav app + deploy
@@ -337,6 +339,8 @@ If something looks wrong in the photo-to-plan conversion itself, use Corners (ne
 | 2026-09-16 | Auto-align = ICP on outlines from 4 quarter-turn starts; show runner-up fits when close | Placards are drawn in different orientations; Wheeler's footprint is nearly symmetric (270° vs 90° within 8%) |
 | 2026-09-16 | Rooms store `labelAt` (OCR position); suite splits assign pieces by it | Merged suites are the most common defect; makes splitting two clicks |
 | 2026-09-16 | Author tool displays JPEG copies (`rectified.jpg`, `ingest.jpg`) | 10 MB PNGs inside SVG decoded too slowly |
+| 2026-09-24 | Routing instructions simplify each leg (RDP, 2 m) before reading turns; consecutive flights in one shaft merge | Corridor skeletons wobble a metre or two, which produced a turn every few steps and one instruction per floor |
+| 2026-09-24 | "Nearest restroom" matches `restroom`, `accessible-restroom` and `gender-inclusive-restroom` | Wheeler's restrooms are all tagged accessible, so a literal match sent people four levels away |
 | 2026-09-22 | Merged suites are cut by a watershed on the placard's wall pixels, seeded by each printed number, on demand from the author tool (`POST /suite-split`) | Colored areas merge through doorway gaps, so 15 suites (~60 rooms) shared one outline; an on-demand split keeps hand edits instead of forcing a pipeline re-run |
 | 2026-09-22 | Rooms entered through another room carry `enteredVia`; at accept they inherit that room's doors | Inner rooms (B 31A) have no corridor door; routing needs a door, directions should say "through 31" |
 | 2026-09-22 | Test the author tool only against a scratch copy (`WF_REPO_ROOT` for Next, `WF_DATA_DIR` for `wf serve`) | Clicking through the tool writes data; the real review is the user's |
