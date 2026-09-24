@@ -6,13 +6,14 @@
 - [x] **M0 — Scaffold** (done 2026-09-16)
 - [x] **M1 — Pipeline** (done 2026-09-16)
 - [x] **M2 — Authoring tool** (done 2026-09-24)
-- [ ] **M3 — Routing + complete Wheeler data** ← current
-- [ ] **M4 — Nav app + deploy**
+- [x] **M3 — Routing + complete Wheeler data** (done 2026-09-24)
+- [ ] **M4 — Nav app + deploy** ← current
 - [ ] **M5 — Field mode + verification walk**
 
 ## Status
-- **Current milestone:** M3 — Routing + complete Wheeler data
-- **Last completed task:** M3 built — routing graph, A*, accessible mode, nearest-POI, instructions; 14 routing tests including real Wheeler data; `pnpm routes wheeler` prints samples
+- **Current milestone:** M4 — Nav app + deploy (app built and tested locally; **waiting on user** to approve the Vercel deploy)
+- **Last completed task:** M4 nav app: search, 3D scene, route panel, URL state — driven in Chrome end to end
+- **Previously:** M3 built — routing graph, A*, accessible mode, nearest-POI, instructions; 14 routing tests including real Wheeler data; `pnpm routes wheeler` prints samples
 - **Previously:** M2 review gate passed — six levels accepted (188 rooms), aligned + OSM-fitted, 11 shafts (9 stairs, 2 elevators), 4 entrances; all canonical files validate
 - **Blockers / waiting on user:** none
 - **Next review gate:** end of M3, with sample routes printed as text to sanity-check
@@ -263,7 +264,7 @@ cd pipeline && uv run wf serve       # only needed for the Corners page (re-runn
 5. **Accept all ready levels** on the overview, then **Shafts & heights**: Propose, untick wrong links, Save.
 If something looks wrong in the photo-to-plan conversion itself, use Corners (needs `wf serve`).
 
-### M3 — Routing + complete Wheeler data
+### M3 — Routing + complete Wheeler data ✅
 - [x] graph build with virtual door nodes (`packages/routing/src/graph.ts`): doors split their corridor edge at `t`, rooms get a node reached through their doors, shafts become vertical edges.
 - [x] A* + accessible mode + access filtering (`route.ts`). Costs in seconds; `locked` always excluded, `card` opt-in.
 - [x] nearest-POI (`nearest.ts`). Asking for a restroom also matches accessible and all-gender ones.
@@ -275,14 +276,14 @@ If something looks wrong in the photo-to-plan conversion itself, use Corners (ne
 - **Review gate M3.** Print sample routes as text for the user to sanity-check.
 
 ### M4 — Nav app + deploy
-- [ ] data bundling from `data/buildings`.
-- [ ] search (numbers, names, entrances, nearest-X).
-- [ ] 3D scene: level meshes, labels, exploded layout.
-- [ ] solid dollhouse mode + animated toggle + cutaway.
-- [ ] route rendering + camera fit + level focus.
-- [ ] bottom sheet / side panel with steps, time, accessible toggle.
-- [ ] URL state (shareable links).
-- [ ] phone-width checks (screenshots) + performance pass.
+- [x] data bundling from `data/buildings` (`apps/nav/scripts/bundle-data.mts` → `public/data`, runs before dev/build/test; gitignored).
+- [x] search (numbers, names, aliases, entrances, nearest-X) with fuse.js; service rooms excluded.
+- [x] 3D scene: level slabs (outline minus voids), room blocks merged per colour, billboard labels, exploded layout.
+- [x] solid dollhouse mode + animated toggle + cutaway (levels above the focus, or above the route's top level, are hidden).
+- [x] route rendering (animated dashed line, start/end pins) + camera fit + level focus.
+- [x] bottom sheet (phone) / side panel (desktop) with steps, time, step-free toggle; tapping a step focuses its level.
+- [x] URL state (shareable links): `from`, `to`, `nearest`, `accessible`, `view`, `level`.
+- [x] phone-width checks + performance pass: 61 fps with the whole building drawn; layout verified at ~500 px and desktop.
 - [ ] **confirm with user**, then create the Vercel project (root `apps/nav`) and deploy.
 - **Review gate M4.** Share the deployed URL + test routes.
 
@@ -339,6 +340,8 @@ If something looks wrong in the photo-to-plan conversion itself, use Corners (ne
 | 2026-09-16 | Auto-align = ICP on outlines from 4 quarter-turn starts; show runner-up fits when close | Placards are drawn in different orientations; Wheeler's footprint is nearly symmetric (270° vs 90° within 8%) |
 | 2026-09-16 | Rooms store `labelAt` (OCR position); suite splits assign pieces by it | Merged suites are the most common defect; makes splitting two clicks |
 | 2026-09-16 | Author tool displays JPEG copies (`rectified.jpg`, `ingest.jpg`) | 10 MB PNGs inside SVG decoded too slowly |
+| 2026-09-24 | Nav data ships as static JSON in `public/data`, copied by a prebuild step, not imported into the bundle | Keeps the JS bundle small and gives M5's offline shell something a service worker can cache |
+| 2026-09-24 | Room labels are drawn only for the focused level, or the route's levels | All six levels at once is an unreadable pile; labels from levels behind still draw over the front one |
 | 2026-09-24 | Never give compass directions; leaving a room turns relative to the door you came out of, and leaving a lift or stairwell points at the first room passed | User: "no one knows compass directions"; indoors a bearing is unfollowable |
 | 2026-09-24 | Routing instructions simplify each leg (RDP, 2 m) before reading turns; consecutive flights in one shaft merge | Corridor skeletons wobble a metre or two, which produced a turn every few steps and one instruction per floor |
 | 2026-09-24 | "Nearest restroom" matches `restroom`, `accessible-restroom` and `gender-inclusive-restroom` | Wheeler's restrooms are all tagged accessible, so a literal match sent people four levels away |
