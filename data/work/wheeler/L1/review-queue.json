@@ -7,28 +7,44 @@
       "kind": "room-number",
       "crop": "review-crops/wheeler-L1-g000-num.png",
       "candidates": [],
-      "targetId": "wheeler-L1-g000"
+      "targetId": "wheeler-L1-g000",
+      "resolved": {
+        "value": null,
+        "at": "2026-09-22T08:15:13.914Z"
+      }
     },
     {
       "id": "wheeler-L1-g037-num",
       "kind": "room-number",
       "crop": "review-crops/wheeler-L1-g037-num.png",
       "candidates": [],
-      "targetId": "wheeler-L1-g037"
+      "targetId": "wheeler-L1-g037",
+      "resolved": {
+        "value": null,
+        "at": "2026-09-22T08:11:01.308Z"
+      }
     },
     {
       "id": "wheeler-L1-g039-num",
       "kind": "room-number",
       "crop": "review-crops/wheeler-L1-g039-num.png",
       "candidates": [],
-      "targetId": "wheeler-L1-g039"
+      "targetId": "wheeler-L1-g039",
+      "resolved": {
+        "value": null,
+        "at": "2026-09-22T08:10:56.825Z"
+      }
     },
     {
       "id": "wheeler-L1-g049-num",
       "kind": "room-number",
       "crop": "review-crops/wheeler-L1-g049-num.png",
       "candidates": [],
-      "targetId": "wheeler-L1-g049"
+      "targetId": "wheeler-L1-g049",
+      "resolved": {
+        "value": "130",
+        "at": "2026-09-22T08:10:51.025Z"
+      }
     },
     {
       "id": "wheeler-L1-alias00",
@@ -40,7 +56,11 @@
           "confidence": 0.239
         }
       ],
-      "targetId": "wheeler-L1-directory"
+      "targetId": "wheeler-L1-directory",
+      "resolved": {
+        "value": "English Dept: Main Office = 322",
+        "at": "2026-09-22T08:10:31.575Z"
+      }
     },
     {
       "id": "wheeler-L1-alias01",
@@ -52,7 +72,11 @@
           "confidence": 0.475
         }
       ],
-      "targetId": "wheeler-L1-directory"
+      "targetId": "wheeler-L1-directory",
+      "resolved": {
+        "value": "English Dept: Advising Office = 319",
+        "at": "2026-09-22T08:10:34.192Z"
+      }
     },
     {
       "id": "wheeler-L1-alias03",
@@ -64,7 +88,11 @@
           "confidence": 0.858
         }
       ],
-      "targetId": "wheeler-L1-directory"
+      "targetId": "wheeler-L1-directory",
+      "resolved": {
+        "value": "Maude Fife Seminar Room = 315",
+        "at": "2026-09-22T08:10:37.424Z"
+      }
     },
     {
       "id": "wheeler-L1-alias04",
@@ -76,7 +104,11 @@
           "confidence": 0.762
         }
       ],
-      "targetId": "wheeler-L1-directory"
+      "targetId": "wheeler-L1-directory",
+      "resolved": {
+        "value": "ETS Computer Facilities = 210",
+        "at": "2026-09-22T08:10:40.774Z"
+      }
     },
     {
       "id": "wheeler-L1-alias05",
@@ -88,7 +120,11 @@
           "confidence": 0.694
         }
       ],
-      "targetId": "wheeler-L1-directory"
+      "targetId": "wheeler-L1-directory",
+      "resolved": {
+        "value": "College Writing Programs = 119",
+        "at": "2026-09-22T08:10:42.991Z"
+      }
     },
     {
       "id": "wheeler-L1-g044-gender",
@@ -100,7 +136,11 @@
           "confidence": 0.2
         }
       ],
-      "targetId": "wheeler-L1-g044"
+      "targetId": "wheeler-L1-g044",
+      "resolved": {
+        "value": null,
+        "at": "2026-09-22T08:30:26.047Z"
+      }
     }
   ]
 }

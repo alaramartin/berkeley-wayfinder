@@ -12,28 +12,44 @@
           "confidence": 0.658
         }
       ],
-      "targetId": "wheeler-B-g001"
+      "targetId": "wheeler-B-g001",
+      "resolved": {
+        "value": "31",
+        "at": "2026-09-18T00:33:12.361Z"
+      }
     },
     {
       "id": "wheeler-B-g010-num",
       "kind": "room-number",
       "crop": "review-crops/wheeler-B-g010-num.png",
       "candidates": [],
-      "targetId": "wheeler-B-g010"
+      "targetId": "wheeler-B-g010",
+      "resolved": {
+        "value": null,
+        "at": "2026-09-18T00:33:20.877Z"
+      }
     },
     {
       "id": "wheeler-B-g015-num",
       "kind": "room-number",
       "crop": "review-crops/wheeler-B-g015-num.png",
       "candidates": [],
-      "targetId": "wheeler-B-g015"
+      "targetId": "wheeler-B-g015",
+      "resolved": {
+        "value": null,
+        "at": "2026-09-18T00:33:22.377Z"
+      }
     },
     {
       "id": "wheeler-B-g033-num",
       "kind": "room-number",
       "crop": "review-crops/wheeler-B-g033-num.png",
       "candidates": [],
-      "targetId": "wheeler-B-g033"
+      "targetId": "wheeler-B-g033",
+      "resolved": {
+        "value": null,
+        "at": "2026-09-18T00:35:03.710Z"
+      }
     },
     {
       "id": "wheeler-B-g009-gender",
@@ -45,7 +61,11 @@
           "confidence": 0.6
         }
       ],
-      "targetId": "wheeler-B-g009"
+      "targetId": "wheeler-B-g009",
+      "resolved": {
+        "value": "women",
+        "at": "2026-09-18T00:33:59.245Z"
+      }
     },
     {
       "id": "wheeler-B-g012-gender",
@@ -57,7 +77,11 @@
           "confidence": 0.6
         }
       ],
-      "targetId": "wheeler-B-g012"
+      "targetId": "wheeler-B-g012",
+      "resolved": {
+        "value": "men",
+        "at": "2026-09-18T00:34:01.010Z"
+      }
     }
   ]
 }

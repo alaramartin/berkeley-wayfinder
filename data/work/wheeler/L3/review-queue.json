@@ -7,7 +7,11 @@
       "kind": "room-number",
       "crop": "review-crops/wheeler-L3-g001-num.png",
       "candidates": [],
-      "targetId": "wheeler-L3-g001"
+      "targetId": "wheeler-L3-g001",
+      "resolved": {
+        "value": null,
+        "at": "2026-09-22T08:16:44.431Z"
+      }
     },
     {
       "id": "wheeler-L3-g024-gender",
@@ -19,7 +23,11 @@
           "confidence": 0.6
         }
       ],
-      "targetId": "wheeler-L3-g024"
+      "targetId": "wheeler-L3-g024",
+      "resolved": {
+        "value": "women",
+        "at": "2026-09-22T08:16:47.265Z"
+      }
     },
     {
       "id": "wheeler-L3-g027-gender",
@@ -31,7 +39,11 @@
           "confidence": 0.6
         }
       ],
-      "targetId": "wheeler-L3-g027"
+      "targetId": "wheeler-L3-g027",
+      "resolved": {
+        "value": "men",
+        "at": "2026-09-22T08:16:49.466Z"
+      }
     }
   ]
 }

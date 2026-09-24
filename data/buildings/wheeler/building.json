@@ -1,0 +1,475 @@
+{
+  "id": "wheeler",
+  "name": "Wheeler Hall",
+  "aliases": [
+    "Wheeler"
+  ],
+  "osmWayId": 1410826203,
+  "origin": {
+    "lat": 37.8713007,
+    "lon": -122.25915102000002
+  },
+  "footprint": [
+    [
+      20.21293385177725,
+      36.56845272580769
+    ],
+    [
+      7.383230599240796,
+      32.8503817333661
+    ],
+    [
+      -40.65785685372468,
+      18.957709282163812
+    ],
+    [
+      -37.59103052805866,
+      8.36009375898209
+    ],
+    [
+      -33.645457404,
+      9.49555256489603
+    ],
+    [
+      -24.295591472698785,
+      -22.820495612745866
+    ],
+    [
+      -27.195455906645233,
+      -23.655391793169454
+    ],
+    [
+      -23.89136794583778,
+      -35.065639599937874
+    ],
+    [
+      -9.88414398380484,
+      -31.013610135168655
+    ],
+    [
+      24.896654286136073,
+      -20.961460116129587
+    ],
+    [
+      37.67363273016956,
+      -17.27678497131625
+    ],
+    [
+      33.73684707481912,
+      -3.6735431963948937
+    ],
+    [
+      29.615524591581437,
+      -4.864661747564942
+    ],
+    [
+      20.63473231480592,
+      26.204608132859825
+    ],
+    [
+      23.007348669966536,
+      26.894788975933917
+    ],
+    [
+      20.21293385177725,
+      36.56845272580769
+    ]
+  ],
+  "levels": [
+    {
+      "id": "B",
+      "sortIndex": 0
+    },
+    {
+      "id": "M",
+      "sortIndex": 1
+    },
+    {
+      "id": "L1",
+      "sortIndex": 2
+    },
+    {
+      "id": "L2",
+      "sortIndex": 3
+    },
+    {
+      "id": "L3",
+      "sortIndex": 4
+    },
+    {
+      "id": "L4",
+      "sortIndex": 5
+    }
+  ],
+  "shafts": [
+    {
+      "id": "wheeler-shaft-s1",
+      "kind": "stair",
+      "nodeIds": [
+        "wheeler-B-v01",
+        "wheeler-L1-v06"
+      ]
+    },
+    {
+      "id": "wheeler-shaft-s2",
+      "kind": "stair",
+      "nodeIds": [
+        "wheeler-B-v02",
+        "wheeler-L1-v07",
+        "wheeler-L2-v06"
+      ]
+    },
+    {
+      "id": "wheeler-shaft-s3",
+      "kind": "stair",
+      "nodeIds": [
+        "wheeler-B-v07",
+        "wheeler-M-v03",
+        "wheeler-L1-n036",
+        "wheeler-L2-v01",
+        "wheeler-L3-v01"
+      ]
+    },
+    {
+      "id": "wheeler-shaft-s4",
+      "kind": "stair",
+      "nodeIds": [
+        "wheeler-B-v08",
+        "wheeler-M-v04",
+        "wheeler-L1-v03"
+      ]
+    },
+    {
+      "id": "wheeler-shaft-s5",
+      "kind": "stair",
+      "nodeIds": [
+        "wheeler-M-v02",
+        "wheeler-L1-v08"
+      ]
+    },
+    {
+      "id": "wheeler-shaft-s6",
+      "kind": "stair",
+      "nodeIds": [
+        "wheeler-L1-v02",
+        "wheeler-L2-v02",
+        "wheeler-L3-v02",
+        "wheeler-L4-v02"
+      ]
+    },
+    {
+      "id": "wheeler-shaft-s7",
+      "kind": "stair",
+      "nodeIds": [
+        "wheeler-L1-v05",
+        "wheeler-L2-v07"
+      ]
+    },
+    {
+      "id": "wheeler-shaft-s8",
+      "kind": "stair",
+      "nodeIds": [
+        "wheeler-L2-v08",
+        "wheeler-L3-v05"
+      ]
+    },
+    {
+      "id": "wheeler-shaft-s9",
+      "kind": "stair",
+      "nodeIds": [
+        "wheeler-L2-v09",
+        "wheeler-L3-v06",
+        "wheeler-L4-v06"
+      ]
+    },
+    {
+      "id": "wheeler-shaft-v10",
+      "kind": "elevator",
+      "nodeIds": [
+        "wheeler-B-v04",
+        "wheeler-L1-v09",
+        "wheeler-L2-v04",
+        "wheeler-L3-v04",
+        "wheeler-L4-v04"
+      ]
+    },
+    {
+      "id": "wheeler-shaft-v11",
+      "kind": "elevator",
+      "nodeIds": [
+        "wheeler-B-v05",
+        "wheeler-M-v05",
+        "wheeler-L1-v04",
+        "wheeler-L2-v03",
+        "wheeler-L3-v03",
+        "wheeler-L4-v03"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "wheeler-shaft-s1-e0",
+      "a": "wheeler-B-v01",
+      "b": "wheeler-L1-v06",
+      "kind": "stair",
+      "accessible": false,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-shaft-s2-e0",
+      "a": "wheeler-B-v02",
+      "b": "wheeler-L1-v07",
+      "kind": "stair",
+      "accessible": false,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-shaft-s2-e1",
+      "a": "wheeler-L1-v07",
+      "b": "wheeler-L2-v06",
+      "kind": "stair",
+      "accessible": false,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-shaft-s3-e0",
+      "a": "wheeler-B-v07",
+      "b": "wheeler-M-v03",
+      "kind": "stair",
+      "accessible": false,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-shaft-s3-e1",
+      "a": "wheeler-M-v03",
+      "b": "wheeler-L1-n036",
+      "kind": "stair",
+      "accessible": false,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-shaft-s3-e2",
+      "a": "wheeler-L1-n036",
+      "b": "wheeler-L2-v01",
+      "kind": "stair",
+      "accessible": false,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-shaft-s3-e3",
+      "a": "wheeler-L2-v01",
+      "b": "wheeler-L3-v01",
+      "kind": "stair",
+      "accessible": false,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-shaft-s4-e0",
+      "a": "wheeler-B-v08",
+      "b": "wheeler-M-v04",
+      "kind": "stair",
+      "accessible": false,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-shaft-s4-e1",
+      "a": "wheeler-M-v04",
+      "b": "wheeler-L1-v03",
+      "kind": "stair",
+      "accessible": false,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-shaft-s5-e0",
+      "a": "wheeler-M-v02",
+      "b": "wheeler-L1-v08",
+      "kind": "stair",
+      "accessible": false,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-shaft-s6-e0",
+      "a": "wheeler-L1-v02",
+      "b": "wheeler-L2-v02",
+      "kind": "stair",
+      "accessible": false,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-shaft-s6-e1",
+      "a": "wheeler-L2-v02",
+      "b": "wheeler-L3-v02",
+      "kind": "stair",
+      "accessible": false,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-shaft-s6-e2",
+      "a": "wheeler-L3-v02",
+      "b": "wheeler-L4-v02",
+      "kind": "stair",
+      "accessible": false,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-shaft-s7-e0",
+      "a": "wheeler-L1-v05",
+      "b": "wheeler-L2-v07",
+      "kind": "stair",
+      "accessible": false,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-shaft-s8-e0",
+      "a": "wheeler-L2-v08",
+      "b": "wheeler-L3-v05",
+      "kind": "stair",
+      "accessible": false,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-shaft-s9-e0",
+      "a": "wheeler-L2-v09",
+      "b": "wheeler-L3-v06",
+      "kind": "stair",
+      "accessible": false,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-shaft-s9-e1",
+      "a": "wheeler-L3-v06",
+      "b": "wheeler-L4-v06",
+      "kind": "stair",
+      "accessible": false,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-shaft-v10-e0",
+      "a": "wheeler-B-v04",
+      "b": "wheeler-L1-v09",
+      "kind": "elevator",
+      "accessible": true,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-shaft-v10-e1",
+      "a": "wheeler-L1-v09",
+      "b": "wheeler-L2-v04",
+      "kind": "elevator",
+      "accessible": true,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-shaft-v10-e2",
+      "a": "wheeler-L2-v04",
+      "b": "wheeler-L3-v04",
+      "kind": "elevator",
+      "accessible": true,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-shaft-v10-e3",
+      "a": "wheeler-L3-v04",
+      "b": "wheeler-L4-v04",
+      "kind": "elevator",
+      "accessible": true,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-shaft-v11-e0",
+      "a": "wheeler-B-v05",
+      "b": "wheeler-M-v05",
+      "kind": "elevator",
+      "accessible": true,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-shaft-v11-e1",
+      "a": "wheeler-M-v05",
+      "b": "wheeler-L1-v04",
+      "kind": "elevator",
+      "accessible": true,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-shaft-v11-e2",
+      "a": "wheeler-L1-v04",
+      "b": "wheeler-L2-v03",
+      "kind": "elevator",
+      "accessible": true,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-shaft-v11-e3",
+      "a": "wheeler-L2-v03",
+      "b": "wheeler-L3-v03",
+      "kind": "elevator",
+      "accessible": true,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-shaft-v11-e4",
+      "a": "wheeler-L3-v03",
+      "b": "wheeler-L4-v03",
+      "kind": "elevator",
+      "accessible": true,
+      "access": "open",
+      "verified": false
+    }
+  ],
+  "entrances": [
+    {
+      "id": "wheeler-B-x01",
+      "nodeId": "wheeler-B-n011",
+      "name": "Level B entrance 1",
+      "accessible": true,
+      "verified": false
+    },
+    {
+      "id": "wheeler-L1-x01",
+      "nodeId": "wheeler-L1-x01n",
+      "name": "Level L1 entrance 1",
+      "accessible": false,
+      "verified": false
+    },
+    {
+      "id": "wheeler-L1-x02",
+      "nodeId": "wheeler-L1-x02n",
+      "name": "Level L1 entrance 2",
+      "accessible": false,
+      "verified": false
+    },
+    {
+      "id": "wheeler-L1-x03",
+      "nodeId": "wheeler-L1-n026",
+      "name": "Level L1 entrance 3",
+      "accessible": false,
+      "verified": false
+    }
+  ]
+}

@@ -7,42 +7,66 @@
       "kind": "room-number",
       "crop": "review-crops/wheeler-L4-g038-num.png",
       "candidates": [],
-      "targetId": "wheeler-L4-g038"
+      "targetId": "wheeler-L4-g038",
+      "resolved": {
+        "value": null,
+        "at": "2026-09-22T08:24:04.639Z"
+      }
     },
     {
       "id": "wheeler-L4-g050-num",
       "kind": "room-number",
       "crop": "review-crops/wheeler-L4-g050-num.png",
       "candidates": [],
-      "targetId": "wheeler-L4-g050"
+      "targetId": "wheeler-L4-g050",
+      "resolved": {
+        "value": null,
+        "at": "2026-09-22T08:24:09.803Z"
+      }
     },
     {
       "id": "wheeler-L4-g058-num",
       "kind": "room-number",
       "crop": "review-crops/wheeler-L4-g058-num.png",
       "candidates": [],
-      "targetId": "wheeler-L4-g058"
+      "targetId": "wheeler-L4-g058",
+      "resolved": {
+        "value": null,
+        "at": "2026-09-22T08:24:10.606Z"
+      }
     },
     {
       "id": "wheeler-L4-g065-num",
       "kind": "room-number",
       "crop": "review-crops/wheeler-L4-g065-num.png",
       "candidates": [],
-      "targetId": "wheeler-L4-g065"
+      "targetId": "wheeler-L4-g065",
+      "resolved": {
+        "value": null,
+        "at": "2026-09-22T08:24:11.039Z"
+      }
     },
     {
       "id": "wheeler-L4-g079-num",
       "kind": "room-number",
       "crop": "review-crops/wheeler-L4-g079-num.png",
       "candidates": [],
-      "targetId": "wheeler-L4-g079"
+      "targetId": "wheeler-L4-g079",
+      "resolved": {
+        "value": null,
+        "at": "2026-09-22T08:24:11.755Z"
+      }
     },
     {
       "id": "wheeler-L4-g088-num",
       "kind": "room-number",
       "crop": "review-crops/wheeler-L4-g088-num.png",
       "candidates": [],
-      "targetId": "wheeler-L4-g088"
+      "targetId": "wheeler-L4-g088",
+      "resolved": {
+        "value": null,
+        "at": "2026-09-22T08:24:13.056Z"
+      }
     },
     {
       "id": "wheeler-L4-g029-gender",
@@ -54,7 +78,11 @@
           "confidence": 0.2
         }
       ],
-      "targetId": "wheeler-L4-g029"
+      "targetId": "wheeler-L4-g029",
+      "resolved": {
+        "value": null,
+        "at": "2026-09-22T08:24:19.339Z"
+      }
     },
     {
       "id": "wheeler-L4-g086-gender",
@@ -66,7 +94,11 @@
           "confidence": 0.6
         }
       ],
-      "targetId": "wheeler-L4-g086"
+      "targetId": "wheeler-L4-g086",
+      "resolved": {
+        "value": "men",
+        "at": "2026-09-22T08:24:22.141Z"
+      }
     },
     {
       "id": "wheeler-L4-g098-gender",
@@ -78,7 +110,11 @@
           "confidence": 0.6
         }
       ],
-      "targetId": "wheeler-L4-g098"
+      "targetId": "wheeler-L4-g098",
+      "resolved": {
+        "value": "women",
+        "at": "2026-09-22T08:24:25.941Z"
+      }
     },
     {
       "id": "wheeler-L4-g105-gender",
@@ -90,7 +126,11 @@
           "confidence": 0.2
         }
       ],
-      "targetId": "wheeler-L4-g105"
+      "targetId": "wheeler-L4-g105",
+      "resolved": {
+        "value": "all",
+        "at": "2026-09-22T08:24:30.339Z"
+      }
     }
   ]
 }

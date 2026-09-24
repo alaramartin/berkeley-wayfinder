@@ -5,16 +5,16 @@
 ## Milestones
 - [x] **M0 — Scaffold** (done 2026-09-16)
 - [x] **M1 — Pipeline** (done 2026-09-16)
-- [ ] **M2 — Authoring tool** ← current
-- [ ] **M3 — Routing + complete Wheeler data**
+- [x] **M2 — Authoring tool** (done 2026-09-24)
+- [ ] **M3 — Routing + complete Wheeler data** ← current
 - [ ] **M4 — Nav app + deploy**
 - [ ] **M5 — Field mode + verification walk**
 
 ## Status
-- **Current milestone:** M2 — Authoring tool (**at review gate**: the tool is built; the review itself is yours)
-- **Last completed task:** full author flow verified on a scratch copy of the data (review → edit → align → OSM fit → accept → shafts)
-- **Blockers / waiting on user:** work through Wheeler in the tool (see "M2 review: how to do it" below); OK to push M2 commits
-- **Next review gate:** end of M2, when all six levels are accepted and shafts are saved
+- **Current milestone:** M3 — Routing + complete Wheeler data
+- **Last completed task:** M2 review gate passed — six levels accepted (188 rooms), aligned + OSM-fitted, 11 shafts (9 stairs, 2 elevators), 4 entrances; all canonical files validate
+- **Blockers / waiting on user:** none
+- **Next review gate:** end of M3, with sample routes printed as text to sanity-check
 
 ### M1 results (per level, before any human review)
 | Level | Room numbers auto-accepted / found anywhere (golden) | Wrong accepts | Rooms | Stairs+elevators linked | Graph components | Entrance candidates | Review items |
@@ -220,7 +220,7 @@ Each milestone ends with a **review gate**: stop, summarize what was built, list
 - L4 outline includes the glare wedge on the photo's left edge.
 - L2 has 4 low-score "DWA" icon matches in review that are window dashes.
 
-### M2 — Authoring tool
+### M2 — Authoring tool ✅
 Design (decided at M2 start, see Decision log):
 - **Hand edits are never clobbered.** Once the tool saves a proposal it sets `editedAt`. After that, `emit` writes `proposal.auto.json` instead, and the tool offers "compare / reset from pipeline".
 - **Workflow per building:** fix each level in pixel space (editor + review queue) → align every level to the reference level (L1) → fit L1 to the OSM footprint → accept all levels (px → meters) → link shafts and set heights on canonical data.
@@ -242,7 +242,7 @@ Tasks:
 - [x] Accept: proposals → `building.json` + `levels/<id>.json` (schema-validated), directory aliases applied across levels, entrances carried over, existing shafts kept.
 - [x] Shafts & heights page: proposes stair/elevator chains (skipping a partial level), plan view of all levels, editable elevations/heights. *Verified* on scratch (8 shafts saved).
 - [x] Tests: author lib 12 (graph edits, split assignment, review answers, accept, shafts, alignment), geometry 9, schema 8, pipeline 22. Typecheck, lint and author build are clean.
-- [ ] **Review gate M2.** The user does the Wheeler review below.
+- [x] **Review gate M2.** Wheeler reviewed and accepted by the user (2026-09-24): all six levels accepted, aligned and OSM-fitted, 11 shafts saved.
 
 #### M2 review: how to do it
 Run these in two terminals, then open http://localhost:3001/b/wheeler
