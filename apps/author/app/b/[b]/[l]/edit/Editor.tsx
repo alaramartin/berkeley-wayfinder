@@ -65,6 +65,7 @@ export function Editor({ building, level }: { building: string; level: string })
   const [layers, setLayers] = useState({ photo: true, rooms: true, labels: true, corridors: true, doors: true, icons: false });
   const [upp, setUpp] = useState(2);
   const [highlight, setHighlight] = useState<string[] | null>(null);
+  const [flashing, setFlashing] = useState(false);
   const [openReview, setOpenReview] = useState(0);
   const [hasAuto, setHasAuto] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -241,6 +242,24 @@ export function Editor({ building, level }: { building: string; level: string })
     setTool("seed");
   }
 
+  /** Highlight a set of nodes, fit the view around them, and flash so they're easy to spot. */
+  const showNodes = useCallback(
+    (ids: string[]) => {
+      if (!ids.length) return;
+      setHighlight(ids);
+      const ns = ids.map((id) => nodeById.get(id)).filter((n): n is NonNullable<typeof n> => !!n);
+      if (ns.length) {
+        const xs = ns.map((n) => n.x);
+        const ys = ns.map((n) => n.y);
+        const pad = 150;
+        canvas.current?.fit({ x: Math.min(...xs) - pad, y: Math.min(...ys) - pad, w: Math.max(...xs) - Math.min(...xs) + 2 * pad, h: Math.max(...ys) - Math.min(...ys) + 2 * pad });
+      }
+      setFlashing(true);
+      window.setTimeout(() => setFlashing(false), 2400);
+    },
+    [nodeById],
+  );
+
   function finishRoom(pts: Point[]) {
     if (!p || pts.length < 3) return;
     const id = nextId(p, "g");
@@ -398,9 +417,15 @@ export function Editor({ building, level }: { building: string; level: string })
               const sel = selection?.type === "edge" && selection.id === e.id;
               const inHl = hl.has(e.a);
               return (
-                <g key={e.id}>
+                <g key={e.id} className={inHl && flashing ? "animate-pulse" : undefined}>
                   <polyline points={pts(e.polyline)} fill="none" stroke="transparent" strokeWidth={r(14)} onPointerDown={down({ type: "edge", id: e.id })} />
-                  <polyline points={pts(e.polyline)} fill="none" stroke={sel ? "#111" : inHl ? "#f97316" : "#dc2626"} strokeWidth={r(sel ? 5 : 3.5)} pointerEvents="none" />
+                  <polyline
+                    points={pts(e.polyline)}
+                    fill="none"
+                    stroke={sel ? "#111" : inHl ? "#f97316" : "#dc2626"}
+                    strokeWidth={r(sel ? 5 : inHl ? 5 : 3.5)}
+                    pointerEvents="none"
+                  />
                 </g>
               );
             })}
@@ -425,9 +450,10 @@ export function Editor({ building, level }: { building: string; level: string })
               return (
                 <circle
                   key={n.id}
+                  className={hl.has(n.id) && flashing ? "animate-pulse" : undefined}
                   cx={n.x}
                   cy={n.y}
-                  r={r(n.kind === "junction" ? 5 : 7)}
+                  r={r((n.kind === "junction" ? 5 : 7) * (hl.has(n.id) ? 1.4 : 1))}
                   fill={hl.has(n.id) ? "#f97316" : NODE_COLORS[n.kind] ?? "#333"}
                   stroke={sel || pending.edgeFrom === n.id ? "#111" : "#fff"}
                   strokeWidth={r(sel ? 3 : 1.5)}
@@ -520,12 +546,22 @@ export function Editor({ building, level }: { building: string; level: string })
           )}
           {blockers.length ? (
             <ul className="space-y-1 text-xs text-amber-800">
-              {blockers.map((b) => (
-                <li key={b} className="flex gap-1">
-                  <Warning className="mt-0.5 shrink-0" />
-                  {b}
-                </li>
-              ))}
+              {blockers.map((b) => {
+                // The corridor blocker points at the pieces that aren't joined to the main one.
+                const strays = /disconnected pieces/.test(b) ? comps.slice().sort((a, c) => c.length - a.length).slice(1).flat() : null;
+                return (
+                  <li key={b} className="flex gap-1">
+                    <Warning className="mt-0.5 shrink-0" />
+                    {strays ? (
+                      <button className="text-left underline decoration-dotted hover:text-amber-950" onClick={() => showNodes(strays)}>
+                        {b} — show them
+                      </button>
+                    ) : (
+                      b
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           ) : (
             <p className="flex items-center gap-1 text-xs text-green-700">
@@ -666,14 +702,7 @@ export function Editor({ building, level }: { building: string; level: string })
               <li key={c[0]}>
                 <button
                   className="hover:underline"
-                  onClick={() => {
-                    setHighlight(c);
-                    const ns = c.map((id) => nodeById.get(id)!).filter(Boolean);
-                    const xs = ns.map((n) => n.x);
-                    const ys = ns.map((n) => n.y);
-                    const pad = 150;
-                    canvas.current?.fit({ x: Math.min(...xs) - pad, y: Math.min(...ys) - pad, w: Math.max(...xs) - Math.min(...xs) + 2 * pad, h: Math.max(...ys) - Math.min(...ys) + 2 * pad });
-                  }}
+                  onClick={() => showNodes(c)}
                 >
                   Piece {i + 1}: {c.length} nodes
                 </button>
