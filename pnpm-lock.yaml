@@ -128,6 +128,12 @@ importers:
         specifier: workspace:*
         version: link:../schema
     devDependencies:
+      '@types/node':
+        specifier: ^22.20.3
+        version: 22.20.3
+      tsx:
+        specifier: ^4.23.13
+        version: 4.23.13
       typescript:
         specifier: ^7.0.2
         version: 7.0.2

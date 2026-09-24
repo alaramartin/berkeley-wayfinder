@@ -58,6 +58,8 @@ export type RoomCategory = z.infer<typeof RoomCategory>;
 export type NodeKind = z.infer<typeof NodeKind>;
 export type EdgeKind = z.infer<typeof EdgeKind>;
 export type Restroom = z.infer<typeof Restroom>;
+export type Access = z.infer<typeof Access>;
+export type PoiKind = z.infer<typeof PoiKind>;
 
 export const Room = z
   .object({

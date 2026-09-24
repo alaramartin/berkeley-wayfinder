@@ -184,14 +184,13 @@ describe("shafts", () => {
 });
 
 describe("real Wheeler proposals", () => {
-  for (const level of ["L1", "M"]) {
+  // Every level was reviewed and accepted at the M2 gate; they must stay acceptable.
+  for (const level of ["B", "M", "L1", "L2", "L3", "L4"]) {
     const path = join(ROOT, "data", "work", "wheeler", level, "proposal.json");
-    it.skipIf(!exists(path))(`${level}: parses, and blockers are explained`, () => {
+    it.skipIf(!exists(path))(`${level}: parses and has no accept blockers`, () => {
       const p = Proposal.parse(JSON.parse(readFileSync(path, "utf8")));
       const q = ReviewQueue.parse(JSON.parse(readFileSync(path.replace("proposal.json", "review-queue.json"), "utf8")));
-      const blockers = acceptBlockers(p, q.items);
-      if (level === "M") expect(blockers).toEqual([]);
-      else expect(blockers.length).toBeGreaterThan(0);
+      expect(acceptBlockers(p, q.items)).toEqual([]);
     });
   }
 });
