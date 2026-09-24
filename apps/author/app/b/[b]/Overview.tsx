@@ -65,7 +65,8 @@ export function Overview({ building }: { building: string }) {
                   {!l.verified && <span className="ml-1 text-xs text-amber-700">(unverified)</span>}
                 </td>
                 <td>
-                  {l.numberedRooms}/{l.rooms}
+                  {l.rooms}
+                  {l.rooms > l.numberedRooms && <span className="ml-1 text-xs text-neutral-500">({l.rooms - l.numberedRooms} named, unnumbered)</span>}
                 </td>
                 <td>{l.totalReview ? `${l.totalReview - l.openReview}/${l.totalReview}` : "—"}</td>
                 <td className={l.components > 1 ? "text-amber-700" : ""}>{l.components}</td>
