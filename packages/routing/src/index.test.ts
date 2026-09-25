@@ -281,6 +281,50 @@ describe("routing on real Wheeler data", () => {
     expect(found.route.levelIds).toEqual(["L1"]);
   });
 
+  it("puts every room node inside its own room, with no door teleports", async () => {
+    const graph = await load();
+    const { pointInPolygon } = await import("@wf/geometry");
+    const outside: string[] = [];
+    for (const [id, node] of graph.nodes) {
+      if (node.kind !== "room" || !node.roomId) continue;
+      const room = graph.rooms.get(node.roomId)!;
+      if (!pointInPolygon([node.x, node.y], room.polygon)) outside.push(id);
+    }
+    expect(outside).toEqual([]);
+
+    // The old bug hopped from the arrival door to some *other* door of the same room, up to 16 m
+    // away and outside the room entirely. Every doorway hop must now finish inside the room it enters.
+    const strays: string[] = [];
+    for (const edges of graph.adjacency.values()) {
+      for (const edge of edges) {
+        if (edge.kind !== "doorway") continue;
+        const target = graph.nodes.get(edge.to);
+        if (target?.kind !== "room" || !target.roomId) continue;
+        const room = graph.rooms.get(target.roomId)!;
+        const end = edge.polyline[edge.polyline.length - 1]!;
+        if (!pointInPolygon(end, room.polygon)) strays.push(edge.id);
+      }
+    }
+    expect(strays).toEqual([]);
+  });
+
+  it("routes to a room entered through another room, and names it", async () => {
+    const graph = await load();
+    // B 31A is entered through 31; L4 420 sits behind a chain (420 -> 419 -> 418).
+    for (const id of ["wheeler-B-r31A", "wheeler-L4-r420"]) {
+      const room = graph.rooms.get(id)!;
+      expect(room.enteredVia).toBeTruthy();
+      const r = route(graph, { type: "entrance", id: graph.building.entrances[0]!.id }, { type: "room", id });
+      expect(r.ok).toBe(true);
+      if (!r.ok) continue;
+      const end = r.route.nodes[r.route.nodes.length - 1]!;
+      expect(end.roomId).toBe(id);
+      const text = instructions(graph, r.route).map((s) => s.text).join("\n");
+      expect(text).toMatch(new RegExp(`Arrive at ${room.number}`));
+      expect(text).toMatch(/which is inside/);
+    }
+  });
+
   it("gives every room a door or a host room", async () => {
     const graph = await load();
     const orphans = [...graph.rooms.values()].filter(

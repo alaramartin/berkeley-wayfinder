@@ -39,6 +39,81 @@ export function pointInPolygon([x, y]: Point, poly: Point[]): boolean {
   return inside;
 }
 
+/** Distance from a point to a polygon's nearest edge; negative outside. */
+function signedDistanceToEdges([x, y]: Point, poly: Point[]): number {
+  let best = Infinity;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [ax, ay] = poly[j]!;
+    const [bx, by] = poly[i]!;
+    const dx = bx - ax;
+    const dy = by - ay;
+    const len2 = dx * dx + dy * dy;
+    const t = len2 === 0 ? 0 : Math.min(1, Math.max(0, ((x - ax) * dx + (y - ay) * dy) / len2));
+    best = Math.min(best, Math.hypot(x - (ax + dx * t), y - (ay + dy * t)));
+  }
+  return pointInPolygon([x, y], poly) ? best : -best;
+}
+
+/**
+ * A point guaranteed to be inside the polygon, for labels and route endpoints.
+ * The area centroid when that lands inside; otherwise the point furthest from any edge
+ * (pole of inaccessibility), found by sampling the bounding box and refining locally.
+ */
+export function interiorPoint(poly: Point[]): Point {
+  if (poly.length < 3) return centroid(poly);
+  const c = centroid(poly);
+  if (pointInPolygon(c, poly)) return c;
+
+  const xs = poly.map((p) => p[0]);
+  const ys = poly.map((p) => p[1]);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+
+  let best: Point = c;
+  let bestDistance = -Infinity;
+  const search = (x0: number, y0: number, x1: number, y1: number, steps: number) => {
+    for (let i = 0; i <= steps; i++) {
+      for (let j = 0; j <= steps; j++) {
+        const p: Point = [x0 + ((x1 - x0) * i) / steps, y0 + ((y1 - y0) * j) / steps];
+        const d = signedDistanceToEdges(p, poly);
+        if (d > bestDistance) {
+          bestDistance = d;
+          best = p;
+        }
+      }
+    }
+  };
+  search(minX, minY, maxX, maxY, 16);
+  // Two rounds of local refinement around the winner.
+  for (const fraction of [4, 16]) {
+    const rx = (maxX - minX) / fraction;
+    const ry = (maxY - minY) / fraction;
+    search(best[0] - rx, best[1] - ry, best[0] + rx, best[1] + ry, 8);
+  }
+  return best;
+}
+
+/** Width and length of a polygon measured along an axis rotated by `angle`, for fitting text into it. */
+export function orientedExtent(poly: Point[], angle: number): { along: number; across: number } {
+  const cos = Math.cos(-angle);
+  const sin = Math.sin(-angle);
+  let minU = Infinity;
+  let maxU = -Infinity;
+  let minV = Infinity;
+  let maxV = -Infinity;
+  for (const [x, y] of poly) {
+    const u = x * cos - y * sin;
+    const v = x * sin + y * cos;
+    minU = Math.min(minU, u);
+    maxU = Math.max(maxU, u);
+    minV = Math.min(minV, v);
+    maxV = Math.max(maxV, v);
+  }
+  return { along: maxU - minU, across: maxV - minV };
+}
+
 export function polylineLength(line: Point[]): number {
   let len = 0;
   for (let i = 1; i < line.length; i++) len += Math.hypot(line[i]![0] - line[i - 1]![0], line[i]![1] - line[i - 1]![1]);

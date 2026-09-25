@@ -5,7 +5,7 @@
  * into two pieces at `t`, so routes arrive at the real doorway rather than at the nearest junction.
  * Shafts become vertical edges between the levels they link.
  */
-import { pointAlong, polylineLength } from "@wf/geometry";
+import { interiorPoint, pointAlong, polylineLength } from "@wf/geometry";
 import type { Access, Building, Door, Edge, EdgeKind, Level, Point, Room } from "@wf/schema";
 
 /** A node in the routing graph: a corridor node, a door, or a room/entrance stand-in. */
@@ -156,12 +156,14 @@ export function buildGraph(building: Building, levels: Level[]): RouteGraph {
     }
 
     // One node per room, reached through its doors. Routes end here so instructions can name the room.
+    // The node sits inside the room, not on a door: putting it on one arbitrary door made routes that
+    // arrived through a different door jump across the building.
     for (const room of level.rooms) {
       const doorIds = graph.roomDoors.get(room.id) ?? [];
       if (!doorIds.length) continue;
       const id = roomNodeId(room.id);
-      const first = graph.nodes.get(doorIds[0]!)!;
-      node(graph, { id, levelId: level.id, x: first.x, y: first.y, z, kind: "room", roomId: room.id });
+      const inside = interiorPoint(room.polygon);
+      node(graph, { id, levelId: level.id, x: inside[0], y: inside[1], z, kind: "room", roomId: room.id });
       for (const doorId of doorIds) {
         const d = graph.nodes.get(doorId)!;
         add(graph, {
@@ -169,12 +171,40 @@ export function buildGraph(building: Building, levels: Level[]): RouteGraph {
           from: doorId,
           to: id,
           kind: "doorway",
+          // Free: the last few metres inside a room are not worth changing every route's distance for.
+          // The polyline is real, so the drawn route finishes inside the room rather than at its door.
           access: "open",
           accessible: true,
           meters: 0,
           levels: 0,
-          polyline: [[d.x, d.y], [d.x, d.y]],
+          polyline: [[d.x, d.y], inside],
         });
+      }
+    }
+
+    // Rooms entered through another room get their own node, linked from their host. Repeated until
+    // nothing new appears, so a chain (L4 420 -> 419 -> 418) resolves all the way.
+    for (let added = true; added; ) {
+      added = false;
+      for (const room of level.rooms) {
+        if (!room.enteredVia || graph.nodes.has(roomNodeId(room.id))) continue;
+        const host = graph.nodes.get(roomNodeId(room.enteredVia));
+        if (!host) continue;
+        const id = roomNodeId(room.id);
+        const inside = interiorPoint(room.polygon);
+        node(graph, { id, levelId: level.id, x: inside[0], y: inside[1], z, kind: "room", roomId: room.id });
+        add(graph, {
+          id: `${id}<-${host.id}`,
+          from: host.id,
+          to: id,
+          kind: "doorway",
+          access: "open",
+          accessible: true,
+          meters: 0,
+          levels: 0,
+          polyline: [[host.x, host.y], inside],
+        });
+        added = true;
       }
     }
   }
@@ -238,7 +268,5 @@ export function resolveEndpoint(graph: RouteGraph, endpoint: { type: string; id:
   if (!room) return { error: `no room ${endpoint.id}` };
   const id = roomNodeId(room.id);
   if (graph.nodes.has(id)) return { nodeId: id };
-  // A room entered through another one arrives at its host's door.
-  if (room.enteredVia && graph.nodes.has(roomNodeId(room.enteredVia))) return { nodeId: roomNodeId(room.enteredVia) };
   return { error: `room ${room.number ?? room.id} has no door yet` };
 }

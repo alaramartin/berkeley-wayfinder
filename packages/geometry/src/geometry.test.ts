@@ -87,3 +87,51 @@ describe("image <-> world", () => {
     close(worldToImage(t, expected), p, 1e-6);
   });
 });
+
+describe("interior point and oriented extent", () => {
+  /** A C-shape: the area centroid falls in the notch, outside the polygon. */
+  const cShape: Point[] = [
+    [0, 0],
+    [10, 0],
+    [10, 3],
+    [3, 3],
+    [3, 7],
+    [10, 7],
+    [10, 10],
+    [0, 10],
+  ];
+
+  it("falls back to a point inside when the centroid is outside", async () => {
+    const { centroid, interiorPoint, pointInPolygon } = await import("./index");
+    expect(pointInPolygon(centroid(cShape), cShape)).toBe(false);
+    const p = interiorPoint(cShape);
+    expect(pointInPolygon(p, cShape)).toBe(true);
+    // The widest part of a C is its spine, not the arms.
+    expect(p[0]).toBeLessThan(3);
+  });
+
+  it("uses the centroid when that is already inside", async () => {
+    const { centroid, interiorPoint } = await import("./index");
+    const square: Point[] = [
+      [0, 0],
+      [4, 0],
+      [4, 4],
+      [0, 4],
+    ];
+    close(interiorPoint(square), centroid(square), 1e-9);
+  });
+
+  it("measures a rotated box along its own axis", async () => {
+    const { orientedExtent } = await import("./index");
+    const angle = Math.PI / 6;
+    const box: Point[] = [
+      [0, 0],
+      [8, 0],
+      [8, 2],
+      [0, 2],
+    ].map(([x, y]) => [x! * Math.cos(angle) - y! * Math.sin(angle), x! * Math.sin(angle) + y! * Math.cos(angle)] as Point);
+    const e = orientedExtent(box, angle);
+    expect(e.along).toBeCloseTo(8, 6);
+    expect(e.across).toBeCloseTo(2, 6);
+  });
+});

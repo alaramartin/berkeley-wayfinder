@@ -1,6 +1,6 @@
 "use client";
 /** Bottom sheet on a phone, side panel on a desktop: the fields, the toggles and the steps. */
-import { ArrowsDownUp, Cube, PersonSimpleCircle, Stack, Warning } from "@phosphor-icons/react";
+import { ArrowsDownUp, CaretLeft, CaretRight, Cube, PersonSimpleCircle, Stack, Warning } from "@phosphor-icons/react";
 import type { Instruction } from "@wf/routing";
 import type { BuildingData } from "@/lib/data";
 import type { SearchResult } from "@/lib/search";
@@ -24,6 +24,10 @@ export function RoutePanel({
   onToggleAccessible,
   onSetView,
   onStep,
+  activeStep,
+  onPrev,
+  onNext,
+  onOverview,
 }: {
   data: BuildingData;
   fromLabel: string | null;
@@ -40,7 +44,12 @@ export function RoutePanel({
   onSwap: () => void;
   onToggleAccessible: () => void;
   onSetView: (v: ViewMode) => void;
-  onStep: (step: Instruction) => void;
+  onStep: (step: Instruction, index: number) => void;
+  /** Step the guide is on, or null when the guide is off. */
+  activeStep: number | null;
+  onPrev: () => void;
+  onNext: () => void;
+  onOverview: () => void;
 }) {
   return (
     <div className="flex h-full flex-col gap-3 overflow-y-auto p-4">
@@ -91,19 +100,44 @@ export function RoutePanel({
         </p>
       )}
 
-      {summary && <p className="text-sm font-medium text-neutral-700">{summary}</p>}
+      {summary && (
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-medium text-neutral-700">{summary}</p>
+          <button onClick={onOverview} className="ml-auto rounded-full border border-neutral-300 px-2.5 py-1 text-xs text-neutral-700 hover:bg-neutral-50">
+            Whole route
+          </button>
+        </div>
+      )}
 
       {steps.length > 0 && (
-        <ol className="space-y-1">
-          {steps.map((step, i) => (
-            <li key={`${step.nodeId}-${i}`}>
-              <button onClick={() => onStep(step)} className="flex w-full gap-3 rounded-lg px-2 py-2 text-left hover:bg-neutral-100">
-                <span className="mt-0.5 w-5 shrink-0 text-xs text-neutral-400">{i + 1}</span>
-                <span className="text-sm">{step.text}</span>
-              </button>
-            </li>
-          ))}
-        </ol>
+        <>
+          <div className="flex items-center gap-2">
+            <button onClick={onPrev} disabled={activeStep === null || activeStep <= 0} className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm disabled:opacity-40">
+              <CaretLeft size={14} className="inline" /> Prev
+            </button>
+            <span className="text-xs text-neutral-500">{activeStep === null ? `${steps.length} steps` : `Step ${activeStep + 1} of ${steps.length}`}</span>
+            <button
+              onClick={onNext}
+              disabled={activeStep !== null && activeStep >= steps.length - 1}
+              className="ml-auto rounded-lg border border-neutral-300 px-3 py-1.5 text-sm disabled:opacity-40"
+            >
+              Next <CaretRight size={14} className="inline" />
+            </button>
+          </div>
+          <ol className="space-y-1">
+            {steps.map((step, i) => (
+              <li key={`${step.nodeId}-${i}`}>
+                <button
+                  onClick={() => onStep(step, i)}
+                  className={`flex w-full gap-3 rounded-lg px-2 py-2 text-left hover:bg-neutral-100 ${i === activeStep ? "bg-berkeley-blue/10 ring-1 ring-berkeley-blue/30" : ""}`}
+                >
+                  <span className="mt-0.5 w-5 shrink-0 text-xs text-neutral-400">{i + 1}</span>
+                  <span className="text-sm">{step.text}</span>
+                </button>
+              </li>
+            ))}
+          </ol>
+        </>
       )}
 
       {!summary && !error && (
