@@ -99,17 +99,21 @@ export function BuildingView({ buildingId }: { buildingId: string }) {
   /** A new route restarts the guide from the overview. */
   const signature = `${state.from ?? ""}|${state.to ?? ""}|${state.nearest ?? ""}|${state.accessible}`;
   const lastSignature = useRef<string | null>(null);
+  /** The camera starts at three.js defaults, so the building has to be framed at least once. */
+  const framed = useRef(false);
   useEffect(() => {
     // Only remember a signature once the route is actually in hand: the first pass happens while the
     // building is still loading, and recording it there would skip the guide for that route.
     if (!geometry || steps.length === 0) {
-      if (lastSignature.current !== null) {
+      if (lastSignature.current !== null || !framed.current) {
         lastSignature.current = null;
+        framed.current = true;
         setGuide("off");
         flyTo("overview", 0, 0, true);
       }
       return;
     }
+    framed.current = true;
     if (lastSignature.current === signature) return;
     lastSignature.current = signature;
     // The guide starts on the first step with a direction of travel; "Start at 120" has none.

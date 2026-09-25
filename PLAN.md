@@ -12,7 +12,9 @@
 
 ## Status
 - **Current milestone:** M4 — Nav app + deploy (app built and tested locally; **waiting on user** to approve the Vercel deploy)
-- **Last completed task:** M4 nav app: search, 3D scene, route panel, URL state — driven in Chrome end to end
+- **Last completed task:** M4 scene rework — mirror fix, floor ribbon, guided camera, room labels, legend; all driven in Chrome
+- **Blocked on user:** whether to straighten the bowed corridor centrelines, and approval for the Vercel deploy
+- **Previously:** M4 nav app: search, 3D scene, route panel, URL state
 - **Previously:** M3 built — routing graph, A*, accessible mode, nearest-POI, instructions; 14 routing tests including real Wheeler data; `pnpm routes wheeler` prints samples
 - **Previously:** M2 review gate passed — six levels accepted (188 rooms), aligned + OSM-fitted, 11 shafts (9 stairs, 2 elevators), 4 entrances; all canonical files validate
 - **Blockers / waiting on user:** none
@@ -283,7 +285,9 @@ If something looks wrong in the photo-to-plan conversion itself, use Corners (ne
 - [x] route rendering (animated dashed line, start/end pins) + camera fit + level focus.
 - [x] bottom sheet (phone) / side panel (desktop) with steps, time, step-free toggle; tapping a step focuses its level.
 - [x] URL state (shareable links): `from`, `to`, `nearest`, `accessible`, `view`, `level`.
-- [x] phone-width checks + performance pass: 61 fps with the whole building drawn; layout verified at ~500 px and desktop.
+- [x] phone-width checks + performance pass: layout verified at ~500 px and desktop. (fps readings on this machine are capped at ~31 by the browser — a plain HTML page reports the same, so it is not the scene.)
+- [x] **Scene rework after review** (2026-09-25): fixed the mirrored building, replaced the floating dashed line with a floor ribbon, freed the camera and added a guided fly-in, put labels on rooms, added a legend. Detail in the Decision log.
+- [ ] **Corridor centrelines still bow** (L4's trunk 38.9 m along a 34.0 m chord; L1 `e026` sags 6.7 m). Visible as the ribbon drifting diagonally across a straight corridor. Decision pending — see Decision log 2026-09-24 for the agreed shape of the fix.
 - [ ] **confirm with user**, then create the Vercel project (root `apps/nav`) and deploy.
 - **Review gate M4.** Share the deployed URL + test routes.
 
@@ -340,6 +344,10 @@ If something looks wrong in the photo-to-plan conversion itself, use Corners (ne
 | 2026-09-16 | Auto-align = ICP on outlines from 4 quarter-turn starts; show runner-up fits when close | Placards are drawn in different orientations; Wheeler's footprint is nearly symmetric (270° vs 90° within 8%) |
 | 2026-09-16 | Rooms store `labelAt` (OCR position); suite splits assign pieces by it | Merged suites are the most common defect; makes splitting two clicks |
 | 2026-09-16 | Author tool displays JPEG copies (`rectified.jpg`, `ingest.jpg`) | 10 MB PNGs inside SVG decoded too slowly |
+| 2026-09-25 | Scene meshes, labels and route all go through `planToShape`/`shapeToScene`/`toScene`, pinned by a test | The mesh path negated y and the label/route path did not, so the building was drawn mirrored against everything on it — the cause of "labels floating over nothing" and most of the apparent corridor mess |
+| 2026-09-25 | A room's graph node sits at the polygon's interior point, not its first door; rooms with `enteredVia` get their own node and chains are followed | Routes arriving through a second door jumped up to 16 m across the building, and `enteredVia` rooms ended at the host's door |
+| 2026-09-25 | The route is a floor ribbon with chevrons and distance fade, depth-tested per level | The dashed line ignored corridor polylines, floated through ceilings and never said which way to walk |
+| 2026-09-25 | The camera only ever moves through an explicit, interruptible flight, never as a side effect of derived state | A `useEffect` re-framing on derived state meant every zoom snapped back to one fixed spot |
 | 2026-09-24 | Nav data ships as static JSON in `public/data`, copied by a prebuild step, not imported into the bundle | Keeps the JS bundle small and gives M5's offline shell something a service worker can cache |
 | 2026-09-24 | Room labels are drawn only for the focused level, or the route's levels | All six levels at once is an unreadable pile; labels from levels behind still draw over the front one |
 | 2026-09-24 | Never give compass directions; leaving a room turns relative to the door you came out of, and leaving a lift or stairwell points at the first room passed | User: "no one knows compass directions"; indoors a bearing is unfollowable |

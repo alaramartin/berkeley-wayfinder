@@ -248,23 +248,31 @@ function CameraRig({ flight, maxDistance, onTakeover }: { flight: Flight | null;
     return () => c.removeEventListener("start", onStart);
   }, [onTakeover]);
 
+  // Queued rather than applied here: on the very first render OrbitControls has not mounted yet, and
+  // moving the camera before it exists leaves the controls pointing at the origin.
+  const queued = useRef<Flight | null>(null);
   useEffect(() => {
-    if (!flight) return;
-    const c = controls.current as unknown as { target: THREE.Vector3 } | null;
-    const from: Pose = {
-      eye: [camera.position.x, camera.position.y, camera.position.z],
-      target: c ? [c.target.x, c.target.y, c.target.z] : [0, 0, 0],
-    };
-    if (flight.immediate) {
-      apply(camera, controls.current, flight.to);
-      active.current = null;
-      flight.onArrive?.();
-      return;
-    }
-    active.current = { flight, from, started: performance.now() };
-  }, [flight, camera]);
+    if (flight) queued.current = flight;
+  }, [flight]);
 
   useFrame(() => {
+    const next = queued.current;
+    if (next && controls.current) {
+      queued.current = null;
+      const c = controls.current as unknown as { target: THREE.Vector3 };
+      const from: Pose = {
+        eye: [camera.position.x, camera.position.y, camera.position.z],
+        target: [c.target.x, c.target.y, c.target.z],
+      };
+      if (next.immediate) {
+        apply(camera, controls.current, next.to);
+        active.current = null;
+        next.onArrive?.();
+      } else {
+        active.current = { flight: next, from, started: performance.now() };
+      }
+    }
+
     const run = active.current;
     if (!run) return;
     const t = Math.min(1, (performance.now() - run.started) / run.flight.ms);
