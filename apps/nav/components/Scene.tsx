@@ -389,6 +389,9 @@ function CameraRig({
       minDistance={2}
       maxDistance={maxDistance}
       zoomToCursor
+      // Half the stock rate: a trackpad pinch moves in many small steps, and at 1.0 the building
+      // jumps from across the courtyard to inside a room in one gesture.
+      zoomSpeed={0.5}
       screenSpacePanning
       maxPolarAngle={Math.PI / 2.05}
       mouseButtons={{ LEFT: -1 as THREE.MOUSE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN }}
