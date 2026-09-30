@@ -281,9 +281,10 @@ describe("grab and turn", () => {
     fovDegrees: 45,
   };
 
-  it("keeps the grabbed point under the cursor", () => {
-    // As in the app, the pivot comes from a raycast through the cursor, so it starts under it.
-    const onCursor: Grab = { ...grab, cursor: projectToScreen(grab.pose, grab.pivot, viewport, grab.fovDegrees) };
+  it("keeps the point it turns about pinned to the same place on screen", () => {
+    // This is what stops the building wandering off-frame: however far you spin, the thing you are
+    // looking at stays where it is. The pivot comes from the middle of the view, so it stays there.
+    const centre: Grab = { ...grab, cursor: projectToScreen(grab.pose, grab.pivot, viewport, grab.fovDegrees) };
     for (const [dx, dy] of [
       [120, 0],
       [-200, 40],
@@ -291,10 +292,10 @@ describe("grab and turn", () => {
       [-340, -120],
       [500, 60],
     ]) {
-      const cursor = { x: onCursor.cursor.x + dx!, y: onCursor.cursor.y + dy! };
-      const pose = grabRotate(onCursor, cursor);
-      const back = projectToScreen(pose, onCursor.pivot, viewport, onCursor.fovDegrees);
-      expect(Math.hypot(back.x - cursor.x, back.y - cursor.y)).toBeLessThan(2);
+      const cursor = { x: centre.cursor.x + dx!, y: centre.cursor.y + dy! };
+      const pose = grabRotate(centre, cursor);
+      const back = projectToScreen(pose, centre.pivot, viewport, centre.fovDegrees);
+      expect(Math.hypot(back.x - centre.cursor.x, back.y - centre.cursor.y)).toBeLessThan(2);
     }
   });
 

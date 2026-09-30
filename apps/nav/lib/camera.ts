@@ -66,7 +66,11 @@ export function lerpPose(from: Pose, to: Pose, t: number): Pose {
 /** State captured when a grab starts, so a long drag never accumulates drift. */
 export interface Grab {
   pose: Pose;
-  /** The world point under the cursor when the drag began; the camera turns about this. */
+  /**
+   * What the camera turns about: the point under the middle of the view when the drag began.
+   * Turning about the spot the user grabbed is geometrically honest but unusable — grab a corner of
+   * the building and a half-turn swings everything else off the screen.
+   */
   pivot: Vec3;
   cursor: { x: number; y: number };
   viewport: { width: number; height: number };
@@ -145,17 +149,9 @@ export function grabRotate(grab: Grab, cursor: { x: number; y: number }): Pose {
   const eye = about(yawedEye, right, pitch);
   const target = about(yawedTarget, right, pitch);
 
-  // Put the grabbed point back under the cursor. Measured as a *change* from where it sat when the
-  // drag began, not against the cursor outright: the raycast point is only as exact as the pixel it
-  // came from, and assuming it is dead under the cursor puts a jump in the first frame of every drag.
-  const held = { x: grab.cursor.x + dx, y: grab.cursor.y + dy };
-  const under = pointUnderCursor({ eye, target }, held, grab.viewport, grab.fovDegrees, grab.pivot);
-  const under0 = pointUnderCursor(grab.pose, grab.cursor, grab.viewport, grab.fovDegrees, grab.pivot);
-  const shift: Vec3 = [under0[0] - under[0], under0[1] - under[1], under0[2] - under[2]];
-  return {
-    eye: [eye[0] + shift[0], eye[1] + shift[1], eye[2] + shift[2]],
-    target: [target[0] + shift[0], target[1] + shift[1], target[2] + shift[2]],
-  };
+  // No translation on top. A rigid rotation of the camera about the pivot already leaves the pivot at
+  // exactly the same place on screen, so the building turns in place instead of wandering off-frame.
+  return { eye, target };
 }
 
 /** Rodrigues rotation of a vector about a unit axis. */

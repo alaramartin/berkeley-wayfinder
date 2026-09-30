@@ -263,14 +263,18 @@ function CameraRig({
     const element = gl.domElement;
     const raycaster = new THREE.Raycaster();
 
-    const pivotAt = (event: PointerEvent): Vec3 => {
-      const rect = element.getBoundingClientRect();
-      const ndc = new THREE.Vector2(((event.clientX - rect.left) / rect.width) * 2 - 1, -(((event.clientY - rect.top) / rect.height) * 2 - 1));
-      raycaster.setFromCamera(ndc, camera);
+    /**
+     * What the drag turns about: whatever sits in the middle of the view.
+     *
+     * Turning about the exact spot the user grabbed reads as more physical, but it makes the building
+     * swing off screen — grab a corner room and half a turn takes the rest of the building with it.
+     * Pivoting on the centre of the view keeps whatever you are looking at where it is.
+     */
+    const pivotAtCentre = (): Vec3 => {
+      raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
       const hit = raycaster.intersectObjects(scene.children, true).find((h) => h.object.visible);
       if (hit) return [hit.point.x, hit.point.y, hit.point.z];
-      const pose = poseNow();
-      return pose.target;
+      return poseNow().target;
     };
 
     const onPointerDown = (event: PointerEvent) => {
@@ -278,7 +282,7 @@ function CameraRig({
       const rect = element.getBoundingClientRect();
       grab.current = {
         pose: poseNow(),
-        pivot: pivotAt(event),
+        pivot: pivotAtCentre(),
         cursor: { x: event.clientX - rect.left, y: event.clientY - rect.top },
         viewport: { width: rect.width, height: rect.height },
         fovDegrees: (camera as THREE.PerspectiveCamera).fov ?? 45,
