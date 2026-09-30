@@ -8,7 +8,7 @@ import type { Vec3 } from "./scene";
 import { boundsOf, cameraFor, contrastRatio, labelColor, legendEntries, levelHeights, planToShape, routePoints, shapeToScene, toScene, CATEGORY_COLOR } from "./scene";
 import { interiorPoint, pointInPolygon } from "@wf/geometry";
 import { route } from "@wf/routing";
-import { type Grab, type Pose, grabRotate, projectToScreen, stepPose } from "./camera";
+import { type Grab, type Pose, grabRotate, pivotFor, projectToScreen, stepPose } from "./camera";
 import { createWheelRouter } from "./input";
 import { alphaAt, locateStep, routeGeometry } from "./route-geometry";
 import { RIBBON_WIDTH_M, buildRibbonMesh, ribbonWidths } from "./ribbon-mesh";
@@ -311,6 +311,22 @@ describe("grab and turn", () => {
       const pose = grabRotate(grab, { x: grab.cursor.x, y: grab.cursor.y + dy });
       expect(pose.eye[1]).toBeGreaterThan(pose.target[1]);
     }
+  });
+
+  it("turns about the model when looking at it, and about what is ahead when zoomed in", () => {
+    const centre: Vec3 = [0, 0, 0];
+    const radius = 40;
+
+    // Zoomed out, looking at the building: the pivot is the building itself, so it spins in place.
+    const far = pivotFor({ eye: [80, 60, 80], target: centre }, centre, radius);
+    expect(Math.hypot(far[0] - centre[0], far[1] - centre[1], far[2] - centre[2])).toBeLessThan(1);
+
+    // Down in a corridor looking away from the middle: turning about the centre 60 m behind would
+    // sweep the camera off the route, so the pivot sits just ahead instead.
+    const inside = pivotFor({ eye: [30, 2, 30], target: [42, 2, 42] }, centre, radius);
+    const fromEye = Math.hypot(inside[0] - 30, inside[1] - 2, inside[2] - 30);
+    expect(fromEye).toBeGreaterThan(0);
+    expect(fromEye).toBeLessThan(20);
   });
 
   it("does nothing when the cursor has not moved", () => {

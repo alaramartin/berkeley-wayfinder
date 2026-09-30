@@ -10,7 +10,7 @@ import type { Level, Point, Room } from "@wf/schema";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { BuildingData } from "@/lib/data";
-import { type Grab, type Pose, grabRotate, lerpPose, overviewPose, stepPose } from "@/lib/camera";
+import { type Grab, type Pose, grabRotate, lerpPose, overviewPose, pivotFor, stepPose } from "@/lib/camera";
 import { type PointerDevice, createWheelRouter } from "@/lib/input";
 import { type LevelRibbon, type RouteGeometry, locateStep } from "@/lib/route-geometry";
 import { CATEGORY_COLOR, EXPLODE_GAP_M, ROOM_HEIGHT, SLAB_THICKNESS, type Vec3, boundsOf, labelColor, levelHeights, planToShape, toScene } from "@/lib/scene";
@@ -219,10 +219,10 @@ function RouteMarkers({ ribbon, isStart, isEnd }: { ribbon: LevelRibbon; isStart
 /**
  * Camera control.
  *
- * Dragging grabs the building: the point under the cursor becomes the pivot and stays under the
- * cursor while the model turns. Stock orbiting spins around whatever the last camera flight left as
- * the target — usually a point ten metres ahead of the walker and off-screen — which is what made
- * this feel broken. Two fingers slide, pinch and the wheel zoom.
+ * Dragging turns the building on the spot, about its own centre, like a model on a turntable. Stock
+ * orbiting spins around whatever the last camera flight left as the target — usually a point ten
+ * metres ahead of the walker and off-screen — which is what made this feel broken. Two fingers slide,
+ * pinch and the wheel zoom.
  *
  * Framing still only happens through an explicit flight, never as a side effect of state changing.
  */
@@ -232,12 +232,16 @@ function CameraRig({
   onTakeover,
   device,
   onZoomApi,
+  modelCentre,
+  modelRadius,
 }: {
   flight: Flight | null;
   maxDistance: number;
   onTakeover: () => void;
   device: PointerDevice;
   onZoomApi: (zoom: (factor: number) => void) => void;
+  modelCentre: Vec3;
+  modelRadius: number;
 }) {
   const { camera, gl, scene, size } = useThree();
   const controls = useRef<React.ComponentRef<typeof OrbitControls>>(null);
@@ -261,28 +265,15 @@ function CameraRig({
   // Grab: the point under the cursor is the pivot, so the model turns about what you are holding.
   useEffect(() => {
     const element = gl.domElement;
-    const raycaster = new THREE.Raycaster();
 
-    /**
-     * What the drag turns about: whatever sits in the middle of the view.
-     *
-     * Turning about the exact spot the user grabbed reads as more physical, but it makes the building
-     * swing off screen — grab a corner room and half a turn takes the rest of the building with it.
-     * Pivoting on the centre of the view keeps whatever you are looking at where it is.
-     */
-    const pivotAtCentre = (): Vec3 => {
-      raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-      const hit = raycaster.intersectObjects(scene.children, true).find((h) => h.object.visible);
-      if (hit) return [hit.point.x, hit.point.y, hit.point.z];
-      return poseNow().target;
-    };
 
     const onPointerDown = (event: PointerEvent) => {
       if (event.button !== 0) return;
       const rect = element.getBoundingClientRect();
+      const pose = poseNow();
       grab.current = {
-        pose: poseNow(),
-        pivot: pivotAtCentre(),
+        pose,
+        pivot: pivotFor(pose, modelCentre, modelRadius),
         cursor: { x: event.clientX - rect.left, y: event.clientY - rect.top },
         viewport: { width: rect.width, height: rect.height },
         fovDegrees: (camera as THREE.PerspectiveCamera).fov ?? 45,
@@ -334,7 +325,7 @@ function CameraRig({
       window.removeEventListener("pointerup", onPointerUp);
       element.removeEventListener("wheel", onWheel, { capture: true } as EventListenerOptions);
     };
-  }, [camera, gl, scene, size.height, poseNow, router, takeover]);
+  }, [camera, gl, size.height, poseNow, router, takeover, modelCentre, modelRadius]);
 
   useEffect(() => {
     const c = controls.current as unknown as { addEventListener: (e: string, f: () => void) => void; removeEventListener: (e: string, f: () => void) => void } | null;
@@ -572,7 +563,15 @@ export function Scene({
           exploded={view === "exploded"}
         />
       ))}
-      <CameraRig flight={flight} maxDistance={buildingBounds.radius * 4} onTakeover={onTakeover} device={device} onZoomApi={onZoomApi} />
+      <CameraRig
+        flight={flight}
+        maxDistance={buildingBounds.radius * 4}
+        onTakeover={onTakeover}
+        device={device}
+        onZoomApi={onZoomApi}
+        modelCentre={buildingBounds.center}
+        modelRadius={buildingBounds.radius}
+      />
     </Canvas>
   );
 }

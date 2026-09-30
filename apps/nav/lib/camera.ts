@@ -52,6 +52,26 @@ export function stepPose(ribbon: LevelRibbon, pointIndex: number, levelY: number
   };
 }
 
+/**
+ * What a drag should turn about.
+ *
+ * Zoomed out, that is the middle of the building: it spins on the spot like a model on a turntable.
+ * Zoomed into a corridor the building's centre can be tens of metres away and off to one side, and
+ * turning about it sweeps the camera off the route entirely — so the pivot slides up the view axis to
+ * something you are actually looking at. Taking the building's centre *along the view direction*
+ * gives both, with no jump between them.
+ */
+export function pivotFor(pose: Pose, modelCentre: Vec3, modelRadius: number): Vec3 {
+  const forward = normalize([pose.target[0] - pose.eye[0], pose.target[1] - pose.eye[1], pose.target[2] - pose.eye[2]]);
+  const toCentre: Vec3 = [modelCentre[0] - pose.eye[0], modelCentre[1] - pose.eye[1], modelCentre[2] - pose.eye[2]];
+  const ahead = dot(toCentre, forward);
+  const toTarget = Math.hypot(pose.target[0] - pose.eye[0], pose.target[1] - pose.eye[1], pose.target[2] - pose.eye[2]);
+  // Never behind the camera, never further than the centre itself, and never so close that a small
+  // drag spins the world around your nose.
+  const distance = Math.min(Math.max(ahead, Math.min(toTarget, modelRadius * 0.25)), Math.hypot(toCentre[0], toCentre[1], toCentre[2]));
+  return [pose.eye[0] + forward[0] * distance, pose.eye[1] + forward[1] * distance, pose.eye[2] + forward[2] * distance];
+}
+
 export function easeInOutCubic(t: number): number {
   const c = Math.min(1, Math.max(0, t));
   return c < 0.5 ? 4 * c * c * c : 1 - (-2 * c + 2) ** 3 / 2;
@@ -67,9 +87,12 @@ export function lerpPose(from: Pose, to: Pose, t: number): Pose {
 export interface Grab {
   pose: Pose;
   /**
-   * What the camera turns about: the point under the middle of the view when the drag began.
-   * Turning about the spot the user grabbed is geometrically honest but unusable — grab a corner of
-   * the building and a half-turn swings everything else off the screen.
+   * What the camera turns about: the middle of the building.
+   *
+   * Turning about the spot the user grabbed is geometrically honest but unusable — grab a corner and
+   * a half-turn swings everything else off screen. Turning about whatever the view happens to be
+   * centred on has the same problem one step removed, because that point is rarely the model's
+   * middle. The building's own centre is the only pivot that keeps it on the turntable.
    */
   pivot: Vec3;
   cursor: { x: number; y: number };
