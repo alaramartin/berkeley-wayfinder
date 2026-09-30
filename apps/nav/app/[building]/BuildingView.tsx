@@ -6,6 +6,8 @@ import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Legend } from "@/components/Legend";
+import { ViewControls } from "@/components/ViewControls";
+import type { PointerDevice } from "@/lib/input";
 import { RoutePanel } from "@/components/RoutePanel";
 import { routeGeometry } from "@/lib/route-geometry";
 import { type BuildingData, loadBuilding } from "@/lib/data";
@@ -87,6 +89,13 @@ export function BuildingView({ buildingId }: { buildingId: string }) {
    * state, not URL state — a shared link should open on the overview, not mid-flight.
    */
   const [guide, setGuide] = useState<"off" | "overview" | "flying" | "following" | "manual">("off");
+  const [device, setDevice] = useState<PointerDevice>("auto");
+  const zoomApi = useRef<((factor: number) => void) | null>(null);
+  // Hooks must not live in the JSX below: it renders after the loading early-returns, so a hook
+  // there changes the hook count between renders.
+  const receiveZoomApi = useCallback((zoom: (factor: number) => void) => {
+    zoomApi.current = zoom;
+  }, []);
   const [stepIndex, setStepIndex] = useState(0);
   const [flightRequest, setFlightRequest] = useState<{ kind: "overview" | "step"; step: number; ms: number; key: number; immediate?: boolean } | null>(null);
   const flightKey = useRef(0);
@@ -191,6 +200,18 @@ export function BuildingView({ buildingId }: { buildingId: string }) {
           onTakeover={() => setGuide((g) => (g === "off" ? g : "manual"))}
           focusLevel={state.level}
           onSelectLevel={(id) => update({ level: state.level === id ? null : id })}
+          device={device}
+          onZoomApi={receiveZoomApi}
+        />
+        <ViewControls
+          onZoomIn={() => zoomApi.current?.(0.75)}
+          onZoomOut={() => zoomApi.current?.(1.35)}
+          onOverview={() => {
+            setGuide("overview");
+            flyTo("overview", 0, 900);
+          }}
+          device={device}
+          onDevice={setDevice}
         />
         <Legend levels={data.levels} focusLevel={state.level} />
         {state.level && (

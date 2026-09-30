@@ -7,13 +7,15 @@ import { OrbitControls, Text } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { interiorPoint, orientedExtent } from "@wf/geometry";
 import type { Level, Point, Room } from "@wf/schema";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { BuildingData } from "@/lib/data";
-import { type Pose, lerpPose, overviewPose, stepPose } from "@/lib/camera";
+import { type Grab, type Pose, grabRotate, lerpPose, overviewPose, stepPose } from "@/lib/camera";
+import { type PointerDevice, createWheelRouter } from "@/lib/input";
 import { type LevelRibbon, type RouteGeometry, locateStep } from "@/lib/route-geometry";
 import { CATEGORY_COLOR, EXPLODE_GAP_M, ROOM_HEIGHT, SLAB_THICKNESS, type Vec3, boundsOf, labelColor, levelHeights, planToShape, toScene } from "@/lib/scene";
 import { RouteRibbon } from "./RouteRibbon";
+import { RouteTransition } from "./RouteTransition";
 import type { ViewMode } from "@/lib/url";
 
 /** Folds a level's axis into (-90, 90] so room numbers are never printed upside down. */
@@ -200,13 +202,13 @@ function RouteMarkers({ ribbon, isStart, isEnd }: { ribbon: LevelRibbon; isStart
     <>
       {isStart && first && (
         <mesh position={[first[0], first[1] + 0.5, first[2]]}>
-          <sphereGeometry args={[0.7, 16, 16]} />
+          <sphereGeometry args={[0.45, 16, 16]} />
           <meshStandardMaterial color="#16a34a" />
         </mesh>
       )}
       {isEnd && last && (
-        <mesh position={[last[0], last[1] + 1.3, last[2]]} rotation={[Math.PI, 0, 0]}>
-          <coneGeometry args={[0.8, 2, 16]} />
+        <mesh position={[last[0], last[1] + 1.0, last[2]]} rotation={[Math.PI, 0, 0]}>
+          <coneGeometry args={[0.5, 1.4, 16]} />
           <meshStandardMaterial color="#dc2626" />
         </mesh>
       )}
@@ -214,39 +216,142 @@ function RouteMarkers({ ribbon, isStart, isEnd }: { ribbon: LevelRibbon; isStart
   );
 }
 
-/** A marker where the route leaves one level for another. */
-function TransitionMarker({ at, up, kind }: { at: Point; up: boolean; kind: "stair" | "elevator" }) {
-  const [x, , z] = toScene(at, 0);
-  return (
-    <group position={[x, SLAB_THICKNESS + 0.1, z]}>
-      <mesh position={[0, 1.1, 0]} rotation={[up ? 0 : Math.PI, 0, 0]}>
-        <coneGeometry args={[0.35, 0.9, 12]} />
-        <meshStandardMaterial color={kind === "elevator" ? "#e0a458" : "#4f9d69"} />
-      </mesh>
-    </group>
-  );
-}
-
 /**
- * Camera control. Framing only ever happens through an explicit flight, never as a side effect of
- * state changing, which is what used to yank the camera back to one fixed spot on every zoom.
+ * Camera control.
+ *
+ * Dragging grabs the building: the point under the cursor becomes the pivot and stays under the
+ * cursor while the model turns. Stock orbiting spins around whatever the last camera flight left as
+ * the target — usually a point ten metres ahead of the walker and off-screen — which is what made
+ * this feel broken. Two fingers slide, pinch and the wheel zoom.
+ *
+ * Framing still only happens through an explicit flight, never as a side effect of state changing.
  */
-function CameraRig({ flight, maxDistance, onTakeover }: { flight: Flight | null; maxDistance: number; onTakeover: () => void }) {
-  const { camera } = useThree();
+function CameraRig({
+  flight,
+  maxDistance,
+  onTakeover,
+  device,
+  onZoomApi,
+}: {
+  flight: Flight | null;
+  maxDistance: number;
+  onTakeover: () => void;
+  device: PointerDevice;
+  onZoomApi: (zoom: (factor: number) => void) => void;
+}) {
+  const { camera, gl, scene, size } = useThree();
   const controls = useRef<React.ComponentRef<typeof OrbitControls>>(null);
   const active = useRef<{ flight: Flight; from: Pose; started: number } | null>(null);
+  const grab = useRef<Grab | null>(null);
+  const router = useMemo(() => createWheelRouter(device), [device]);
+
+  const poseNow = useCallback((): Pose => {
+    const c = controls.current as unknown as { target: THREE.Vector3 } | null;
+    return {
+      eye: [camera.position.x, camera.position.y, camera.position.z],
+      target: c ? [c.target.x, c.target.y, c.target.z] : [0, 0, 0],
+    };
+  }, [camera]);
+
+  const takeover = useCallback(() => {
+    active.current = null;
+    onTakeover();
+  }, [onTakeover]);
+
+  // Grab: the point under the cursor is the pivot, so the model turns about what you are holding.
+  useEffect(() => {
+    const element = gl.domElement;
+    const raycaster = new THREE.Raycaster();
+
+    const pivotAt = (event: PointerEvent): Vec3 => {
+      const rect = element.getBoundingClientRect();
+      const ndc = new THREE.Vector2(((event.clientX - rect.left) / rect.width) * 2 - 1, -(((event.clientY - rect.top) / rect.height) * 2 - 1));
+      raycaster.setFromCamera(ndc, camera);
+      const hit = raycaster.intersectObjects(scene.children, true).find((h) => h.object.visible);
+      if (hit) return [hit.point.x, hit.point.y, hit.point.z];
+      const pose = poseNow();
+      return pose.target;
+    };
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.button !== 0) return;
+      const rect = element.getBoundingClientRect();
+      grab.current = {
+        pose: poseNow(),
+        pivot: pivotAt(event),
+        cursor: { x: event.clientX - rect.left, y: event.clientY - rect.top },
+        viewport: { width: rect.width, height: rect.height },
+        fovDegrees: (camera as THREE.PerspectiveCamera).fov ?? 45,
+      };
+      element.style.cursor = "grabbing";
+      takeover();
+    };
+
+    const onPointerMove = (event: PointerEvent) => {
+      const held = grab.current;
+      if (!held) return;
+      const rect = element.getBoundingClientRect();
+      apply(camera, controls.current, grabRotate(held, { x: event.clientX - rect.left, y: event.clientY - rect.top }));
+    };
+
+    const onPointerUp = () => {
+      grab.current = null;
+      element.style.cursor = "grab";
+    };
+
+    const onWheel = (event: WheelEvent) => {
+      const intent = router.route(event);
+      takeover();
+      if (intent.kind === "zoom") return; // OrbitControls' own handler dollies, with zoom-to-cursor.
+      // A trackpad swipe slides the model; stop the controls from dollying on the same event.
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const c = controls.current as unknown as { target: THREE.Vector3; update: () => void } | null;
+      if (!c) return;
+      const pose = poseNow();
+      const distance = Math.hypot(pose.eye[0] - pose.target[0], pose.eye[1] - pose.target[1], pose.eye[2] - pose.target[2]);
+      const metresPerPixel = (2 * Math.tan((((camera as THREE.PerspectiveCamera).fov ?? 45) * Math.PI) / 360) * distance) / Math.max(1, size.height);
+      const forward = new THREE.Vector3(pose.target[0] - pose.eye[0], 0, pose.target[2] - pose.eye[2]).normalize();
+      const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize().multiplyScalar(-1);
+      const shift = right.multiplyScalar(intent.dx * metresPerPixel).add(forward.multiplyScalar(-intent.dy * metresPerPixel));
+      camera.position.add(shift);
+      c.target.add(shift);
+      c.update();
+    };
+
+    element.style.cursor = "grab";
+    element.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    element.addEventListener("wheel", onWheel, { capture: true, passive: false });
+    return () => {
+      element.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      element.removeEventListener("wheel", onWheel, { capture: true } as EventListenerOptions);
+    };
+  }, [camera, gl, scene, size.height, poseNow, router, takeover]);
 
   useEffect(() => {
     const c = controls.current as unknown as { addEventListener: (e: string, f: () => void) => void; removeEventListener: (e: string, f: () => void) => void } | null;
     if (!c) return;
-    // The controls' own "start" fires on drag and wheel, and never on a step tap.
-    const onStart = () => {
-      if (active.current) active.current = null;
-      onTakeover();
-    };
-    c.addEventListener("start", onStart);
-    return () => c.removeEventListener("start", onStart);
-  }, [onTakeover]);
+    c.addEventListener("start", takeover);
+    return () => c.removeEventListener("start", takeover);
+  }, [takeover]);
+
+  // The on-screen buttons zoom without a gesture, whichever device the router guessed.
+  useEffect(() => {
+    onZoomApi((factor: number) => {
+      const c = controls.current as unknown as { target: THREE.Vector3; update: () => void } | null;
+      if (!c) return;
+      takeover();
+      const target = new THREE.Vector3(c.target.x, c.target.y, c.target.z);
+      const offset = camera.position.clone().sub(target);
+      const distance = Math.min(maxDistance, Math.max(2, offset.length() * factor));
+      camera.position.copy(target).add(offset.setLength(distance));
+      c.update();
+    });
+  }, [camera, maxDistance, onZoomApi, takeover]);
 
   // Queued rather than applied here: on the very first render OrbitControls has not mounted yet, and
   // moving the camera before it exists leaves the controls pointing at the origin.
@@ -259,11 +364,7 @@ function CameraRig({ flight, maxDistance, onTakeover }: { flight: Flight | null;
     const next = queued.current;
     if (next && controls.current) {
       queued.current = null;
-      const c = controls.current as unknown as { target: THREE.Vector3 };
-      const from: Pose = {
-        eye: [camera.position.x, camera.position.y, camera.position.z],
-        target: [c.target.x, c.target.y, c.target.z],
-      };
+      const from = poseNow();
       if (next.immediate) {
         apply(camera, controls.current, next.to);
         active.current = null;
@@ -287,14 +388,16 @@ function CameraRig({ flight, maxDistance, onTakeover }: { flight: Flight | null;
     <OrbitControls
       ref={controls}
       makeDefault
+      enableRotate={false}
       enablePan
-      enableDamping
-      dampingFactor={0.12}
+      enableDamping={false}
       minDistance={2}
       maxDistance={maxDistance}
       zoomToCursor
       screenSpacePanning
       maxPolarAngle={Math.PI / 2.05}
+      mouseButtons={{ LEFT: -1 as THREE.MOUSE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN }}
+      touches={{ ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE }}
     />
   );
 }
@@ -333,6 +436,9 @@ export interface SceneProps {
   onTakeover: () => void;
   focusLevel: string | null;
   onSelectLevel: (levelId: string) => void;
+  /** Overrides the trackpad/mouse guess when the user tells us which they have. */
+  device: PointerDevice;
+  onZoomApi: (zoom: (factor: number) => void) => void;
 }
 
 export function Scene({
@@ -346,6 +452,8 @@ export function Scene({
   onTakeover,
   focusLevel,
   onSelectLevel,
+  device,
+  onZoomApi,
 }: SceneProps) {
   const heights = useMemo(() => levelHeights(data.building, data.levels, view), [data, view]);
   const { size } = useThreeSafe();
@@ -448,21 +556,19 @@ export function Scene({
               <RouteMarkers ribbon={ribbon} isStart={ribbon === geometry?.ribbons[0]} isEnd={ribbon === lastRibbon} />
             </group>
           ))}
-          {view === "exploded" &&
-            !dimmed(level.id) &&
-            (geometry?.transitions ?? [])
-              .filter((t) => t.fromLevelId === level.id)
-              .map((t) => (
-                <TransitionMarker
-                  key={`${t.stepIndex}-${t.fromLevelId}`}
-                  at={t.at}
-                  up={(order.get(t.toLevelId) ?? 0) > (order.get(t.fromLevelId) ?? 0)}
-                  kind={t.kind}
-                />
-              ))}
         </LevelMesh>
       ))}
-      <CameraRig flight={flight} maxDistance={buildingBounds.radius * 4} onTakeover={onTakeover} />
+      {(geometry?.risers ?? []).map((riser) => (
+        <RouteTransition
+          key={`${riser.stepIndex}-${riser.fromLevelId}`}
+          transition={riser}
+          fromY={heights.get(riser.fromLevelId) ?? 0}
+          toY={heights.get(riser.toLevelId) ?? 0}
+          levelName={data.levels.find((l) => l.id === riser.toLevelId)?.displayName ?? riser.toLevelId}
+          exploded={view === "exploded"}
+        />
+      ))}
+      <CameraRig flight={flight} maxDistance={buildingBounds.radius * 4} onTakeover={onTakeover} device={device} onZoomApi={onZoomApi} />
     </Canvas>
   );
 }

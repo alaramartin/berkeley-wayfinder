@@ -4,11 +4,14 @@ import path from "node:path";
 import { buildGraph } from "@wf/routing";
 import { describe, expect, it } from "vitest";
 import type { BuildingData } from "./data";
+import type { Vec3 } from "./scene";
 import { boundsOf, cameraFor, contrastRatio, labelColor, legendEntries, levelHeights, planToShape, routePoints, shapeToScene, toScene, CATEGORY_COLOR } from "./scene";
 import { interiorPoint, pointInPolygon } from "@wf/geometry";
 import { route } from "@wf/routing";
-import { stepPose } from "./camera";
+import { type Grab, grabRotate, projectToScreen, stepPose } from "./camera";
+import { createWheelRouter } from "./input";
 import { alphaAt, locateStep, routeGeometry } from "./route-geometry";
+import { RIBBON_WIDTH_M, buildRibbonMesh, ribbonWidths } from "./ribbon-mesh";
 import { buildIndex, search } from "./search";
 import { DEFAULT_STATE, readState, writeState } from "./url";
 
@@ -138,11 +141,17 @@ describe("route geometry", () => {
     expect(totalPoints).toBeGreaterThan(found.route.nodes.length / 2);
     expect(geometry.transitions.length).toBeGreaterThan(0);
 
-    // The last point sits inside room 315 rather than out at its door.
+    // The last point sits a short step past the arrival door, not out on the corridor and not away
+    // across the room at its centre. (Doors are still unverified field data, so some sit further from
+    // their room's outline than the drawn stub reaches — hence distance to the door, not containment.)
     const last = geometry.ribbons[geometry.ribbons.length - 1]!;
     const end = last.points[last.points.length - 1]!;
     const room = data.graph.rooms.get("wheeler-L3-r315")!;
-    expect(pointInPolygon([end[0], -end[2]], room.polygon)).toBe(true);
+    const doorNodes = (data.graph.roomDoors.get(room.id) ?? []).map((id) => data.graph.nodes.get(id)!);
+    const toNearestDoor = Math.min(...doorNodes.map((d) => Math.hypot(end[0] - d.x, -end[2] - d.y)));
+    expect(toNearestDoor).toBeLessThan(2.5);
+    const centre = interiorPoint(room.polygon);
+    expect(Math.hypot(end[0] - centre[0], -end[2] - centre[1])).toBeGreaterThan(2.5);
   });
 
   it("frames a step from behind, looking the way you walk", async () => {
@@ -169,6 +178,190 @@ describe("route geometry", () => {
     expect(alphaAt(5, 20)).toBeLessThan(0.3);
     expect(alphaAt(25, 20)).toBeGreaterThan(0.8);
     expect(alphaAt(70, 20)).toBeLessThan(0.2);
+  });
+});
+
+describe("ribbon mesh", () => {
+  it("keeps its width at every corner, including hairpins and both ends", () => {
+    // The old builder offset along a central difference with a miter up to 3x, so a hairpin came out
+    // 3.3 m wide and both ends 1.56 m wide, which is what made the route look like a carpet.
+    const path: Vec3[] = [
+      [0, 0, 0],
+      [10, 0, 0],
+      [10, 0, 6],
+      [10.2, 0, 0.2],
+      [20, 0, 0],
+    ];
+    const distances = [0, 10, 16, 22, 32];
+    const widths = ribbonWidths(buildRibbonMesh(path, distances));
+    for (const w of widths) {
+      expect(w).toBeGreaterThan(RIBBON_WIDTH_M * 0.95);
+      expect(w).toBeLessThan(RIBBON_WIDTH_M * 1.65);
+    }
+  });
+
+  it("draws a real ribbon for a real route, without carpets", async () => {
+    const data = await wheeler();
+    const found = route(data.graph, { type: "room", id: "wheeler-L1-r120" }, { type: "room", id: "wheeler-L3-r315" });
+    expect(found.ok).toBe(true);
+    if (!found.ok) return;
+    const geometry = routeGeometry(found.route);
+    for (const ribbon of geometry.ribbons) {
+      const widths = ribbonWidths(buildRibbonMesh(ribbon.points, ribbon.distances));
+      expect(Math.max(...widths)).toBeLessThan(1.4);
+      expect(Math.min(...widths)).toBeGreaterThan(0.7);
+    }
+  });
+});
+
+describe("route drawing stops at the doorway", () => {
+  it("does not drive the ribbon across the room to its centre", async () => {
+    const data = await wheeler();
+    const found = route(data.graph, { type: "room", id: "wheeler-L1-r120" }, { type: "room", id: "wheeler-L3-r315" });
+    expect(found.ok).toBe(true);
+    if (!found.ok) return;
+    const geometry = routeGeometry(found.route);
+
+    // The room node sits in the middle of the room: the hop is 8.3 m across 120 and 9.7 m across 315.
+    // Drawing those hops was what put a wide orange carpet through both rooms.
+    const points = geometry.ribbons.flatMap((r) => r.points);
+    for (const id of ["wheeler-L1-r120", "wheeler-L3-r315"]) {
+      const room = data.graph.rooms.get(id)!;
+      const centre = interiorPoint(room.polygon);
+      const nearest = Math.min(...points.map((p) => Math.hypot(p[0] - centre[0], -p[2] - centre[1])));
+      expect(nearest).toBeGreaterThan(2.5);
+    }
+
+    // The drawn path and the quoted distance now agree.
+    const drawn = geometry.ribbons.reduce((total, r) => total + (r.distances[r.distances.length - 1] ?? 0), 0);
+    expect(Math.abs(drawn - geometry.meters)).toBeLessThan(1.5);
+  });
+});
+
+describe("floor changes", () => {
+  it("collapses a shaft that passes through a floor into one riser", async () => {
+    const data = await wheeler();
+    const found = route(data.graph, { type: "room", id: "wheeler-L1-r120" }, { type: "room", id: "wheeler-L3-r315" });
+    expect(found.ok).toBe(true);
+    if (!found.ok) return;
+    const geometry = routeGeometry(found.route);
+
+    // The shaft chains L1 -> L2 -> L3, so the route has two transitions; the step list says
+    // "up to Level 3" once and the scene must agree.
+    expect(geometry.transitions.length).toBe(2);
+    expect(geometry.risers.length).toBe(1);
+    const riser = geometry.risers[0]!;
+    expect(riser.fromLevelId).toBe("L1");
+    expect(riser.toLevelId).toBe("L3");
+    expect(riser.kind).toBe("stair");
+  });
+
+  it("bridges every gap between ribbons", async () => {
+    const data = await wheeler();
+    const found = route(data.graph, { type: "room", id: "wheeler-B-r24" }, { type: "room", id: "wheeler-L4-r450" });
+    expect(found.ok).toBe(true);
+    if (!found.ok) return;
+    const geometry = routeGeometry(found.route);
+    // A break between two ribbons only happens at a floor change, so each one needs a riser.
+    expect(geometry.risers.length).toBeGreaterThanOrEqual(1);
+    expect(geometry.ribbons.length - 1).toBeLessThanOrEqual(geometry.transitions.length);
+    for (const riser of geometry.risers) expect(riser.fromLevelId).not.toBe(riser.toLevelId);
+  });
+});
+
+describe("grab and turn", () => {
+  const viewport = { width: 1200, height: 800 };
+  const grab: Grab = {
+    pose: { eye: [40, 30, 40], target: [0, 0, 0] },
+    pivot: [0, 0, 0],
+    cursor: { x: 600, y: 400 },
+    viewport,
+    fovDegrees: 45,
+  };
+
+  it("keeps the grabbed point under the cursor", () => {
+    for (const [dx, dy] of [
+      [120, 0],
+      [-200, 40],
+      [0, 90],
+      [-340, -120],
+      [500, 60],
+    ]) {
+      const cursor = { x: grab.cursor.x + dx!, y: grab.cursor.y + dy! };
+      const pose = grabRotate(grab, cursor);
+      const back = projectToScreen(pose, grab.pivot, viewport, grab.fovDegrees);
+      expect(Math.hypot(back.x - cursor.x, back.y - cursor.y)).toBeLessThan(2);
+    }
+  });
+
+  it("turns the model with the drag and keeps the tilt sane", () => {
+    const right = grabRotate(grab, { x: grab.cursor.x + 150, y: grab.cursor.y });
+    const left = grabRotate(grab, { x: grab.cursor.x - 150, y: grab.cursor.y });
+    // Opposite drags turn the camera opposite ways around the pivot.
+    expect(Math.sign(right.eye[0] - grab.pose.eye[0])).not.toBe(Math.sign(left.eye[0] - grab.pose.eye[0]));
+
+    // Dragging far up or down never flips the model over: the camera stays above the pivot and the
+    // view keeps pointing down at it.
+    for (const dy of [-5000, 5000]) {
+      const pose = grabRotate(grab, { x: grab.cursor.x, y: grab.cursor.y + dy });
+      expect(pose.eye[1]).toBeGreaterThan(pose.target[1]);
+    }
+  });
+
+  it("does nothing when the cursor has not moved", () => {
+    const pose = grabRotate(grab, grab.cursor);
+    for (let i = 0; i < 3; i++) {
+      expect(pose.eye[i]).toBeCloseTo(grab.pose.eye[i]!, 6);
+      expect(pose.target[i]).toBeCloseTo(grab.pose.target[i]!, 6);
+    }
+  });
+});
+
+describe("telling a trackpad from a mouse", () => {
+  const wheel = (over: Partial<Parameters<ReturnType<typeof createWheelRouter>["route"]>[0]>, at = 0) => ({
+    deltaX: 0,
+    deltaY: 0,
+    deltaMode: 0,
+    ctrlKey: false,
+    shiftKey: false,
+    metaKey: false,
+    timeStamp: at,
+    ...over,
+  });
+
+  it("keeps zoom working for a mouse, forever", () => {
+    // The failure that matters: mapping plain wheels to panning would leave a mouse with no zoom.
+    const router = createWheelRouter();
+    for (let i = 0; i < 50; i++) {
+      const intent = router.route(wheel({ deltaY: i % 2 ? 100 : -120 }, i * 30));
+      expect(intent.kind).toBe("zoom");
+    }
+    expect(router.device()).not.toBe("trackpad");
+  });
+
+  it("switches to panning once a trackpad gives itself away", () => {
+    const router = createWheelRouter();
+    expect(router.route(wheel({ deltaY: 2.5 }, 0)).kind).toBe("pan");
+    expect(router.route(wheel({ deltaY: 4, deltaX: -1 }, 16)).kind).toBe("pan");
+    expect(router.device()).toBe("trackpad");
+  });
+
+  it("treats a pinch as zoom without mistaking it for a trackpad swipe", () => {
+    const router = createWheelRouter();
+    expect(router.route(wheel({ deltaY: -2.5, ctrlKey: true }, 0)).kind).toBe("zoom");
+    // A pinch must not latch the router, or a mouse plugged in later would pan instead of zoom.
+    expect(router.route(wheel({ deltaY: 120 }, 100)).kind).toBe("zoom");
+  });
+
+  it("honours an explicit device choice", () => {
+    expect(createWheelRouter("mouse").route(wheel({ deltaY: 1.5, deltaX: 0.2 })).kind).toBe("zoom");
+    expect(createWheelRouter("trackpad").route(wheel({ deltaY: 120 })).kind).toBe("pan");
+  });
+
+  it("does not latch on a shift-wheel, which mice send sideways", () => {
+    const router = createWheelRouter();
+    expect(router.route(wheel({ deltaX: 120, deltaY: 0, shiftKey: true })).kind).toBe("zoom");
+    expect(router.device()).not.toBe("trackpad");
   });
 });
 

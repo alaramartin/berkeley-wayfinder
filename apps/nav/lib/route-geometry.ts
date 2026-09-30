@@ -28,14 +28,93 @@ export interface Transition {
   stepIndex: number;
 }
 
+/** One or more flights in the same shaft, shown as a single "up to Level 3". */
+export interface MergedTransition {
+  kind: "stair" | "elevator";
+  fromLevelId: string;
+  toLevelId: string;
+  at: Point;
+  to: Point;
+  stepIndex: number;
+}
+
 export interface RouteGeometry {
   ribbons: LevelRibbon[];
   transitions: Transition[];
+  /** Transitions collapsed per shaft; what the scene draws and the step list describes. */
+  risers: MergedTransition[];
   /** Total metres, matching the route's own figure. */
   meters: number;
 }
 
 const near = (a: Point, b: Point, tolerance = 0.01) => Math.hypot(a[0] - b[0], a[1] - b[1]) < tolerance;
+
+/** How far the ribbon reaches past the doorway. Doors sit on the corridor centreline, roughly a metre
+ * outside the room wall, so a shorter stub never actually gets inside the room. */
+const DOORWAY_STUB_M = 2.2;
+/** Points closer together than this only make the ribbon's corners fold; they add nothing to draw. */
+const MIN_SPACING_M = 0.35;
+
+/** The stretch of a polyline within `meters` of one end. */
+function trim(line: Point[], meters: number, fromStart: boolean): Point[] {
+  const ordered = fromStart ? line : [...line].reverse();
+  const out: Point[] = [ordered[0]!];
+  let walked = 0;
+  for (let i = 1; i < ordered.length; i++) {
+    const a = ordered[i - 1]!;
+    const b = ordered[i]!;
+    const seg = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    if (walked + seg >= meters) {
+      const f = seg === 0 ? 0 : (meters - walked) / seg;
+      out.push([a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]);
+      break;
+    }
+    out.push(b);
+    walked += seg;
+  }
+  return fromStart ? out : out.reverse();
+}
+
+/**
+ * A room's node sits in the middle of the room, so the doorway step is a hop of up to 10 m across it.
+ * Routing needs that hop; drawing it at full width turns the ribbon into a carpet through the room, so
+ * only the stretch just inside the door is drawn.
+ */
+function doorwayStub(step: RouteStep, line: Point[]): Point[] {
+  const length = polylineLength(line);
+  if (length <= DOORWAY_STUB_M) return line;
+  // Keep the end nearest the door; when both ends are rooms (a room entered through another one),
+  // keep the arrival end.
+  const doorAtStart = step.from.kind === "door";
+  return trim(line, DOORWAY_STUB_M, doorAtStart);
+}
+
+function polylineLength(line: Point[]): number {
+  let total = 0;
+  for (let i = 1; i < line.length; i++) total += Math.hypot(line[i]![0] - line[i - 1]![0], line[i]![1] - line[i - 1]![1]);
+  return total;
+}
+
+/** Drop points that sit on top of each other, keeping the ends and every step boundary. */
+function thin(ribbon: LevelRibbon): LevelRibbon {
+  const keep = new Set<number>([0, ribbon.points.length - 1, ...ribbon.stepEnds.map((e) => e.pointIndex)]);
+  const indices: number[] = [];
+  let lastKept = -1;
+  for (let i = 0; i < ribbon.points.length; i++) {
+    const a = ribbon.distances[lastKept] ?? Number.NEGATIVE_INFINITY;
+    if (keep.has(i) || ribbon.distances[i]! - a >= MIN_SPACING_M) {
+      indices.push(i);
+      lastKept = i;
+    }
+  }
+  const remap = new Map(indices.map((old, next) => [old, next]));
+  return {
+    levelId: ribbon.levelId,
+    points: indices.map((i) => ribbon.points[i]!),
+    distances: indices.map((i) => ribbon.distances[i]!),
+    stepEnds: ribbon.stepEnds.map((e) => ({ stepIndex: e.stepIndex, pointIndex: remap.get(e.pointIndex) ?? 0 })),
+  };
+}
 
 /** A step's polyline, oriented from the step's `from` node to its `to` node. */
 function orientedPolyline(step: RouteStep): Point[] {
@@ -57,7 +136,7 @@ export function routeGeometry(route: Route): RouteGeometry {
   let meters = 0;
 
   const flush = () => {
-    if (current && plan.length >= 2) ribbons.push(current);
+    if (current && plan.length >= 2) ribbons.push(thin(current));
     current = null;
     plan = [];
   };
@@ -93,12 +172,35 @@ export function routeGeometry(route: Route): RouteGeometry {
       flush();
       return;
     }
-    for (const point of orientedPolyline(step)) push(step.to.levelId, point, stepIndex);
-    meters += step.edge.meters;
+    const line = orientedPolyline(step);
+    const drawn = step.edge.kind === "doorway" ? doorwayStub(step, line) : line;
+    for (const point of drawn) push(step.to.levelId, point, stepIndex);
+    // Doorway hops cost nothing to walk but are real metres on screen; counting them keeps the drawn
+    // length and the quoted distance in step.
+    meters += step.edge.kind === "doorway" ? polylineLength(drawn) : step.edge.meters;
   });
   flush();
 
-  return { ribbons, transitions, meters };
+  return { ribbons, transitions, risers: mergeTransitions(transitions), meters };
+}
+
+/**
+ * A shaft that passes through a floor without stopping produces one transition per flight (L1->L2,
+ * L2->L3). Drawing each one separately contradicts the step list, which says "up to Level 3" once.
+ */
+export function mergeTransitions(transitions: Transition[]): MergedTransition[] {
+  const out: MergedTransition[] = [];
+  for (const transition of transitions) {
+    const previous = out[out.length - 1];
+    const continues = previous && previous.kind === transition.kind && previous.toLevelId === transition.fromLevelId && transition.stepIndex === previous.stepIndex + 1;
+    if (continues && previous) {
+      previous.toLevelId = transition.toLevelId;
+      previous.to = transition.to;
+      continue;
+    }
+    out.push({ ...transition });
+  }
+  return out;
 }
 
 /** The ribbon and point index a route step ends at, for framing the camera on that step. */
