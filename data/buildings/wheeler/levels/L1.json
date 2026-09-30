@@ -1128,6 +1128,14 @@
       "y": 17.516,
       "kind": "stair",
       "verified": false
+    },
+    {
+      "id": "wheeler-L1-n037",
+      "levelId": "L1",
+      "x": 8.957,
+      "y": 26.644,
+      "kind": "junction",
+      "verified": false
     }
   ],
   "edges": [
@@ -1707,25 +1715,6 @@
       "verified": false
     },
     {
-      "id": "wheeler-L1-v02-link",
-      "a": "wheeler-L1-v02j",
-      "b": "wheeler-L1-v02",
-      "kind": "corridor",
-      "polyline": [
-        [
-          6.721,
-          29.564
-        ],
-        [
-          7.66,
-          26.425
-        ]
-      ],
-      "accessible": true,
-      "access": "open",
-      "verified": false
-    },
-    {
       "id": "wheeler-L1-e024b",
       "a": "wheeler-L1-v04j",
       "b": "wheeler-L1-n007",
@@ -2148,25 +2137,6 @@
       "verified": false
     },
     {
-      "id": "wheeler-L1-e036",
-      "a": "wheeler-L1-n007",
-      "b": "wheeler-L1-x02n",
-      "kind": "corridor",
-      "polyline": [
-        [
-          9.438,
-          23.796
-        ],
-        [
-          8.4,
-          29.944
-        ]
-      ],
-      "accessible": true,
-      "access": "open",
-      "verified": false
-    },
-    {
       "id": "wheeler-L1-e037",
       "a": "wheeler-L1-n036",
       "b": "wheeler-L1-v08",
@@ -2198,6 +2168,63 @@
         [
           -23.996,
           17.069
+        ]
+      ],
+      "accessible": true,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-L1-e039",
+      "a": "wheeler-L1-n007",
+      "b": "wheeler-L1-n037",
+      "kind": "corridor",
+      "polyline": [
+        [
+          9.438,
+          23.796
+        ],
+        [
+          8.957,
+          26.644
+        ]
+      ],
+      "accessible": true,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-L1-e040",
+      "a": "wheeler-L1-n037",
+      "b": "wheeler-L1-x02n",
+      "kind": "corridor",
+      "polyline": [
+        [
+          8.957,
+          26.644
+        ],
+        [
+          8.4,
+          29.944
+        ]
+      ],
+      "accessible": true,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-L1-e041",
+      "a": "wheeler-L1-v02",
+      "b": "wheeler-L1-n037",
+      "kind": "corridor",
+      "polyline": [
+        [
+          7.66,
+          26.425
+        ],
+        [
+          8.957,
+          26.644
         ]
       ],
       "accessible": true,

@@ -6,7 +6,7 @@
     2343
   ],
   "generatedAt": "2026-09-17T05:05:52+00:00",
-  "editedAt": "2026-09-24T08:59:41.130Z",
+  "editedAt": "2026-09-30T07:46:48.802Z",
   "pipelineVersion": "0.1.0",
   "outline": [
     [
@@ -1077,6 +1077,13 @@
       "y": 1252.7894287109375,
       "kind": "stair",
       "confidence": 1
+    },
+    {
+      "id": "wheeler-L1-n037",
+      "x": 1848.4832165899181,
+      "y": 574.478537750058,
+      "kind": "junction",
+      "confidence": 1
     }
   ],
   "edges": [
@@ -1614,23 +1621,6 @@
       "confidence": 0.8
     },
     {
-      "id": "wheeler-L1-v02-link",
-      "a": "wheeler-L1-v02j",
-      "b": "wheeler-L1-v02",
-      "kind": "corridor",
-      "polyline": [
-        [
-          1776,
-          600.2
-        ],
-        [
-          1844.5,
-          601.7
-        ]
-      ],
-      "confidence": 0.6
-    },
-    {
       "id": "wheeler-L1-e024b",
       "a": "wheeler-L1-v04j",
       "b": "wheeler-L1-n007",
@@ -2009,23 +1999,6 @@
       "confidence": 1
     },
     {
-      "id": "wheeler-L1-e036",
-      "a": "wheeler-L1-n007",
-      "b": "wheeler-L1-x02n",
-      "kind": "corridor",
-      "polyline": [
-        [
-          1908.254638671875,
-          583.2246704101562
-        ],
-        [
-          1779.21875,
-          564.3433227539062
-        ]
-      ],
-      "confidence": 1
-    },
-    {
       "id": "wheeler-L1-e037",
       "a": "wheeler-L1-n036",
       "b": "wheeler-L1-v08",
@@ -2055,6 +2028,57 @@
         [
           1827.1,
           1291.8
+        ]
+      ],
+      "confidence": 1
+    },
+    {
+      "id": "wheeler-L1-e039",
+      "a": "wheeler-L1-n007",
+      "b": "wheeler-L1-n037",
+      "kind": "corridor",
+      "polyline": [
+        [
+          1908.254638671875,
+          583.2246704101562
+        ],
+        [
+          1848.4832165899181,
+          574.478537750058
+        ]
+      ],
+      "confidence": 1
+    },
+    {
+      "id": "wheeler-L1-e040",
+      "a": "wheeler-L1-n037",
+      "b": "wheeler-L1-x02n",
+      "kind": "corridor",
+      "polyline": [
+        [
+          1848.4832165899181,
+          574.478537750058
+        ],
+        [
+          1779.21875,
+          564.3433227539062
+        ]
+      ],
+      "confidence": 1
+    },
+    {
+      "id": "wheeler-L1-e041",
+      "a": "wheeler-L1-v02",
+      "b": "wheeler-L1-n037",
+      "kind": "corridor",
+      "polyline": [
+        [
+          1844.5,
+          601.7
+        ],
+        [
+          1848.4832165899181,
+          574.478537750058
         ]
       ],
       "confidence": 1

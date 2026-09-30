@@ -6,7 +6,7 @@
     3000
   ],
   "generatedAt": "2026-09-17T05:05:26+00:00",
-  "editedAt": "2026-09-24T10:45:17.031Z",
+  "editedAt": "2026-09-30T07:46:48.807Z",
   "pipelineVersion": "0.1.0",
   "outline": [
     [
@@ -569,6 +569,13 @@
       "y": 1758.6,
       "kind": "stair",
       "confidence": 0.7
+    },
+    {
+      "id": "wheeler-L3-n004",
+      "x": 590.9383998121032,
+      "y": 801.8586642531177,
+      "kind": "junction",
+      "confidence": 1
     }
   ],
   "edges": [
@@ -585,31 +592,6 @@
         [
           1445.5,
           798.7
-        ]
-      ],
-      "confidence": 0.8
-    },
-    {
-      "id": "wheeler-L3-e002a",
-      "a": "wheeler-L3-n002",
-      "b": "wheeler-L3-v03j",
-      "kind": "corridor",
-      "polyline": [
-        [
-          493,
-          797.2
-        ],
-        [
-          496,
-          801
-        ],
-        [
-          750.3,
-          803.3
-        ],
-        [
-          1280.1,
-          799.8
         ]
       ],
       "confidence": 0.8
@@ -885,9 +867,51 @@
       "confidence": 0.6
     },
     {
-      "id": "wheeler-L3-e004",
+      "id": "wheeler-L3-e005",
+      "a": "wheeler-L3-n002",
+      "b": "wheeler-L3-n004",
+      "kind": "corridor",
+      "polyline": [
+        [
+          493,
+          797.2
+        ],
+        [
+          496,
+          801
+        ],
+        [
+          590.9383998121032,
+          801.8586642531177
+        ]
+      ],
+      "confidence": 0.8
+    },
+    {
+      "id": "wheeler-L3-e006",
+      "a": "wheeler-L3-n004",
+      "b": "wheeler-L3-v03j",
+      "kind": "corridor",
+      "polyline": [
+        [
+          590.9383998121032,
+          801.8586642531177
+        ],
+        [
+          750.3,
+          803.3
+        ],
+        [
+          1280.1,
+          799.8
+        ]
+      ],
+      "confidence": 0.8
+    },
+    {
+      "id": "wheeler-L3-e007",
       "a": "wheeler-L3-v04",
-      "b": "wheeler-L3-n002",
+      "b": "wheeler-L3-n004",
       "kind": "corridor",
       "polyline": [
         [
@@ -895,8 +919,8 @@
           883.5
         ],
         [
-          493,
-          797.2
+          590.9383998121032,
+          801.8586642531177
         ]
       ],
       "confidence": 1
@@ -1225,14 +1249,14 @@
       ],
       "doors": [
         {
-          "edgeId": "wheeler-L3-e002a",
-          "t": 0.18159717871302003,
+          "edgeId": "wheeler-L3-e006",
+          "t": 0.0631036689273415,
           "side": "left",
           "confidence": 1
         },
         {
-          "edgeId": "wheeler-L3-e002a",
-          "t": 0.5974950322110717,
+          "edgeId": "wheeler-L3-e006",
+          "t": 0.539217830448155,
           "side": "left",
           "confidence": 1
         }
@@ -1278,8 +1302,8 @@
       ],
       "doors": [
         {
-          "edgeId": "wheeler-L3-e002a",
-          "t": 0.8288,
+          "edgeId": "wheeler-L3-e006",
+          "t": 0.804012586824411,
           "side": "left",
           "confidence": 0.5
         }
@@ -1419,8 +1443,8 @@
       ],
       "doors": [
         {
-          "edgeId": "wheeler-L3-e002a",
-          "t": 0.9907,
+          "edgeId": "wheeler-L3-e006",
+          "t": 0.9893534874852046,
           "side": "right",
           "confidence": 0.5
         }

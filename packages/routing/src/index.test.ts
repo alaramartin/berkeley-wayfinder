@@ -325,6 +325,49 @@ describe("routing on real Wheeler data", () => {
     }
   });
 
+  it("attaches every stair and lift to the corridor beside it, not a junction further along", async () => {
+    // A lift linked to a far junction sends routes walking there and doubling back: on L3 the lift was
+    // 3.6 m from room 315 and the route 10.5 m, with two turns. The link should be about as short as
+    // the distance to the nearest other corridor.
+    const graph = await load();
+    const offenders: string[] = [];
+    for (const level of graph.levels.values()) {
+      const nodes = new Map(level.nodes.map((n) => [n.id, n]));
+      const line = (e: (typeof level.edges)[number]): [number, number][] => e.polyline ?? [[nodes.get(e.a)!.x, nodes.get(e.a)!.y], [nodes.get(e.b)!.x, nodes.get(e.b)!.y]];
+      const length = (pts: [number, number][]) => pts.reduce((sum, p, i) => (i === 0 ? 0 : sum + Math.hypot(p[0] - pts[i - 1]![0], p[1] - pts[i - 1]![1])), 0);
+      const distanceTo = (n: { x: number; y: number }, pts: [number, number][]) => {
+        let best = Number.POSITIVE_INFINITY;
+        for (let i = 1; i < pts.length; i++) {
+          const [ax, ay] = pts[i - 1]!;
+          const [bx, by] = pts[i]!;
+          const l2 = (bx - ax) ** 2 + (by - ay) ** 2;
+          const u = l2 === 0 ? 0 : Math.min(1, Math.max(0, ((n.x - ax) * (bx - ax) + (n.y - ay) * (by - ay)) / l2));
+          best = Math.min(best, Math.hypot(n.x - (ax + (bx - ax) * u), n.y - (ay + (by - ay) * u)));
+        }
+        return best;
+      };
+      for (const node of level.nodes) {
+        if (node.kind !== "stair" && node.kind !== "elevator") continue;
+        const own = level.edges.filter((e) => e.a === node.id || e.b === node.id);
+        if (own.length !== 1) continue;
+        const linkLength = length(line(own[0]!));
+        const nearest = Math.min(...level.edges.filter((e) => e !== own[0]).map((e) => distanceTo(node, line(e))));
+        if (linkLength - nearest > 1.5 && nearest < linkLength * 0.7) offenders.push(`${node.id}: link ${linkLength.toFixed(1)} m, corridor ${nearest.toFixed(1)} m away`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("goes straight from the lift to a door three metres away", async () => {
+    const graph = await load();
+    const r = route(graph, { type: "room", id: "wheeler-L1-r120" }, { type: "room", id: "wheeler-L3-r315" }, { accessible: true });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    // Was 21.1 m, walking west to a junction and back; the lift and the door are 3.6 m apart.
+    expect(r.route.meters).toBeLessThan(17);
+    expect(instructions(graph, r.route).map((i) => i.text).join("\n")).not.toMatch(/Turn sharply right/);
+  });
+
   it("gives every room a door or a host room", async () => {
     const graph = await load();
     const orphans = [...graph.rooms.values()].filter(

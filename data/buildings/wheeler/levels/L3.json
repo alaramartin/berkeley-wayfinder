@@ -587,6 +587,14 @@
       "y": -15.751,
       "kind": "stair",
       "verified": false
+    },
+    {
+      "id": "wheeler-L3-n004",
+      "levelId": "L3",
+      "x": -19.74,
+      "y": 9.536,
+      "kind": "junction",
+      "verified": false
     }
   ],
   "edges": [
@@ -603,33 +611,6 @@
         [
           11.647,
           19.575
-        ]
-      ],
-      "accessible": true,
-      "access": "open",
-      "verified": false
-    },
-    {
-      "id": "wheeler-L3-e002a",
-      "a": "wheeler-L3-n002",
-      "b": "wheeler-L3-v03j",
-      "kind": "corridor",
-      "polyline": [
-        [
-          -23.396,
-          8.57
-        ],
-        [
-          -23.241,
-          8.465
-        ],
-        [
-          -13.863,
-          11.333
-        ],
-        [
-          5.578,
-          17.614
         ]
       ],
       "accessible": true,
@@ -927,9 +908,55 @@
       "verified": false
     },
     {
-      "id": "wheeler-L3-e004",
+      "id": "wheeler-L3-e005",
+      "a": "wheeler-L3-n002",
+      "b": "wheeler-L3-n004",
+      "kind": "corridor",
+      "polyline": [
+        [
+          -23.396,
+          8.57
+        ],
+        [
+          -23.241,
+          8.465
+        ],
+        [
+          -19.74,
+          9.536
+        ]
+      ],
+      "accessible": true,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-L3-e006",
+      "a": "wheeler-L3-n004",
+      "b": "wheeler-L3-v03j",
+      "kind": "corridor",
+      "polyline": [
+        [
+          -19.74,
+          9.536
+        ],
+        [
+          -13.863,
+          11.333
+        ],
+        [
+          5.578,
+          17.614
+        ]
+      ],
+      "accessible": true,
+      "access": "open",
+      "verified": false
+    },
+    {
+      "id": "wheeler-L3-e007",
       "a": "wheeler-L3-v04",
-      "b": "wheeler-L3-n002",
+      "b": "wheeler-L3-n004",
       "kind": "corridor",
       "polyline": [
         [
@@ -937,8 +964,8 @@
           6.525
         ],
         [
-          -23.396,
-          8.57
+          -19.74,
+          9.536
         ]
       ],
       "accessible": true,
@@ -1242,14 +1269,14 @@
       ],
       "doors": [
         {
-          "edgeId": "wheeler-L3-e002a",
-          "t": 0.18159717871302003,
+          "edgeId": "wheeler-L3-e006",
+          "t": 0.0631036689273415,
           "side": "left",
           "verified": false
         },
         {
-          "edgeId": "wheeler-L3-e002a",
-          "t": 0.5974950322110717,
+          "edgeId": "wheeler-L3-e006",
+          "t": 0.539217830448155,
           "side": "left",
           "verified": false
         }
@@ -1292,8 +1319,8 @@
       ],
       "doors": [
         {
-          "edgeId": "wheeler-L3-e002a",
-          "t": 0.8288,
+          "edgeId": "wheeler-L3-e006",
+          "t": 0.804012586824411,
           "side": "left",
           "verified": false
         }
@@ -1416,8 +1443,8 @@
       ],
       "doors": [
         {
-          "edgeId": "wheeler-L3-e002a",
-          "t": 0.9907,
+          "edgeId": "wheeler-L3-e006",
+          "t": 0.9893534874852046,
           "side": "right",
           "verified": false
         }

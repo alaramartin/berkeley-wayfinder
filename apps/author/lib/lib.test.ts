@@ -401,3 +401,90 @@ describe("straightening corridors", () => {
     expect(dominantAxis(rotated)).toBeCloseTo(angle, 2);
   });
 });
+
+describe("re-linking stairs and lifts to the nearest corridor", () => {
+  const PX_PER_M = 25;
+
+  /** A corridor j0 -> j1 with a door on it, and a lift below it linked to the far junction j0. */
+  function liftProposal(linkTo: "j0" | "middle"): Proposal {
+    const corridor: [number, number][] = [[100, 300], [400, 300]];
+    const base = Proposal.parse({
+      buildingId: "test",
+      levelId: "L1",
+      imageSize: [1000, 1000],
+      generatedAt: "now",
+      pipelineVersion: "t",
+      outline: [[0, 0], [1000, 0], [1000, 1000], [0, 1000]],
+      voids: [],
+      nodes: [
+        { id: "j0", x: 100, y: 300, kind: "junction", confidence: 1 },
+        { id: "j1", x: 400, y: 300, kind: "junction", confidence: 1 },
+        { id: "lift", x: 250, y: 360, kind: "elevator", confidence: 1 },
+      ],
+      edges: [{ id: "e1", a: "j0", b: "j1", kind: "corridor", polyline: corridor, confidence: 1 }],
+      rooms: [
+        {
+          id: "r1",
+          regionId: "r1",
+          number: "101",
+          numberConfidence: 1,
+          category: "office",
+          group: null,
+          polygon: [[240, 200], [320, 200], [320, 280], [240, 280]],
+          doors: [{ edgeId: "e1", t: 0.6, side: "left", confidence: 1 }],
+          aliases: [],
+        },
+      ],
+      icons: [],
+      entrances: [],
+      directory: [],
+    });
+    const target = linkTo === "j0" ? [100, 300] : [250, 300];
+    const nodes = linkTo === "middle" ? [...base.nodes, { id: "mid", x: 250, y: 300, kind: "junction" as const, confidence: 1 }] : base.nodes;
+    const lead = linkTo === "j0" ? "j0" : "mid";
+    return Proposal.parse({
+      ...base,
+      nodes,
+      edges: [...base.edges, { id: "link", a: "lift", b: lead, kind: "corridor", polyline: [[250, 360], target], confidence: 1 }],
+    });
+  }
+
+  it("joins a lift to the corridor beside it instead of a far junction", async () => {
+    const { relinkVertical } = await import("./relink");
+    const before = liftProposal("j0");
+    const { proposal, changes } = relinkVertical(before, { pxPerM: PX_PER_M });
+    expect(changes).toHaveLength(1);
+    expect(changes[0]).toMatchObject({ nodeId: "lift", fromEdge: "link", toEdge: "e1" });
+    expect(changes[0]!.linkBeforeM).toBeGreaterThan(changes[0]!.linkAfterM + 3);
+
+    // The lift now has one link, and it is the short one straight up to the corridor.
+    const links = proposal.edges.filter((e) => e.a === "lift" || e.b === "lift");
+    expect(links).toHaveLength(1);
+    const length = links[0]!.polyline.reduce((sum, p, i) => (i === 0 ? 0 : sum + Math.hypot(p[0] - links[0]!.polyline[i - 1]![0], p[1] - links[0]!.polyline[i - 1]![1])), 0);
+    expect(length).toBeCloseTo(60, 0);
+    // Nothing was disconnected.
+    expect(components(proposal)).toHaveLength(1);
+  });
+
+  it("keeps every door exactly where it was on the ground", async () => {
+    const { relinkVertical } = await import("./relink");
+    const before = liftProposal("j0");
+    const { proposal } = relinkVertical(before, { pxPerM: PX_PER_M });
+    const at = (p: Proposal) => {
+      const door = p.rooms[0]!.doors[0]!;
+      const edge = p.edges.find((e) => e.id === door.edgeId)!;
+      return doorPoint(p, { edgeId: edge.id, t: door.t })!;
+    };
+    const was = at(before);
+    const now = at(proposal);
+    expect(Math.hypot(now[0] - was[0], now[1] - was[1])).toBeLessThan(0.5);
+  });
+
+  it("leaves a lift that is already attached at the nearest point alone", async () => {
+    const { relinkVertical } = await import("./relink");
+    const before = liftProposal("middle");
+    const { proposal, changes } = relinkVertical(before, { pxPerM: PX_PER_M });
+    expect(changes).toHaveLength(0);
+    expect(proposal.edges.map((e) => e.id).sort()).toEqual(before.edges.map((e) => e.id).sort());
+  });
+});
