@@ -302,7 +302,6 @@ export function instructions(graph: RouteGraph, route: Route): Instruction[] {
     const host = graph.rooms.get(endRoom.enteredVia);
     if (host) text += `, which is inside ${roomLabel(host)}`;
   }
-  if (endRoom?.doors[0] && !endRoom.doors[0].verified) text += ". The door position is unconfirmed";
   out.push({ kind: "arrive", text, levelId: end.levelId, nodeId: end.id, at: [end.x, end.y] });
   return out;
 }

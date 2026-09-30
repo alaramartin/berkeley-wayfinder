@@ -142,7 +142,7 @@ export function RoutePanel({
 
       {!summary && !error && (
         <p className="text-sm text-neutral-500">
-          Pick a start and a destination. Distances are approximate, and doors marked unconfirmed still need a check in the building.
+          Pick a start and a destination. Distances are approximate.
         </p>
       )}
     </div>

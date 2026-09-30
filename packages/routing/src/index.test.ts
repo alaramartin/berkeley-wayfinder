@@ -182,9 +182,9 @@ describe("routing on a fixture", () => {
     expect(text).toMatch(/about \d+ m|a few steps/);
     expect(text).toMatch(/Take the elevator up to Level L2/);
     expect(steps[steps.length - 1]!.text).toMatch(/Arrive at 201/);
-    // Distances stay vague and the unconfirmed door is called out.
+    // Distances stay vague, and directions never mention unconfirmed doors.
     expect(text).not.toMatch(/\d+\.\d+ m/);
-    expect(text).toMatch(/door position is unconfirmed/);
+    expect(text).not.toMatch(/unconfirmed/);
     expect(summary(r.route)).toMatch(/·/);
   });
 });
