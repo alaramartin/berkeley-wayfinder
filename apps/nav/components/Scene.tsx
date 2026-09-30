@@ -252,6 +252,8 @@ function CameraRig({
   const controls = useRef<React.ComponentRef<typeof OrbitControls>>(null);
   const active = useRef<{ flight: Flight; from: Pose; started: number } | null>(null);
   const grab = useRef<Grab | null>(null);
+  /** The pointer that owns the current drag, so a second pointer cannot hijack it. */
+  const grabPointer = useRef<number | null>(null);
   const router = useMemo(() => createWheelRouter(device), [device]);
 
   const poseNow = useCallback((): Pose => {
@@ -274,6 +276,12 @@ function CameraRig({
 
     const onPointerDown = (event: PointerEvent) => {
       if (event.button !== 0) return;
+      // Fingers belong to OrbitControls (one pans, two pinch and twist). A touch also reports button 0,
+      // so without this a finger drove both at once, and a second finger restarted the grab mid-pinch.
+      if (event.pointerType === "touch") return;
+      // One drag at a time, and only for the pointer that started it.
+      if (grabPointer.current !== null) return;
+      grabPointer.current = event.pointerId;
       const rect = element.getBoundingClientRect();
       const pose = poseNow();
       grab.current = {
@@ -289,13 +297,15 @@ function CameraRig({
 
     const onPointerMove = (event: PointerEvent) => {
       const held = grab.current;
-      if (!held) return;
+      if (!held || event.pointerId !== grabPointer.current) return;
       const rect = element.getBoundingClientRect();
       apply(camera, controls.current, grabRotate(held, { x: event.clientX - rect.left, y: event.clientY - rect.top }));
     };
 
-    const onPointerUp = () => {
+    const onPointerUp = (event: PointerEvent) => {
+      if (event.pointerId !== grabPointer.current) return;
       grab.current = null;
+      grabPointer.current = null;
       element.style.cursor = "grab";
     };
 
@@ -340,11 +350,13 @@ function CameraRig({
     element.addEventListener("pointerdown", onPointerDown);
     window.addEventListener("pointermove", onPointerMove);
     window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerUp);
     element.addEventListener("wheel", onWheel, { capture: true, passive: false });
     return () => {
       element.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
       element.removeEventListener("wheel", onWheel, { capture: true } as EventListenerOptions);
     };
   }, [camera, gl, size.height, poseNow, router, takeover, modelCentre, modelRadius, maxDistance]);
