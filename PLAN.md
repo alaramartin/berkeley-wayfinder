@@ -12,7 +12,8 @@
 
 ## Status
 - **Current milestone:** M4 — Nav app + deploy (app built and tested locally; **waiting on user** to approve the Vercel deploy)
-- **Last completed task:** M4 scene rework — mirror fix, floor ribbon, guided camera, room labels, legend; all driven in Chrome
+- **Last completed task:** M4 scene round 2 — ribbon rebuilt, floor-change risers, grab-and-turn camera; corridor straightening measured and declined
+- **Previously:** M4 scene rework — mirror fix, floor ribbon, guided camera, room labels, legend; all driven in Chrome
 - **Blocked on user:** whether to straighten the bowed corridor centrelines, and approval for the Vercel deploy
 - **Previously:** M4 nav app: search, 3D scene, route panel, URL state
 - **Previously:** M3 built — routing graph, A*, accessible mode, nearest-POI, instructions; 14 routing tests including real Wheeler data; `pnpm routes wheeler` prints samples
@@ -287,7 +288,8 @@ If something looks wrong in the photo-to-plan conversion itself, use Corners (ne
 - [x] URL state (shareable links): `from`, `to`, `nearest`, `accessible`, `view`, `level`.
 - [x] phone-width checks + performance pass: layout verified at ~500 px and desktop. (fps readings on this machine are capped at ~31 by the browser — a plain HTML page reports the same, so it is not the scene.)
 - [x] **Scene rework after review** (2026-09-25): fixed the mirrored building, replaced the floating dashed line with a floor ribbon, freed the camera and added a guided fly-in, put labels on rooms, added a legend. Detail in the Decision log.
-- [ ] **Corridor centrelines still bow** (L4's trunk 38.9 m along a 34.0 m chord; L1 `e026` sags 6.7 m). Visible as the ribbon drifting diagonally across a straight corridor. Decision pending — see Decision log 2026-09-24 for the agreed shape of the fix.
+- [x] **Corridor centrelines: measured, and deliberately left alone** (2026-09-29). See the Decision log.
+- [ ] ~~Corridor centrelines still bow~~ (L4's trunk 38.9 m along a 34.0 m chord; L1 `e026` sags 6.7 m). Visible as the ribbon drifting diagonally across a straight corridor. Decision pending — see Decision log 2026-09-24 for the agreed shape of the fix.
 - [ ] **confirm with user**, then create the Vercel project (root `apps/nav`) and deploy.
 - **Review gate M4.** Share the deployed URL + test routes.
 
@@ -344,6 +346,10 @@ If something looks wrong in the photo-to-plan conversion itself, use Corners (ne
 | 2026-09-16 | Auto-align = ICP on outlines from 4 quarter-turn starts; show runner-up fits when close | Placards are drawn in different orientations; Wheeler's footprint is nearly symmetric (270° vs 90° within 8%) |
 | 2026-09-16 | Rooms store `labelAt` (OCR position); suite splits assign pieces by it | Merged suites are the most common defect; makes splitting two clicks |
 | 2026-09-16 | Author tool displays JPEG copies (`rectified.jpg`, `ingest.jpg`) | 10 MB PNGs inside SVG decoded too slowly |
+| 2026-09-29 | Corridor centrelines are NOT rewritten; the wobble is ~0.4 m, not the 5 m the chord suggested | The "L4 trunk is 38.9 m along a 34.0 m chord" figure is not wobble: the corridor threads *between* two rows of rooms whose own alignment is straight to within 0.45 m, so it legitimately runs 2-3 m off its chord and straightening to the chord would drive it through the rooms. Fitting each corridor to its own line instead changes lengths by <1%, sometimes lengthening them, and would have introduced side errors — 0 of 198 doors currently disagree with their room. `apps/author/lib/straighten.ts` and `scripts/straighten-report.mts` are kept as a diagnostic, deliberately not wired into accept |
+| 2026-09-29 | The route ribbon is built from corner bisectors with a bevel past a 1.6x miter, and the doorway hop is drawn as a short stub | The old builder offset along a central difference with a 3x miter, so hairpins came out 3.3 m wide and both ends 1.56 m wide; it also drew the 8-10 m hop from a room's centre to its door, which is what put a carpet through the room |
+| 2026-09-29 | Floor changes are drawn as a riser spanning the gap with climbing arrows and a label, merged per shaft | A 0.7 m cone on the departure level only, with nothing bridging the two ribbons, did not communicate "go up here"; a shaft passing through a floor also produced two markers where the step list says one thing |
+| 2026-09-29 | Dragging turns the building about the point under the cursor, two-finger swipe slides, wheel and pinch zoom | Stock orbiting spun around whatever the last camera flight left as the target, usually off-screen. The wheel is ambiguous between a trackpad swipe and a mouse wheel, so it defaults to zoom and only switches to panning once a trackpad gives itself away; on-screen +/- always work |
 | 2026-09-25 | Scene meshes, labels and route all go through `planToShape`/`shapeToScene`/`toScene`, pinned by a test | The mesh path negated y and the label/route path did not, so the building was drawn mirrored against everything on it — the cause of "labels floating over nothing" and most of the apparent corridor mess |
 | 2026-09-25 | A room's graph node sits at the polygon's interior point, not its first door; rooms with `enteredVia` get their own node and chains are followed | Routes arriving through a second door jumped up to 16 m across the building, and `enteredVia` rooms ended at the host's door |
 | 2026-09-25 | The route is a floor ribbon with chevrons and distance fade, depth-tested per level | The dashed line ignored corridor polylines, floated through ceilings and never said which way to walk |

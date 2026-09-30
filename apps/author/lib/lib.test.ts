@@ -274,3 +274,130 @@ describe("alignment", () => {
     expect(svgMatrix({ scale: 1, rotation: 0, tx: 5, ty: 6 })).toBe("matrix(1 0 0 1 5 6)");
   });
 });
+
+describe("straightening corridors", () => {
+  const PX_PER_M = 25;
+  const opts = { pxPerM: PX_PER_M };
+
+  /** A proposal with one corridor edge and optional rooms, in pixels. */
+  function withEdge(polyline: [number, number][], extra: Partial<Proposal> = {}): Proposal {
+    return Proposal.parse({
+      buildingId: "test",
+      levelId: "L1",
+      imageSize: [1000, 1000],
+      generatedAt: "now",
+      pipelineVersion: "t",
+      outline: [[0, 0], [1000, 0], [1000, 1000], [0, 1000]],
+      voids: [],
+      nodes: [
+        { id: "n1", x: polyline[0]![0], y: polyline[0]![1], kind: "junction", confidence: 1 },
+        { id: "n2", x: polyline[polyline.length - 1]![0], y: polyline[polyline.length - 1]![1], kind: "junction", confidence: 1 },
+      ],
+      edges: [{ id: "e1", a: "n1", b: "n2", kind: "corridor", polyline, confidence: 1 }],
+      rooms: [],
+      icons: [],
+      entrances: [],
+      directory: [],
+      ...extra,
+    });
+  }
+
+  it("flattens a wobbly straight corridor", async () => {
+    const { straightenEdges } = await import("./straighten");
+    // 20 m of corridor with +/- 0.3 m of skeleton wobble.
+    const polyline = Array.from({ length: 11 }, (_, i): [number, number] => [100 + i * 50, 300 + (i % 2 ? 7 : -7)]);
+    const { proposal, report } = straightenEdges(withEdge(polyline), 0, opts);
+    const line = proposal.edges[0]!.polyline;
+    // The run between the end nodes is dead straight; the first and last points are short connectors
+    // back to the nodes, which are shared with other corridors and never move.
+    const middle = line.slice(1, -1).map((p) => p[1]);
+    expect(Math.max(...middle) - Math.min(...middle)).toBeLessThan(1);
+    expect(line[0]).toEqual(polyline[0]);
+    expect(line[line.length - 1]).toEqual(polyline[polyline.length - 1]);
+    expect(report.totals.edgesChanged).toBe(1);
+  });
+
+  it("keeps a real L-bend", async () => {
+    const { straightenEdges } = await import("./straighten");
+    // 10 m east then 10 m north: a genuine corner, not wobble.
+    const polyline: [number, number][] = [[100, 300], [200, 300], [350, 300], [350, 200], [350, 50]];
+    const { proposal } = straightenEdges(withEdge(polyline), 0, opts);
+    const line = proposal.edges[0]!.polyline;
+    const corner = line.find((p) => Math.abs(p[0] - 350) < 6 && Math.abs(p[1] - 300) < 6);
+    expect(corner).toBeTruthy();
+    // Still turns: it has not been cut into one straight run.
+    expect(line.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("leaves stair and lift stubs exactly as they are", async () => {
+    const { straightenEdges } = await import("./straighten");
+    // A diagonal spur to a stairwell centroid: snapping it would drag the stair out of its shaft.
+    const base = withEdge([[100, 300], [200, 340], [260, 400]]);
+    const proposal = Proposal.parse({
+      ...base,
+      nodes: [...base.nodes, { id: "v05", x: 260, y: 400, kind: "stair", confidence: 1 }],
+      edges: [{ ...base.edges[0]!, id: "v05-link", b: "v05" }],
+    });
+    const { proposal: out, report } = straightenEdges(proposal, 0, opts);
+    expect(out.edges[0]!.polyline).toEqual(proposal.edges[0]!.polyline);
+    expect(report.edges[0]!.skipped).toBe("link");
+  });
+
+  it("never moves the nodes an edge is anchored to", async () => {
+    const { straightenEdges } = await import("./straighten");
+    // A stairwell must stay in its shaft even when its corridor is refitted around it.
+    const polyline = Array.from({ length: 9 }, (_, i): [number, number] => [100 + i * 50, 300 + (i % 2 ? 6 : -6)]);
+    const { proposal } = straightenEdges(withEdge(polyline), 0, opts);
+    const line = proposal.edges[0]!.polyline;
+    expect(line[0]).toEqual(polyline[0]);
+    expect(line[line.length - 1]).toEqual(polyline[polyline.length - 1]);
+  });
+
+  it("keeps a door where it was, and takes its side from the room", async () => {
+    const { straightenEdges } = await import("./straighten");
+    const polyline = Array.from({ length: 11 }, (_, i): [number, number] => [100 + i * 50, 300 + (i % 2 ? 8 : -8)]);
+    const base = withEdge(polyline);
+    // A room north of the corridor (smaller y in image space), with its door halfway along.
+    const proposal = Proposal.parse({
+      ...base,
+      rooms: [
+        {
+          id: "r1",
+          regionId: "r1",
+          number: "101",
+          numberConfidence: 1,
+          category: "office",
+          group: null,
+          polygon: [[300, 200], [400, 200], [400, 280], [300, 280]],
+          doors: [{ edgeId: "e1", t: 0.5, side: "left", confidence: 1 }],
+          aliases: [],
+        },
+      ],
+    });
+    const before = proposal.rooms[0]!.doors[0]!;
+    const beforePoint = [100 + 5 * 50, 300] as [number, number];
+    const { proposal: out } = straightenEdges(proposal, 0, opts);
+    const after = out.rooms[0]!.doors[0]!;
+    const line = out.edges[0]!.polyline;
+    const walked = after.t * line.reduce((sum, p, i) => (i === 0 ? 0 : sum + Math.hypot(p[0] - line[i - 1]![0], p[1] - line[i - 1]![1])), 0);
+    // The door stays within half a metre of where it was on the ground.
+    expect(Math.abs(walked - (beforePoint[0] - 100))).toBeLessThan(PX_PER_M * 0.5);
+    expect(after.side).toBe(before.side);
+  });
+
+  it("finds the building axis from the outline", async () => {
+    const { dominantAxis } = await import("./straighten");
+    const square = withEdge([[0, 0], [10, 0]]);
+    expect(Math.abs(dominantAxis(square))).toBeLessThan(0.01);
+
+    const angle = 0.3;
+    const rotated = Proposal.parse({
+      ...square,
+      outline: ([[0, 0], [400, 0], [400, 200], [0, 200]] as [number, number][]).map(([x, y]) => [
+        x * Math.cos(angle) - y * Math.sin(angle),
+        x * Math.sin(angle) + y * Math.cos(angle),
+      ]),
+    });
+    expect(dominantAxis(rotated)).toBeCloseTo(angle, 2);
+  });
+});
