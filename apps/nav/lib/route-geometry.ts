@@ -15,7 +15,7 @@ export interface LevelRibbon {
   points: Vec3[];
   /** Metres walked at each point. */
   distances: number[];
-  /** Where each route step ends along `points`, for per-step camera framing and fading. */
+  /** Where each route step ends along `points`. These are raw graph edges, not guide steps. */
   stepEnds: { stepIndex: number; pointIndex: number }[];
 }
 
@@ -23,20 +23,15 @@ export interface Transition {
   kind: "stair" | "elevator";
   fromLevelId: string;
   toLevelId: string;
+  fromNodeId: string;
+  toNodeId: string;
   at: Point;
   to: Point;
   stepIndex: number;
 }
 
 /** One or more flights in the same shaft, shown as a single "up to Level 3". */
-export interface MergedTransition {
-  kind: "stair" | "elevator";
-  fromLevelId: string;
-  toLevelId: string;
-  at: Point;
-  to: Point;
-  stepIndex: number;
-}
+export type MergedTransition = Transition;
 
 export interface RouteGeometry {
   ribbons: LevelRibbon[];
@@ -165,6 +160,8 @@ export function routeGeometry(route: Route): RouteGeometry {
         kind: step.edge.kind,
         fromLevelId: step.from.levelId,
         toLevelId: step.to.levelId,
+        fromNodeId: step.from.id,
+        toNodeId: step.to.id,
         at: [step.from.x, step.from.y],
         to: [step.to.x, step.to.y],
         stepIndex,
@@ -195,6 +192,7 @@ export function mergeTransitions(transitions: Transition[]): MergedTransition[] 
     const continues = previous && previous.kind === transition.kind && previous.toLevelId === transition.fromLevelId && transition.stepIndex === previous.stepIndex + 1;
     if (continues && previous) {
       previous.toLevelId = transition.toLevelId;
+      previous.toNodeId = transition.toNodeId;
       previous.to = transition.to;
       continue;
     }
@@ -203,14 +201,83 @@ export function mergeTransitions(transitions: Transition[]): MergedTransition[] 
   return out;
 }
 
-/** The ribbon and point index a route step ends at, for framing the camera on that step. */
-export function locateStep(geometry: RouteGeometry, stepIndex: number): { ribbon: LevelRibbon; pointIndex: number } | null {
-  for (const ribbon of geometry.ribbons) {
-    for (const end of ribbon.stepEnds) {
-      if (end.stepIndex === stepIndex) return { ribbon, pointIndex: end.pointIndex };
+/** The riser whose far end is this node, which is how a "take the stairs" step names its shaft. */
+export function riserEndingAt(geometry: RouteGeometry, nodeId: string): MergedTransition | null {
+  return geometry.risers.find((r) => r.toNodeId === nodeId) ?? null;
+}
+
+/**
+ * What the guide is showing: one step of the instruction list, placed by where it starts and ends.
+ *
+ * A step is identified by position rather than by graph node or by index. It used to be looked up by
+ * its number among the route's raw graph edges, of which there are more than twice as many as steps,
+ * so every step on an upper floor was framed on the lower one; and a node only says where the last
+ * *edge* ended, which is often the same node for two consecutive steps when a turn falls mid-edge.
+ */
+export interface GuideStep {
+  kind: "start" | "walk" | "vertical" | "arrive";
+  /** Where the previous step ended, in building metres, or null for the first step. */
+  fromAt: Point | null;
+  /** Where this step ends. */
+  toAt: Point;
+  /** The node this step ends at; names a shaft for a "take the stairs" step. */
+  toNodeId: string;
+  /** The level the step ends on. */
+  levelId: string;
+}
+
+/** Build a guide step from the instruction list, which is what the panel shows. */
+export function guideStepAt(steps: { kind: GuideStep["kind"]; nodeId: string; levelId: string; at: Point }[], index: number): GuideStep | null {
+  const step = steps[index];
+  if (!step) return null;
+  return { kind: step.kind, fromAt: steps[index - 1]?.at ?? null, toAt: step.at, toNodeId: step.nodeId, levelId: step.levelId };
+}
+
+/** Where on a ribbon a point in the plan falls: how far along it, and how far off it. */
+export function alongRibbon(ribbon: LevelRibbon, at: Point): { distance: number; offset: number } {
+  // Ribbon points are scene coordinates, where plan y is negated.
+  const px = at[0];
+  const pz = -at[1];
+  let best = { distance: 0, offset: Number.POSITIVE_INFINITY };
+  for (let i = 1; i < ribbon.points.length; i++) {
+    const a = ribbon.points[i - 1]!;
+    const b = ribbon.points[i]!;
+    const dx = b[0] - a[0];
+    const dz = b[2] - a[2];
+    const length2 = dx * dx + dz * dz;
+    const u = length2 === 0 ? 0 : Math.min(1, Math.max(0, ((px - a[0]) * dx + (pz - a[2]) * dz) / length2));
+    const offset = Math.hypot(px - (a[0] + dx * u), pz - (a[2] + dz * u));
+    if (offset < best.offset) {
+      const walked = ribbon.distances[i - 1]! + u * (ribbon.distances[i]! - ribbon.distances[i - 1]!);
+      best = { distance: walked, offset };
     }
   }
-  return null;
+  return best;
+}
+
+/** The ribbon on a level that passes closest to a point. */
+function ribbonNear(geometry: RouteGeometry, levelId: string, at: Point): { ribbon: LevelRibbon; distance: number } | null {
+  let best: { ribbon: LevelRibbon; distance: number; offset: number } | null = null;
+  for (const ribbon of geometry.ribbons) {
+    if (ribbon.levelId !== levelId) continue;
+    const found = alongRibbon(ribbon, at);
+    if (!best || found.offset < best.offset) best = { ribbon, ...found };
+  }
+  return best;
+}
+
+export interface StepSpan {
+  ribbon: LevelRibbon;
+  startDistance: number;
+  endDistance: number;
+}
+
+/** The stretch of ribbon a walking step covers: from where the last step ended to where this one does. */
+export function stepSpan(geometry: RouteGeometry, step: GuideStep): StepSpan | null {
+  const end = ribbonNear(geometry, step.levelId, step.toAt);
+  if (!end) return null;
+  const start = step.fromAt ? alongRibbon(end.ribbon, step.fromAt).distance : 0;
+  return { ribbon: end.ribbon, startDistance: Math.min(start, end.distance), endDistance: Math.max(start, end.distance) };
 }
 
 /** Point at a given distance along a ribbon, clamped to its ends. */
@@ -231,15 +298,48 @@ export function pointAtDistance(ribbon: LevelRibbon, distance: number): Vec3 {
   return points[points.length - 1]!;
 }
 
-/** How far ahead of the walker stays bright, and where the path has faded out. */
+/** Everything on a ribbon walked before the current step, and everything on one not yet reached. */
+const BEHIND = { start: Number.POSITIVE_INFINITY, end: Number.POSITIVE_INFINITY };
+const AHEAD = { start: Number.NEGATIVE_INFINITY, end: -1 };
+
+/**
+ * How one ribbon should be lit for the current guide step: dimmed if it is behind, faded if it is
+ * ahead, and with the step's own stretch brightest if the step is on it. Null means no step is active.
+ */
+export function ribbonActivity(geometry: RouteGeometry, step: GuideStep | null, ribbon: LevelRibbon): { start: number; end: number } | null {
+  if (!step) return null;
+  const index = geometry.ribbons.indexOf(ribbon);
+  if (step.kind === "vertical") {
+    // A floor change sits between two ribbons: everything before it is behind, everything after ahead.
+    const after = ribbonNear(geometry, step.levelId, step.toAt);
+    const boundary = after ? geometry.ribbons.indexOf(after.ribbon) : -1;
+    if (boundary < 0) return null;
+    return index < boundary ? BEHIND : AHEAD;
+  }
+  const span = stepSpan(geometry, step);
+  if (!span) return null;
+  const current = geometry.ribbons.indexOf(span.ribbon);
+  if (index < current) return BEHIND;
+  if (index > current) return AHEAD;
+  return { start: span.startDistance, end: span.endDistance };
+}
+
+/** How far ahead of the current step stays bright, and where the path has faded out. */
 const BRIGHT_M = 18;
 const FADED_M = 35;
 
-/** Ribbon opacity at a distance along the route, given where the walker is. */
-export function alphaAt(distance: number, activeDistance: number | null): number {
-  if (activeDistance === null) return 0.8;
-  if (distance < activeDistance - 1) return 0.22;
-  const ahead = distance - activeDistance;
+/**
+ * Ribbon opacity at a distance along the route. Given a point, everything behind it dims and
+ * everything ahead fades. Given a step's span, the step itself is the brightest thing on screen, so
+ * clicking through the guide visibly moves the highlight along the path.
+ */
+export function alphaAt(distance: number, active: number | { start: number; end: number } | null): number {
+  if (active === null) return 0.8;
+  const start = typeof active === "number" ? active : active.start;
+  const end = typeof active === "number" ? active : active.end;
+  if (distance < start - 1) return 0.22;
+  if (typeof active !== "number" && distance <= end + 0.5) return 1;
+  const ahead = distance - end;
   if (ahead <= BRIGHT_M) return 0.95;
   if (ahead >= FADED_M) return 0.15;
   return 0.95 - ((ahead - BRIGHT_M) / (FADED_M - BRIGHT_M)) * 0.8;

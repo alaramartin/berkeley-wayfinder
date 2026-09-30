@@ -16,8 +16,10 @@ export interface Instruction {
   text: string;
   meters?: number;
   levelId: string;
-  /** Node the step ends at, for highlighting in the app. */
+  /** Node the step ends at. Several steps can share one, because a turn can fall mid-edge. */
   nodeId: string;
+  /** Exactly where the step ends, in building metres: the turn, the stairs, the door. */
+  at: Point;
 }
 
 const ROUND_TO_M = 5;
@@ -164,6 +166,8 @@ function legInstructions(leg: Leg, ctx: LegContext): Instruction[] {
   let meters = 0;
   let runStart = 0;
   let travelled = 0;
+  /** Where the run being accumulated has got to, so a run can say exactly where it ends. */
+  let reached: Point = simplified[0] ?? [0, 0];
 
   const emit = () => {
     if (meters <= 0) return;
@@ -183,6 +187,7 @@ function legInstructions(leg: Leg, ctx: LegContext): Instruction[] {
       meters,
       levelId: leg.levelId,
       nodeId: mark?.nodeId ?? leg.endNode.id,
+      at: reached,
     });
     runStart = travelled;
     meters = 0;
@@ -204,6 +209,7 @@ function legInstructions(leg: Leg, ctx: LegContext): Instruction[] {
     heading = bearing;
     meters += segment;
     travelled += segment;
+    reached = b;
   }
   emit();
   return out;
@@ -243,6 +249,7 @@ export function instructions(graph: RouteGraph, route: Route): Instruction[] {
     text: startRoom ? `Start at ${roomLabel(startRoom)}` : entrance ? `Start at ${entrance.name}` : `Start on Level ${levelName(graph, start.levelId)}`,
     levelId: start.levelId,
     nodeId: start.id,
+    at: [start.x, start.y],
   });
 
   const { legs, verticals } = legsOf(graph, route);
@@ -268,6 +275,7 @@ export function instructions(graph: RouteGraph, route: Route): Instruction[] {
       text: `Take the ${kind} ${up ? "up" : "down"} to Level ${levelName(graph, last.to.levelId)}`,
       levelId: last.to.levelId,
       nodeId: last.to.id,
+      at: [last.to.x, last.to.y],
     });
   };
 
@@ -295,7 +303,7 @@ export function instructions(graph: RouteGraph, route: Route): Instruction[] {
     if (host) text += `, which is inside ${roomLabel(host)}`;
   }
   if (endRoom?.doors[0] && !endRoom.doors[0].verified) text += ". The door position is unconfirmed";
-  out.push({ kind: "arrive", text, levelId: end.levelId, nodeId: end.id });
+  out.push({ kind: "arrive", text, levelId: end.levelId, nodeId: end.id, at: [end.x, end.y] });
   return out;
 }
 

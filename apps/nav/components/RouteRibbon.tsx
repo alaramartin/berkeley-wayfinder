@@ -56,7 +56,7 @@ function geometryFor(ribbon: LevelRibbon): THREE.BufferGeometry {
   return geometry;
 }
 
-export function RouteRibbon({ ribbon, activeDistance }: { ribbon: LevelRibbon; activeDistance: number | null }) {
+export function RouteRibbon({ ribbon, active }: { ribbon: LevelRibbon; active: { start: number; end: number } | null }) {
   const geometry = useMemo(() => geometryFor(ribbon), [ribbon]);
   const texture = useMemo(() => chevronTexture(), []);
   const material = useRef<THREE.MeshBasicMaterial>(null);
@@ -68,9 +68,9 @@ export function RouteRibbon({ ribbon, activeDistance }: { ribbon: LevelRibbon; a
   useEffect(() => {
     const color = geometry.getAttribute("color") as THREE.BufferAttribute;
     const distances = geometry.userData.vertexDistances as number[];
-    for (let i = 0; i < distances.length; i++) color.setW(i, alphaAt(distances[i]!, activeDistance));
+    for (let i = 0; i < distances.length; i++) color.setW(i, alphaAt(distances[i]!, active));
     color.needsUpdate = true;
-  }, [geometry, activeDistance]);
+  }, [geometry, active?.start, active?.end, active === null]);
 
   useFrame((_, delta) => {
     if (material.current?.map) material.current.map.offset.x -= delta * 0.35;

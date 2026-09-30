@@ -10,10 +10,10 @@ import type { Level, Point, Room } from "@wf/schema";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { BuildingData } from "@/lib/data";
-import { type Grab, type Pose, grabRotate, lerpPose, overviewPose, pivotFor, stepPose } from "@/lib/camera";
-import { type PointerDevice, createWheelRouter } from "@/lib/input";
-import { type LevelRibbon, type RouteGeometry, locateStep } from "@/lib/route-geometry";
-import { CATEGORY_COLOR, EXPLODE_GAP_M, ROOM_HEIGHT, SLAB_THICKNESS, type Vec3, boundsOf, labelColor, levelHeights, planToShape, toScene } from "@/lib/scene";
+import { type Grab, type Pose, grabRotate, lerpPose, overviewPose, pivotFor, spanPose, zoomPose } from "@/lib/camera";
+import { type PointerDevice, createWheelRouter, zoomFactor } from "@/lib/input";
+import { type GuideStep, type LevelRibbon, type RouteGeometry, ribbonActivity, riserEndingAt, stepSpan } from "@/lib/route-geometry";
+import { CATEGORY_COLOR, EXPLODE_GAP_M, ROOM_HEIGHT, SLAB_THICKNESS, type Vec3, boundsOf, labelColor, levelHeights, levelVisibility, planToShape, toScene } from "@/lib/scene";
 import { RouteRibbon } from "./RouteRibbon";
 import { RouteTransition } from "./RouteTransition";
 import type { ViewMode } from "@/lib/url";
@@ -302,10 +302,27 @@ function CameraRig({
     const onWheel = (event: WheelEvent) => {
       const intent = router.route(event);
       takeover();
-      if (intent.kind === "zoom") return; // OrbitControls' own handler dollies, with zoom-to-cursor.
-      // A trackpad swipe slides the model; stop the controls from dollying on the same event.
+      // Every wheel event is handled here and never reaches OrbitControls, whose zoom is a fixed
+      // percentage per event regardless of how far you scrolled.
       event.preventDefault();
       event.stopImmediatePropagation();
+      if (intent.kind === "zoom") {
+        const rect = element.getBoundingClientRect();
+        apply(
+          camera,
+          controls.current,
+          zoomPose(
+            poseNow(),
+            zoomFactor(event),
+            { x: event.clientX - rect.left, y: event.clientY - rect.top },
+            { width: rect.width, height: rect.height },
+            (camera as THREE.PerspectiveCamera).fov ?? 45,
+            { min: MIN_ZOOM_DISTANCE, max: maxDistance },
+          ),
+        );
+        return;
+      }
+      // A trackpad swipe slides the model.
       const c = controls.current as unknown as { target: THREE.Vector3; update: () => void } | null;
       if (!c) return;
       const pose = poseNow();
@@ -330,7 +347,7 @@ function CameraRig({
       window.removeEventListener("pointerup", onPointerUp);
       element.removeEventListener("wheel", onWheel, { capture: true } as EventListenerOptions);
     };
-  }, [camera, gl, size.height, poseNow, router, takeover, modelCentre, modelRadius]);
+  }, [camera, gl, size.height, poseNow, router, takeover, modelCentre, modelRadius, maxDistance]);
 
   useEffect(() => {
     const c = controls.current as unknown as { addEventListener: (e: string, f: () => void) => void; removeEventListener: (e: string, f: () => void) => void } | null;
@@ -342,16 +359,17 @@ function CameraRig({
   // The on-screen buttons zoom without a gesture, whichever device the router guessed.
   useEffect(() => {
     onZoomApi((factor: number) => {
-      const c = controls.current as unknown as { target: THREE.Vector3; update: () => void } | null;
-      if (!c) return;
       takeover();
-      const target = new THREE.Vector3(c.target.x, c.target.y, c.target.z);
-      const offset = camera.position.clone().sub(target);
-      const distance = Math.min(maxDistance, Math.max(2, offset.length() * factor));
-      camera.position.copy(target).add(offset.setLength(distance));
-      c.update();
+      apply(
+        camera,
+        controls.current,
+        zoomPose(poseNow(), factor, null, { width: size.width, height: size.height }, (camera as THREE.PerspectiveCamera).fov ?? 45, {
+          min: MIN_ZOOM_DISTANCE,
+          max: maxDistance,
+        }),
+      );
     });
-  }, [camera, maxDistance, onZoomApi, takeover]);
+  }, [camera, maxDistance, onZoomApi, takeover, poseNow, size.width, size.height]);
 
   // Queued rather than applied here: on the very first render OrbitControls has not mounted yet, and
   // moving the camera before it exists leaves the controls pointing at the origin.
@@ -394,9 +412,8 @@ function CameraRig({
       minDistance={2}
       maxDistance={maxDistance}
       zoomToCursor
-      // Half the stock rate: a trackpad pinch moves in many small steps, and at 1.0 the building
-      // jumps from across the courtyard to inside a room in one gesture.
-      zoomSpeed={0.5}
+      // Touch pinch still goes through these controls, at their natural rate. Wheel and trackpad pinch
+      // are handled above, because this zoom ignores how far you scrolled.
       screenSpacePanning
       maxPolarAngle={Math.PI / 2.05}
       mouseButtons={{ LEFT: -1 as THREE.MOUSE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN }}
@@ -404,6 +421,9 @@ function CameraRig({
     />
   );
 }
+
+/** Closest the camera may get to what it is looking at. */
+const MIN_ZOOM_DISTANCE = 2;
 
 function apply(camera: THREE.Camera, controls: unknown, pose: Pose): void {
   camera.position.set(pose.eye[0], pose.eye[1], pose.eye[2]);
@@ -414,6 +434,12 @@ function apply(camera: THREE.Camera, controls: unknown, pose: Pose): void {
   } else {
     camera.lookAt(pose.target[0], pose.target[1], pose.target[2]);
   }
+}
+
+interface FlightTiming {
+  ms: number;
+  key: number;
+  immediate?: boolean;
 }
 
 export interface Flight {
@@ -431,10 +457,12 @@ export interface SceneProps {
   /** Levels the route touches; others are dimmed when a route is shown. */
   routeLevels: string[];
   geometry: RouteGeometry | null;
-  /** Step the guide is on, used for framing and for fading the path behind you. */
-  activeStep: number | null;
+  /** The guide step being shown, used to frame the camera and to highlight its stretch of path. */
+  activeStep: GuideStep | null;
   /** Bumped when the guide wants a new flight; null means "leave the camera alone". */
-  flightRequest: { kind: "overview" | "step"; step: number; ms: number; key: number; immediate?: boolean } | null;
+  flightRequest: { kind: "overview" } & FlightTiming | ({ kind: "step"; step: GuideStep } & FlightTiming) | null;
+  /** The user asked to see every level, which overrides the route's own dimming and cutaway. */
+  showAll: boolean;
   onFlightArrive: () => void;
   onTakeover: () => void;
   focusLevel: string | null;
@@ -451,6 +479,7 @@ export function Scene({
   geometry,
   activeStep,
   flightRequest,
+  showAll,
   onFlightArrive,
   onTakeover,
   focusLevel,
@@ -466,13 +495,6 @@ export function Scene({
     [data.levels, heights],
   );
 
-  /** Distance walked at the active step, so the ribbon can fade ahead of and behind the walker. */
-  const activeDistance = useMemo(() => {
-    if (!geometry || activeStep === null) return null;
-    const found = locateStep(geometry, activeStep);
-    return found ? (found.ribbon.distances[found.pointIndex] ?? 0) : null;
-  }, [geometry, activeStep]);
-
   const flight = useMemo<Flight | null>(() => {
     if (!flightRequest) return null;
     const aspect = size.width / Math.max(1, size.height);
@@ -485,50 +507,54 @@ export function Scene({
         onArrive: onFlightArrive,
       };
     }
-    const found = locateStep(geometry, flightRequest.step);
-    if (found) {
-      const levelY = heights.get(found.ribbon.levelId) ?? 0;
-      const level = data.levels.find((l) => l.id === found.ribbon.levelId);
-      const ceiling = view === "solid" && level ? levelY + level.heightM - 0.6 : undefined;
-      return { to: stepPose(found.ribbon, found.pointIndex, levelY, ceiling), ms: flightRequest.ms, key: flightRequest.key, onArrive: onFlightArrive };
-    }
-    // Stairs and lifts have no ribbon of their own, so look at the shaft from just above it.
-    const transition = geometry.transitions.find((t) => t.stepIndex === flightRequest.step);
-    if (!transition) return null;
-    const from = toScene(transition.at, heights.get(transition.fromLevelId) ?? 0);
-    const to = toScene(transition.to, heights.get(transition.toLevelId) ?? 0);
-    const centre: Vec3 = [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2 + 2, (from[2] + to[2]) / 2];
-    return {
-      to: { eye: [centre[0] + 14, centre[1] + 11, centre[2] + 14], target: centre },
+    const overview = (): Flight => ({
+      to: overviewPose(buildingBounds.center, buildingBounds.radius, aspect),
       ms: flightRequest.ms,
       key: flightRequest.key,
       onArrive: onFlightArrive,
-    };
+    });
+    const step = flightRequest.step;
+
+    if (step.kind === "vertical") {
+      // Stairs and lifts have no ribbon of their own, so look at the shaft from just above it.
+      const riser = riserEndingAt(geometry, step.toNodeId);
+      if (!riser) return overview();
+      const from = toScene(riser.at, heights.get(riser.fromLevelId) ?? 0);
+      const to = toScene(riser.to, heights.get(riser.toLevelId) ?? 0);
+      const centre: Vec3 = [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2 + 2, (from[2] + to[2]) / 2];
+      return {
+        to: { eye: [centre[0] + 14, centre[1] + 11, centre[2] + 14], target: centre },
+        ms: flightRequest.ms,
+        key: flightRequest.key,
+        onArrive: onFlightArrive,
+      };
+    }
+
+    // A walking step is framed by its own stretch of path, found through the nodes it runs between.
+    const span = stepSpan(geometry, step);
+    if (!span) return overview();
+    const levelY = heights.get(span.ribbon.levelId) ?? 0;
+    const level = data.levels.find((l) => l.id === span.ribbon.levelId);
+    const ceiling = view === "solid" && level ? levelY + level.heightM - 0.6 : undefined;
+    return { to: spanPose(span.ribbon, span.startDistance, span.endDistance, levelY, ceiling), ms: flightRequest.ms, key: flightRequest.key, onArrive: onFlightArrive };
     // `heights` changes identity on every view toggle; keying on the request is what stops the camera
     // being re-framed behind the user's back.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flightRequest?.key, geometry, buildingBounds, size.width, size.height]);
 
-  const dimmed = (levelId: string) => {
-    if (focusLevel) return levelId !== focusLevel;
-    if (routeLevels.length) return !routeLevels.includes(levelId);
-    return false;
-  };
-
-  /**
-   * Room numbers only go on the levels being looked at. Showing every level at once turns into an
-   * unreadable pile, because labels from levels behind still draw over the one in front.
-   */
-  const labelLevels = new Set(focusLevel ? [focusLevel] : routeLevels);
-
-  // Solid view stacks the levels at their real heights, so anything above what you care about is in
-  // the way: cut away above the focused level, or above the highest level the route reaches.
   const order = new Map(data.building.levels.map((l) => [l.id, l.sortIndex]));
-  const topOfRoute = routeLevels.length ? Math.max(...routeLevels.map((id) => order.get(id) ?? 0)) : null;
-  // While the guide is walking, cut away above the level being walked on, so the route stays visible.
-  const walkingLevel = geometry && activeStep !== null ? (locateStep(geometry, activeStep)?.ribbon.levelId ?? null) : null;
-  const cutAbove = focusLevel ? (order.get(focusLevel) ?? null) : (walkingLevel ? (order.get(walkingLevel) ?? null) : topOfRoute);
-  const hidden = (levelId: string) => view === "solid" && cutAbove !== null && (order.get(levelId) ?? 0) > cutAbove;
+  const visibility = levelVisibility({
+    levelIds: data.levels.map((l) => l.id),
+    order,
+    focusLevel,
+    routeLevels,
+    walkingLevel: activeStep?.levelId ?? null,
+    showAll,
+    view,
+  });
+  const dimmed = (levelId: string) => visibility.dimmed.has(levelId);
+  const hidden = (levelId: string) => visibility.hidden.has(levelId);
+  const labelLevels = visibility.labelled;
 
   const ribbonsByLevel = new Map<string, LevelRibbon[]>();
   for (const ribbon of geometry?.ribbons ?? []) {
@@ -555,7 +581,7 @@ export function Scene({
         >
           {(ribbonsByLevel.get(level.id) ?? []).map((ribbon, i) => (
             <group key={`${ribbon.levelId}-${i}`}>
-              <RouteRibbon ribbon={ribbon} activeDistance={activeDistance} />
+              <RouteRibbon ribbon={ribbon} active={geometry ? ribbonActivity(geometry, activeStep, ribbon) : null} />
               <RouteMarkers ribbon={ribbon} isStart={ribbon === geometry?.ribbons[0]} isEnd={ribbon === lastRibbon} />
             </group>
           ))}

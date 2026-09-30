@@ -191,3 +191,58 @@ export function legendEntries(levels: Level[], focusLevel: string | null = null)
 export function routePoints(nodes: { x: number; y: number; levelId: string }[], heights: Map<string, number>): Vec3[] {
   return nodes.map((n) => toScene([n.x, n.y], (heights.get(n.levelId) ?? 0) + 0.6));
 }
+
+export interface LevelVisibilityInput {
+  levelIds: string[];
+  /** Level id to its position in the stack, bottom first. */
+  order: Map<string, number>;
+  focusLevel: string | null;
+  /** Levels the current route touches. */
+  routeLevels: string[];
+  /** The level the guide is currently walking on, if it is running. */
+  walkingLevel: string | null;
+  /** The user asked to see every level, which outranks everything the route would otherwise do. */
+  showAll: boolean;
+  view: "exploded" | "solid";
+}
+
+export interface LevelVisibility {
+  dimmed: Set<string>;
+  hidden: Set<string>;
+  labelled: Set<string>;
+}
+
+/**
+ * Which levels are lit, cut away or labelled.
+ *
+ * With a route showing, levels the route never touches dim, and in solid view everything above the
+ * route is cut away so the path can be seen. "Show all" has to undo both: it used to clear only the
+ * focus, so the route's own dimming came straight back and the button appeared to light just the
+ * middle three levels.
+ */
+export function levelVisibility(i: LevelVisibilityInput): LevelVisibility {
+  const dimmed = new Set<string>();
+  const hidden = new Set<string>();
+  // Room numbers from every level at once pile into an unreadable mess, so labels only go on the levels
+  // being looked at, even when everything is lit.
+  const labelled = new Set(i.focusLevel ? [i.focusLevel] : i.routeLevels);
+
+  if (i.showAll && !i.focusLevel) return { dimmed, hidden, labelled };
+
+  for (const id of i.levelIds) {
+    if (i.focusLevel) {
+      if (id !== i.focusLevel) dimmed.add(id);
+    } else if (i.routeLevels.length && !i.routeLevels.includes(id)) dimmed.add(id);
+  }
+
+  if (i.view === "solid") {
+    const topOfRoute = i.routeLevels.length ? Math.max(...i.routeLevels.map((id) => i.order.get(id) ?? 0)) : null;
+    const cutAbove = i.focusLevel
+      ? (i.order.get(i.focusLevel) ?? null)
+      : i.walkingLevel
+        ? (i.order.get(i.walkingLevel) ?? null)
+        : topOfRoute;
+    if (cutAbove !== null) for (const id of i.levelIds) if ((i.order.get(id) ?? 0) > cutAbove) hidden.add(id);
+  }
+  return { dimmed, hidden, labelled };
+}

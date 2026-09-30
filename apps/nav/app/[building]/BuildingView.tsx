@@ -9,7 +9,7 @@ import { Legend } from "@/components/Legend";
 import { ViewControls } from "@/components/ViewControls";
 import type { PointerDevice } from "@/lib/input";
 import { RoutePanel } from "@/components/RoutePanel";
-import { routeGeometry } from "@/lib/route-geometry";
+import { type GuideStep, guideStepAt, routeGeometry } from "@/lib/route-geometry";
 import { type BuildingData, loadBuilding } from "@/lib/data";
 import type { SearchResult } from "@/lib/search";
 import { type NavState, type ViewMode, readState, writeState } from "@/lib/url";
@@ -97,13 +97,18 @@ export function BuildingView({ buildingId }: { buildingId: string }) {
     zoomApi.current = zoom;
   }, []);
   const [stepIndex, setStepIndex] = useState(0);
-  const [flightRequest, setFlightRequest] = useState<{ kind: "overview" | "step"; step: number; ms: number; key: number; immediate?: boolean } | null>(null);
+  const [flightRequest, setFlightRequest] = useState<
+    ({ kind: "overview" } | { kind: "step"; step: GuideStep }) & { ms: number; key: number; immediate?: boolean } | null
+  >(null);
   const flightKey = useRef(0);
 
-  const flyTo = useCallback((kind: "overview" | "step", step: number, ms: number, immediate = false) => {
+  const flyTo = useCallback((target: { kind: "overview" } | { kind: "step"; step: GuideStep }, ms: number, immediate = false) => {
     flightKey.current += 1;
-    setFlightRequest({ kind, step, ms, key: flightKey.current, immediate });
+    setFlightRequest({ ...target, ms, key: flightKey.current, immediate });
   }, []);
+
+  /** The user pressed "show all": every level lit, whatever the route would otherwise dim. */
+  const [showAll, setShowAll] = useState(false);
 
   /** A new route restarts the guide from the overview. */
   const signature = `${state.from ?? ""}|${state.to ?? ""}|${state.nearest ?? ""}|${state.accessible}`;
@@ -118,35 +123,46 @@ export function BuildingView({ buildingId }: { buildingId: string }) {
         lastSignature.current = null;
         framed.current = true;
         setGuide("off");
-        flyTo("overview", 0, 0, true);
+        flyTo({ kind: "overview" }, 0, true);
       }
       return;
     }
     framed.current = true;
     if (lastSignature.current === signature) return;
     lastSignature.current = signature;
-    // The guide starts on the first step with a direction of travel; "Start at 120" has none.
-    const first = firstWalkStep(steps);
-    setStepIndex(first);
+    setStepIndex(0);
+    setShowAll(false);
     setGuide("overview");
-    flyTo("overview", 0, 0, true);
+    flyTo({ kind: "overview" }, 0, true);
     const timer = window.setTimeout(() => {
+      const first = guideStepAt(steps, 0);
+      if (!first) return;
       setGuide("flying");
-      flyTo("step", first, 1600);
+      flyTo({ kind: "step", step: first }, 1600);
     }, 1500);
     return () => window.clearTimeout(timer);
   }, [signature, geometry, steps, flyTo]);
+
+  // Focusing a level is the opposite of showing them all.
+  useEffect(() => {
+    if (state.level) setShowAll(false);
+  }, [state.level]);
+
+  /** The step the guide is on, as the scene needs it: named by the nodes it runs between. */
+  const activeGuideStep = useMemo(() => (guide === "off" || guide === "overview" ? null : guideStepAt(steps, stepIndex)), [guide, steps, stepIndex]);
 
   const goToStep = useCallback(
     (index: number) => {
       const clamped = Math.min(Math.max(0, index), Math.max(0, steps.length - 1));
       setStepIndex(clamped);
       setGuide("following");
-      flyTo("step", clamped, 900);
+      const target = guideStepAt(steps, clamped);
+      if (target) flyTo({ kind: "step", step: target }, 900);
+      // Stepping focuses the step's level, unless the user has asked to see every level.
       const step = steps[clamped];
-      if (step) update({ level: step.levelId });
+      if (step && !showAll) update({ level: step.levelId });
     },
-    [steps, flyTo, update],
+    [steps, flyTo, update, showAll],
   );
 
   const pick = (which: "from" | "to") => (r: SearchResult) => {
@@ -181,7 +197,7 @@ export function BuildingView({ buildingId }: { buildingId: string }) {
       onNext={() => goToStep(stepIndex + 1)}
       onOverview={() => {
         setGuide("overview");
-        flyTo("overview", 0, 900);
+        flyTo({ kind: "overview" }, 900);
       }}
     />
   );
@@ -194,8 +210,9 @@ export function BuildingView({ buildingId }: { buildingId: string }) {
           view={state.view}
           routeLevels={result?.route?.levelIds ?? []}
           geometry={geometry}
-          activeStep={guide === "off" || guide === "overview" ? null : stepIndex}
+          activeStep={activeGuideStep}
           flightRequest={flightRequest}
+          showAll={showAll}
           onFlightArrive={() => setGuide((g) => (g === "flying" ? "following" : g))}
           onTakeover={() => setGuide((g) => (g === "off" ? g : "manual"))}
           focusLevel={state.level}
@@ -208,14 +225,19 @@ export function BuildingView({ buildingId }: { buildingId: string }) {
           onZoomOut={() => zoomApi.current?.(1.35)}
           onOverview={() => {
             setGuide("overview");
-            flyTo("overview", 0, 900);
+            flyTo({ kind: "overview" }, 900);
           }}
           device={device}
           onDevice={setDevice}
         />
         <Legend levels={data.levels} focusLevel={state.level} />
         {state.level && (
-          <button onClick={() => update({ level: null })} className="absolute right-3 top-3 rounded-full bg-white/90 px-3 py-1.5 text-sm shadow">
+          <button
+            onClick={() => {
+              setShowAll(true);
+              update({ level: null });
+            }}
+            className="absolute right-3 top-3 rounded-full bg-white/90 px-3 py-1.5 text-sm shadow">
             Showing Level {data.levels.find((l) => l.id === state.level)?.displayName ?? state.level} · show all
           </button>
         )}
@@ -231,10 +253,4 @@ export function BuildingView({ buildingId }: { buildingId: string }) {
       <aside className="max-h-[55dvh] shrink-0 border-t border-neutral-200 bg-white md:max-h-none md:w-96 md:border-l md:border-t-0">{panel}</aside>
     </main>
   );
-}
-
-/** The first step worth flying to: skip the "Start at 120" line, which has no direction of travel. */
-function firstWalkStep(steps: Instruction[]): number {
-  const index = steps.findIndex((s) => s.kind !== "start");
-  return index < 0 ? 0 : index;
 }

@@ -5,14 +5,14 @@ import { buildGraph } from "@wf/routing";
 import { describe, expect, it } from "vitest";
 import type { BuildingData } from "./data";
 import type { Vec3 } from "./scene";
-import { boundsOf, cameraFor, contrastRatio, labelColor, legendEntries, levelHeights, planToShape, routePoints, shapeToScene, toScene, CATEGORY_COLOR } from "./scene";
+import { boundsOf, cameraFor, contrastRatio, labelColor, legendEntries, levelHeights, levelVisibility, planToShape, routePoints, shapeToScene, toScene, CATEGORY_COLOR } from "./scene";
 import { interiorPoint, pointInPolygon } from "@wf/geometry";
-import { route } from "@wf/routing";
-import { type Grab, type Pose, grabRotate, pivotFor, projectToScreen, stepPose } from "./camera";
+import { instructions, route } from "@wf/routing";
+import { type Grab, type Pose, grabRotate, pivotFor, pointUnderCursor, projectToScreen, spanPose, zoomPose } from "./camera";
 import * as THREE from "three";
-import { createWheelRouter } from "./input";
+import { createWheelRouter, zoomFactor } from "./input";
 import { ARROW_FADE_FRACTION, advancePhase, riserArrows } from "./riser";
-import { alphaAt, locateStep, routeGeometry } from "./route-geometry";
+import { alphaAt, guideStepAt, pointAtDistance, ribbonActivity, riserEndingAt, routeGeometry, stepSpan } from "./route-geometry";
 import { RIBBON_WIDTH_M, buildRibbonMesh, ribbonWidths } from "./ribbon-mesh";
 import { buildIndex, search } from "./search";
 import { DEFAULT_STATE, readState, writeState } from "./url";
@@ -156,23 +156,113 @@ describe("route geometry", () => {
     expect(Math.hypot(end[0] - centre[0], -end[2] - centre[1])).toBeGreaterThan(2.5);
   });
 
-  it("frames a step from behind, looking the way you walk", async () => {
-    const data = await wheeler();
-    const found = route(data.graph, { type: "room", id: "wheeler-L1-r120" }, { type: "room", id: "wheeler-L1-r130" });
-    expect(found.ok).toBe(true);
-    if (!found.ok) return;
-    const geometry = routeGeometry(found.route);
-    const at = locateStep(geometry, 1);
-    expect(at).not.toBeNull();
-    if (!at) return;
+  /** The routes the guide tests walk through: one floor, three floors, and the whole building. */
+  const ROUTES: [string, string][] = [
+    ["wheeler-L1-r120", "wheeler-L1-r130"],
+    ["wheeler-L1-r120", "wheeler-L3-r315"],
+    ["wheeler-B-r24", "wheeler-L4-r450"],
+  ];
 
-    const pose = stepPose(at.ribbon, at.pointIndex, 0);
-    const here = at.ribbon.points[at.pointIndex]!;
-    // Eye above the floor and behind the walker; the target is further along than the eye.
-    expect(pose.eye[1]).toBeGreaterThan(here[1] + 2);
-    const eyeToHere = Math.hypot(here[0] - pose.eye[0], here[2] - pose.eye[2]);
-    const eyeToTarget = Math.hypot(pose.target[0] - pose.eye[0], pose.target[2] - pose.eye[2]);
-    expect(eyeToTarget).toBeGreaterThan(eyeToHere);
+  async function guided(from: string, to: string) {
+    const data = await wheeler();
+    const found = route(data.graph, { type: "room", id: from }, { type: "room", id: to });
+    if (!found.ok) throw new Error(found.error);
+    const steps = instructions(data.graph, found.route);
+    return { data, route: found.route, steps, geometry: routeGeometry(found.route) };
+  }
+
+  it("finds each guide step on its own floor, not by counting graph edges", async () => {
+    // The guide's steps are runs of several graph edges. Looking a step up by its number among the raw
+    // edges put every step on the upper floor onto the lower one, and left "Arrive" with nothing at all.
+    for (const [from, to] of ROUTES) {
+      const { steps, geometry } = await guided(from, to);
+      steps.forEach((step, i) => {
+        const guide = guideStepAt(steps, i)!;
+        if (step.kind === "vertical") {
+          expect(riserEndingAt(geometry, guide.toNodeId), `${from}->${to} step ${i}`).not.toBeNull();
+          return;
+        }
+        const span = stepSpan(geometry, guide);
+        expect(span, `${from}->${to} step ${i} "${step.text}"`).not.toBeNull();
+        expect(span!.ribbon.levelId, `${from}->${to} step ${i}`).toBe(step.levelId);
+      });
+    }
+  });
+
+  it("moves along the route as the guide steps forward", async () => {
+    const { steps, geometry } = await guided("wheeler-L1-r120", "wheeler-L3-r315");
+    let previous: { ribbon: unknown; end: number } | null = null;
+    steps.forEach((step, i) => {
+      if (step.kind === "vertical") return;
+      const span = stepSpan(geometry, guideStepAt(steps, i)!)!;
+      if (previous && previous.ribbon === span.ribbon) {
+        // Each step picks up where the last one ended, and never goes backwards.
+        expect(span.startDistance).toBeGreaterThanOrEqual(previous.end - 0.01);
+        expect(span.endDistance).toBeGreaterThanOrEqual(span.startDistance);
+      }
+      previous = { ribbon: span.ribbon, end: span.endDistance };
+    });
+  });
+
+  it("frames a step's own stretch of path in the view", async () => {
+    const viewport = { width: 1200, height: 800 };
+    for (const [from, to] of ROUTES) {
+      const { steps, geometry } = await guided(from, to);
+      steps.forEach((step, i) => {
+        if (step.kind === "vertical") return;
+        const span = stepSpan(geometry, guideStepAt(steps, i)!)!;
+        const pose = spanPose(span.ribbon, span.startDistance, span.endDistance, 0);
+        for (const distance of [span.startDistance, span.endDistance]) {
+          const at = pointAtDistance(span.ribbon, distance);
+          const px = projectToScreen(pose, [at[0], 0, at[2]], viewport, 45);
+          expect(px.x, `${from}->${to} step ${i} at ${distance.toFixed(1)} m`).toBeGreaterThan(-viewport.width * 0.05);
+          expect(px.x).toBeLessThan(viewport.width * 1.05);
+          expect(px.y).toBeGreaterThan(-viewport.height * 0.05);
+          expect(px.y).toBeLessThan(viewport.height * 1.05);
+        }
+      });
+    }
+  });
+
+  it("looks somewhere different on each step, turning when the step turns", async () => {
+    // Clicking through the guide used to zoom in a hair and nudge the camera. Consecutive steps must
+    // visibly differ, and a turn in the instructions must show up as the view turning.
+    const { steps, geometry } = await guided("wheeler-L1-r120", "wheeler-L3-r315");
+    const poses = steps.map((step, i) => {
+      if (step.kind === "vertical") return null;
+      const span = stepSpan(geometry, guideStepAt(steps, i)!)!;
+      return { pose: spanPose(span.ribbon, span.startDistance, span.endDistance, 0), level: span.ribbon.levelId };
+    });
+    const heading = (p: Pose) => Math.atan2(p.target[2] - p.eye[2], p.target[0] - p.eye[0]);
+    let biggestTurn = 0;
+    for (let i = 1; i < poses.length; i++) {
+      const a = poses[i - 1];
+      const b = poses[i];
+      if (!a || !b || a.level !== b.level) continue;
+      const moved = Math.hypot(a.pose.eye[0] - b.pose.eye[0], a.pose.eye[2] - b.pose.eye[2]);
+      let turn = Math.abs(heading(a.pose) - heading(b.pose));
+      if (turn > Math.PI) turn = 2 * Math.PI - turn;
+      biggestTurn = Math.max(biggestTurn, (turn * 180) / Math.PI);
+      // Either the camera has gone somewhere else or it is pointing somewhere else.
+      expect(moved > 0.75 || turn > 0.3, `step ${i - 1} -> ${i}`).toBe(true);
+    }
+    expect(biggestTurn).toBeGreaterThan(45);
+  });
+
+  it("lights the current step and dims what is behind it", async () => {
+    const { steps, geometry } = await guided("wheeler-L1-r120", "wheeler-L3-r315");
+    const [lower, upper] = geometry.ribbons;
+    const vertical = steps.findIndex((s) => s.kind === "vertical");
+    // At the stairs, everything on the lower floor is behind you and the upper floor is still to come.
+    const atStairs = guideStepAt(steps, vertical)!;
+    expect(alphaAt(3, ribbonActivity(geometry, atStairs, lower!))).toBeLessThan(0.3);
+    expect(alphaAt(3, ribbonActivity(geometry, atStairs, upper!))).toBeGreaterThan(0.8);
+    // On the upper floor the lower ribbon stays dimmed, and the step's own stretch is the brightest.
+    const arrive = guideStepAt(steps, steps.length - 1)!;
+    expect(alphaAt(3, ribbonActivity(geometry, arrive, lower!))).toBeLessThan(0.3);
+    const span = stepSpan(geometry, arrive)!;
+    const activity = ribbonActivity(geometry, arrive, upper!);
+    expect(alphaAt((span.startDistance + span.endDistance) / 2, activity)).toBe(1);
   });
 
   it("fades the path behind the walker and far ahead", () => {
@@ -463,6 +553,91 @@ describe("riser arrows", () => {
     const shortRise = advancePhase(0, 1, 6) * 6;
     const longRise = advancePhase(0, 1, 24) * 24;
     expect(shortRise).toBeCloseTo(longRise, 6);
+  });
+});
+
+describe("zoom", () => {
+  const viewport = { width: 1200, height: 800 };
+  const start: Pose = { eye: [60, 40, 60], target: [0, 0, 0] };
+  const limits = { min: 2, max: 300 };
+  const distance = (p: Pose) => Math.hypot(p.eye[0] - p.target[0], p.eye[1] - p.target[1], p.eye[2] - p.target[2]);
+  const wheel = (deltaY: number, extra: object = {}) => ({ deltaY, deltaMode: 0, ctrlKey: false, ...extra });
+
+  it("is proportional to how far you scroll, in the right direction", () => {
+    // The stock controls zoomed a fixed percentage per event, so a gentle pinch and a violent one did
+    // exactly the same thing.
+    expect(zoomFactor(wheel(-4, { ctrlKey: true }))).toBeLessThan(1);
+    expect(zoomFactor(wheel(4, { ctrlKey: true }))).toBeGreaterThan(1);
+    expect(zoomFactor(wheel(-40, { ctrlKey: true }))).toBeLessThan(zoomFactor(wheel(-4, { ctrlKey: true })));
+    expect(zoomFactor(wheel(-30)) * zoomFactor(wheel(30))).toBeCloseTo(1, 10);
+    // A flick cannot fling the camera.
+    expect(zoomFactor(wheel(-4000))).toBeCloseTo(zoomFactor(wheel(-120)), 10);
+    // A mouse reporting lines rather than pixels zooms about as much as one reporting pixels.
+    expect(zoomFactor({ deltaY: -3, deltaMode: 1, ctrlKey: false })).toBeCloseTo(zoomFactor(wheel(-48)), 10);
+  });
+
+  it("makes three mouse-wheel notches a clear step, not 7%", () => {
+    let pose = start;
+    const before = distance(pose);
+    for (let i = 0; i < 3; i++) pose = zoomPose(pose, zoomFactor(wheel(-100)), null, viewport, 45, limits);
+    expect(distance(pose) / before).toBeLessThan(0.75);
+  });
+
+  it("can always reach the closest and furthest distance", () => {
+    // Sixty notches used to leave the camera 20 m out with the limit at 2 m.
+    let pose = start;
+    for (let i = 0; i < 80; i++) pose = zoomPose(pose, zoomFactor(wheel(-100)), null, viewport, 45, limits);
+    expect(distance(pose)).toBeCloseTo(limits.min, 6);
+    for (let i = 0; i < 200; i++) pose = zoomPose(pose, zoomFactor(wheel(100)), null, viewport, 45, limits);
+    expect(distance(pose)).toBeCloseTo(limits.max, 6);
+  });
+
+  it("does not stick at a limit: zooming the other way works straight away", () => {
+    const atMin = zoomPose(start, 0.0001, null, viewport, 45, limits);
+    expect(distance(atMin)).toBeCloseTo(limits.min, 6);
+    expect(distance(zoomPose(atMin, 0.5, null, viewport, 45, limits))).toBeCloseTo(limits.min, 6);
+    expect(distance(zoomPose(atMin, 1.5, null, viewport, 45, limits))).toBeGreaterThan(limits.min + 0.5);
+  });
+
+  it("keeps the point under the cursor on the same pixel", () => {
+    const cursor = { x: 900, y: 250 };
+    const anchor = pointUnderCursor(start, cursor, viewport, 45, start.target);
+    for (const factor of [0.5, 0.8, 1.3]) {
+      const after = zoomPose(start, factor, cursor, viewport, 45, limits);
+      const px = projectToScreen(after, anchor, viewport, 45);
+      expect(Math.hypot(px.x - cursor.x, px.y - cursor.y)).toBeLessThan(1);
+    }
+  });
+});
+
+describe("which levels are lit", () => {
+  const levelIds = ["B", "M", "L1", "L2", "L3", "L4"];
+  const order = new Map(levelIds.map((id, i) => [id, i]));
+  const base = { levelIds, order, focusLevel: null, routeLevels: ["L1", "L2", "L3"], walkingLevel: null, showAll: false, view: "exploded" as const };
+
+  it("dims the levels a route does not touch", () => {
+    const v = levelVisibility(base);
+    expect([...v.dimmed].sort()).toEqual(["B", "L4", "M"]);
+  });
+
+  it("lights every level when the user says show all", () => {
+    // "Show all" used to clear only the focus, so the route's dimming came straight back and it
+    // appeared to light just the middle three levels.
+    const v = levelVisibility({ ...base, showAll: true });
+    expect(v.dimmed.size).toBe(0);
+    const solid = levelVisibility({ ...base, showAll: true, view: "solid", walkingLevel: "L2" });
+    expect(solid.hidden.size).toBe(0);
+  });
+
+  it("still focuses one level, whatever show all was", () => {
+    const v = levelVisibility({ ...base, focusLevel: "L2", showAll: true });
+    expect([...v.dimmed].sort()).toEqual(["B", "L1", "L3", "L4", "M"]);
+    expect([...v.labelled]).toEqual(["L2"]);
+  });
+
+  it("cuts away above the route in solid view, and above the level being walked", () => {
+    expect([...levelVisibility({ ...base, view: "solid" }).hidden]).toEqual(["L4"]);
+    expect([...levelVisibility({ ...base, view: "solid", walkingLevel: "L1" }).hidden].sort()).toEqual(["L2", "L3", "L4"]);
   });
 });
 

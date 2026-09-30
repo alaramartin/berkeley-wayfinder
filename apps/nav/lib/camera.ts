@@ -12,44 +12,81 @@ export interface Pose {
   target: Vec3;
 }
 
-/** How far ahead the heading is averaged, so corridor wobble doesn't swing the camera. */
-const LOOKAHEAD_M = 8;
-const EYE_BEHIND_M = 12;
-const EYE_ABOVE_M = 7.5;
-const TARGET_AHEAD_M = 12;
-const TARGET_ABOVE_M = 1.2;
+/** Never frame less than this much path, so a two-metre step still shows somewhere to look. */
+const MIN_SPAN_M = 5;
+
+/**
+ * A low three-quarter view behind a step, looking along it, close enough that the whole stretch fills
+ * the view. The heading is the step's own direction, so a turn in the instructions shows up as the
+ * view actually turning; averaging the heading over several metres, as this once did, smeared every
+ * turn away and made consecutive steps look the same.
+ *
+ * `levelY` lifts the pose onto the level's current height (levels move when the view toggles) and
+ * `ceilingY` keeps the eye under the floor above in solid view.
+ */
+export function spanPose(ribbon: LevelRibbon, startDistance: number, endDistance: number, levelY: number, ceilingY?: number): Pose {
+  const last = ribbon.distances[ribbon.distances.length - 1] ?? 0;
+  const d0 = Math.min(last, Math.max(0, startDistance));
+  let d1 = Math.min(last, Math.max(d0, endDistance));
+  if (d1 - d0 < MIN_SPAN_M) d1 = Math.min(last, d0 + MIN_SPAN_M);
+  // At the very end of a ribbon there may be nothing ahead, so look back instead.
+  const from = d1 - d0 < 1 ? Math.max(0, d1 - MIN_SPAN_M) : d0;
+
+  const a = pointAtDistance(ribbon, from);
+  const b = pointAtDistance(ribbon, d1);
+  let dx = b[0] - a[0];
+  let dz = b[2] - a[2];
+  const chord = Math.hypot(dx, dz);
+  if (chord < 0.1) {
+    dx = 1;
+    dz = 0;
+  } else {
+    dx /= chord;
+    dz /= chord;
+  }
+
+  const span = Math.max(d1 - from, MIN_SPAN_M);
+  const middle: Vec3 = [(a[0] + b[0]) / 2, 0, (a[2] + b[2]) / 2];
+  // Far enough back that the whole step fits. A 40 m corridor needs the camera well out, so these
+  // are generous: capping them at 24 m and 14 m left the start of a long step below the bottom edge.
+  const behind = Math.min(70, Math.max(7, 5 + span * 0.9));
+  const height = Math.min(40, Math.max(5, 3.5 + span * 0.45));
+  const eyeY = ceilingY === undefined ? levelY + height : Math.min(levelY + height, ceilingY);
+  return {
+    eye: [middle[0] - dx * behind, eyeY, middle[2] - dz * behind],
+    target: [middle[0] + dx * span * 0.15, levelY + 0.8, middle[2] + dz * span * 0.15],
+  };
+}
 
 export function overviewPose(center: Vec3, radius: number, aspect: number): Pose {
   return { eye: cameraFor(center, radius, 45, aspect), target: center };
 }
 
 /**
- * A low three-quarter view sitting behind the walker, looking along the way they are about to go.
- * `levelY` lifts the pose onto the level's current height (levels move when the view toggles).
+ * Dolly towards a point on screen, keeping that point exactly where it is.
+ *
+ * Zoom has to be proportional to how far the user scrolled and to how far away the scene is: the
+ * stock controls zoomed a fixed percentage per *event*, so three mouse-wheel notches moved 7% while a
+ * gentle pinch and a violent one both moved 47%, and sixty notches still stopped short of the limit.
+ * Scaling the eye about the point under the cursor leaves that point on the same pixel, which is what
+ * makes it feel like zooming into the place you are pointing at.
  */
-export function stepPose(ribbon: LevelRibbon, pointIndex: number, levelY: number, ceilingY?: number): Pose {
-  const here = ribbon.points[Math.min(pointIndex, ribbon.points.length - 1)] ?? [0, 0, 0];
-  const distance = ribbon.distances[Math.min(pointIndex, ribbon.distances.length - 1)] ?? 0;
-  const ahead = pointAtDistance(ribbon, distance + LOOKAHEAD_M);
-  const back = pointAtDistance(ribbon, Math.max(0, distance - LOOKAHEAD_M));
-
-  let dx = ahead[0] - back[0];
-  let dz = ahead[2] - back[2];
-  const length = Math.hypot(dx, dz);
-  if (length < 0.1) {
-    dx = 1;
-    dz = 0;
-  } else {
-    dx /= length;
-    dz /= length;
-  }
-
-  // In solid view the floor above is a real ceiling: an eye above it looks at the inside of a slab.
-  const eyeY = ceilingY === undefined ? levelY + EYE_ABOVE_M : Math.min(levelY + EYE_ABOVE_M, ceilingY);
-  return {
-    eye: [here[0] - dx * EYE_BEHIND_M, eyeY, here[2] - dz * EYE_BEHIND_M],
-    target: [here[0] + dx * TARGET_AHEAD_M, levelY + TARGET_ABOVE_M, here[2] + dz * TARGET_AHEAD_M],
-  };
+export function zoomPose(
+  pose: Pose,
+  factor: number,
+  cursor: { x: number; y: number } | null,
+  viewport: { width: number; height: number },
+  fovDegrees: number,
+  limits: { min: number; max: number },
+): Pose {
+  const distance = Math.hypot(pose.eye[0] - pose.target[0], pose.eye[1] - pose.target[1], pose.eye[2] - pose.target[2]);
+  if (distance < 1e-6) return pose;
+  // Never past a limit, but always able to move towards one you are not yet at.
+  const wanted = Math.min(limits.max, Math.max(limits.min, distance * factor));
+  const f = wanted / distance;
+  const anchor = cursor ? pointUnderCursor(pose, cursor, viewport, fovDegrees, pose.target) : pose.target;
+  const scale = (p: Vec3): Vec3 => [anchor[0] + (p[0] - anchor[0]) * f, anchor[1] + (p[1] - anchor[1]) * f, anchor[2] + (p[2] - anchor[2]) * f];
+  return { eye: scale(pose.eye), target: scale(pose.target) };
 }
 
 /**
