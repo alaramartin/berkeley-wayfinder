@@ -8,7 +8,7 @@ import type { Vec3 } from "./scene";
 import { boundsOf, cameraFor, contrastRatio, labelColor, legendEntries, levelHeights, planToShape, routePoints, shapeToScene, toScene, CATEGORY_COLOR } from "./scene";
 import { interiorPoint, pointInPolygon } from "@wf/geometry";
 import { route } from "@wf/routing";
-import { type Grab, grabRotate, projectToScreen, stepPose } from "./camera";
+import { type Grab, type Pose, grabRotate, projectToScreen, stepPose } from "./camera";
 import { createWheelRouter } from "./input";
 import { alphaAt, locateStep, routeGeometry } from "./route-geometry";
 import { RIBBON_WIDTH_M, buildRibbonMesh, ribbonWidths } from "./ribbon-mesh";
@@ -271,8 +271,10 @@ describe("floor changes", () => {
 
 describe("grab and turn", () => {
   const viewport = { width: 1200, height: 800 };
+  // The pivot is deliberately NOT the camera's target: after a guided flight the target sits ten
+  // metres ahead of the walker, and grabbing anything else used to re-aim the camera at it.
   const grab: Grab = {
-    pose: { eye: [40, 30, 40], target: [0, 0, 0] },
+    pose: { eye: [40, 30, 40], target: [6, 1, -4] },
     pivot: [0, 0, 0],
     cursor: { x: 600, y: 400 },
     viewport,
@@ -280,6 +282,8 @@ describe("grab and turn", () => {
   };
 
   it("keeps the grabbed point under the cursor", () => {
+    // As in the app, the pivot comes from a raycast through the cursor, so it starts under it.
+    const onCursor: Grab = { ...grab, cursor: projectToScreen(grab.pose, grab.pivot, viewport, grab.fovDegrees) };
     for (const [dx, dy] of [
       [120, 0],
       [-200, 40],
@@ -287,9 +291,9 @@ describe("grab and turn", () => {
       [-340, -120],
       [500, 60],
     ]) {
-      const cursor = { x: grab.cursor.x + dx!, y: grab.cursor.y + dy! };
-      const pose = grabRotate(grab, cursor);
-      const back = projectToScreen(pose, grab.pivot, viewport, grab.fovDegrees);
+      const cursor = { x: onCursor.cursor.x + dx!, y: onCursor.cursor.y + dy! };
+      const pose = grabRotate(onCursor, cursor);
+      const back = projectToScreen(pose, onCursor.pivot, viewport, onCursor.fovDegrees);
       expect(Math.hypot(back.x - cursor.x, back.y - cursor.y)).toBeLessThan(2);
     }
   });
@@ -314,6 +318,33 @@ describe("grab and turn", () => {
       expect(pose.eye[i]).toBeCloseTo(grab.pose.eye[i]!, 6);
       expect(pose.target[i]).toBeCloseTo(grab.pose.target[i]!, 6);
     }
+  });
+
+  it("starts moving smoothly, with no jump on the first pixel", () => {
+    // The jitter: the first move used to re-point the camera at the grabbed spot, so the view snapped
+    // once and was smooth afterwards. A one-pixel drag must barely change anything.
+    const step = (dx: number) => grabRotate(grab, { x: grab.cursor.x + dx, y: grab.cursor.y });
+    const move = (a: Pose, b: Pose) =>
+      Math.max(
+        Math.hypot(a.eye[0] - b.eye[0], a.eye[1] - b.eye[1], a.eye[2] - b.eye[2]),
+        Math.hypot(a.target[0] - b.target[0], a.target[1] - b.target[1], a.target[2] - b.target[2]),
+      );
+
+    const first = move(grab.pose, step(1));
+    const later = move(step(20), step(21));
+    expect(first).toBeLessThan(1);
+    // The very first pixel moves the camera about as much as any other pixel: no discontinuity.
+    expect(first).toBeLessThan(later * 3);
+  });
+
+  it("turns the model about the grabbed point rather than the old camera target", () => {
+    const pose = grabRotate(grab, { x: grab.cursor.x + 200, y: grab.cursor.y });
+    // The camera swings around the pivot rather than being re-aimed at it: it stays roughly the same
+    // distance away, and what it was looking at is carried along instead of being discarded.
+    const before = Math.hypot(grab.pose.eye[0] - grab.pivot[0], grab.pose.eye[1] - grab.pivot[1], grab.pose.eye[2] - grab.pivot[2]);
+    const after = Math.hypot(pose.eye[0] - grab.pivot[0], pose.eye[1] - grab.pivot[1], pose.eye[2] - grab.pivot[2]);
+    expect(Math.abs(after - before)).toBeLessThan(before * 0.1);
+    expect(pose.target).not.toEqual(grab.pivot);
   });
 });
 

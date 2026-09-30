@@ -118,22 +118,58 @@ export function grabRotate(grab: Grab, cursor: { x: number; y: number }): Pose {
   // compensation below would fling the camera somewhere absurd.
   const dx = clamp(cursor.x - grab.cursor.x, grab.viewport.width);
   const dy = clamp(cursor.y - grab.cursor.y, grab.viewport.height);
-  const { radius, theta, phi } = toSpherical(grab.pose.eye, grab.pivot);
-  // A full width of drag turns the model half a turn; a full height tips it through its limits.
-  const turned = theta - (dx / Math.max(1, grab.viewport.width)) * Math.PI * 2;
-  const tipped = clampPolar(phi - (dy / Math.max(1, grab.viewport.height)) * Math.PI);
 
-  const eye = fromSpherical(grab.pivot, radius, turned, tipped);
-  const rotated: Pose = { eye, target: grab.pivot };
+  // How far to turn. The polar clamp is applied to the eye's angle about the pivot, and whatever it
+  // allows is the rotation the whole camera gets.
+  const { theta, phi } = toSpherical(grab.pose.eye, grab.pivot);
+  // Dragging the full width of the view turns the model half a turn, and the full height covers the
+  // whole range of tilt once. A full turn per width felt twitchy.
+  const turned = theta - (dx / Math.max(1, grab.viewport.width)) * Math.PI;
+  const tipped = clampPolar(phi - (dy / Math.max(1, grab.viewport.height)) * (Math.PI / 2));
+  const yaw = turned - theta;
+  const pitch = tipped - phi;
 
-  // Put the grabbed point back under the cursor.
+  // Rotate the camera *and* what it is looking at, rigidly, about the grabbed point. Re-aiming at the
+  // pivot instead would make the view jump the instant a drag began, however small the movement.
+  const about = (p: Vec3, axis: Vec3, angle: number): Vec3 => {
+    const v: Vec3 = [p[0] - grab.pivot[0], p[1] - grab.pivot[1], p[2] - grab.pivot[2]];
+    const r = rotateAbout(v, axis, angle);
+    return [grab.pivot[0] + r[0], grab.pivot[1] + r[1], grab.pivot[2] + r[2]];
+  };
+
+  const yawedEye = about(grab.pose.eye, [0, 1, 0], yaw);
+  const yawedTarget = about(grab.pose.target, [0, 1, 0], yaw);
+  // Tilt about the camera's own horizontal axis, so dragging up and down tips the model towards you.
+  const forward = normalize([yawedTarget[0] - yawedEye[0], 0, yawedTarget[2] - yawedEye[2]]);
+  const right = normalize(cross(forward, [0, 1, 0]));
+  const eye = about(yawedEye, right, pitch);
+  const target = about(yawedTarget, right, pitch);
+
+  // Put the grabbed point back under the cursor. Measured as a *change* from where it sat when the
+  // drag began, not against the cursor outright: the raycast point is only as exact as the pixel it
+  // came from, and assuming it is dead under the cursor puts a jump in the first frame of every drag.
   const held = { x: grab.cursor.x + dx, y: grab.cursor.y + dy };
-  const under = pointUnderCursor(rotated, held, grab.viewport, grab.fovDegrees, grab.pivot);
-  const shift: Vec3 = [grab.pivot[0] - under[0], grab.pivot[1] - under[1], grab.pivot[2] - under[2]];
+  const under = pointUnderCursor({ eye, target }, held, grab.viewport, grab.fovDegrees, grab.pivot);
+  const under0 = pointUnderCursor(grab.pose, grab.cursor, grab.viewport, grab.fovDegrees, grab.pivot);
+  const shift: Vec3 = [under0[0] - under[0], under0[1] - under[1], under0[2] - under[2]];
   return {
     eye: [eye[0] + shift[0], eye[1] + shift[1], eye[2] + shift[2]],
-    target: [grab.pivot[0] + shift[0], grab.pivot[1] + shift[1], grab.pivot[2] + shift[2]],
+    target: [target[0] + shift[0], target[1] + shift[1], target[2] + shift[2]],
   };
+}
+
+/** Rodrigues rotation of a vector about a unit axis. */
+function rotateAbout(v: Vec3, axis: Vec3, angle: number): Vec3 {
+  if (angle === 0) return v;
+  const cosA = Math.cos(angle);
+  const sinA = Math.sin(angle);
+  const d = dot(axis, v);
+  const c = cross(axis, v);
+  return [
+    v[0] * cosA + c[0] * sinA + axis[0] * d * (1 - cosA),
+    v[1] * cosA + c[1] * sinA + axis[1] * d * (1 - cosA),
+    v[2] * cosA + c[2] * sinA + axis[2] * d * (1 - cosA),
+  ];
 }
 
 const clamp = (value: number, limit: number) => Math.min(limit, Math.max(-limit, value));
