@@ -142,12 +142,17 @@ function LevelMesh({
         onSelect(level.id);
       }}
     >
+      {/*
+        The `key` on each material matters: turning `transparent` on or off needs a new shader, and
+        three will not recompile one in place. Without it a level that was lit once stayed lit for the
+        rest of the session, however the focus changed.
+      */}
       <mesh geometry={slab} receiveShadow>
-        <meshStandardMaterial color="#f2efe9" transparent={dimmed} opacity={opacity} roughness={0.95} />
+        <meshStandardMaterial key={dimmed ? "dim" : "lit"} color="#f2efe9" transparent={dimmed} opacity={opacity} roughness={0.95} />
       </mesh>
       {rooms.map(({ color, geometry }) => (
         <mesh key={color} geometry={geometry} castShadow>
-          <meshStandardMaterial color={color} transparent={dimmed} opacity={opacity} roughness={0.8} />
+          <meshStandardMaterial key={dimmed ? "dim" : "lit"} color={color} transparent={dimmed} opacity={opacity} roughness={0.8} />
         </mesh>
       ))}
       {labelsVisible &&
