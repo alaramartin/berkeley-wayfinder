@@ -10,7 +10,9 @@ export async function generateStaticParams() {
   return entries.filter((e) => e.isDirectory()).map((e) => ({ building: e.name }));
 }
 
-export default async function BuildingPage(props: PageProps<"/[building]">) {
+// Typed by hand rather than with the generated `PageProps` helper: that global only exists once
+// `next typegen` has written `.next/types`, so typecheck failed on any clean checkout, including CI.
+export default async function BuildingPage(props: { params: Promise<{ building: string }> }) {
   const { building } = await props.params;
   if (!/^[a-z0-9-]+$/.test(building)) notFound();
   return (
