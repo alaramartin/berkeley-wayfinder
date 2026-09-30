@@ -91,24 +91,27 @@ export function zoomPose(
   return { eye: scale(pose.eye), target: scale(pose.target) };
 }
 
+/** 0 when close in, 1 once the camera is far enough back to see the whole building. */
+function zoomedOut(pose: Pose, modelRadius: number): number {
+  const distance = Math.hypot(pose.eye[0] - pose.target[0], pose.eye[1] - pose.target[1], pose.eye[2] - pose.target[2]);
+  const t = Math.min(1, Math.max(0, distance / (modelRadius * 2)));
+  return t * t * (3 - 2 * t);
+}
+
 /**
  * What a drag should turn about.
  *
- * Zoomed out, that is the middle of the building: it spins on the spot like a model on a turntable.
- * Zoomed into a corridor the building's centre can be tens of metres away and off to one side, and
- * turning about it sweeps the camera off the route entirely — so the pivot slides up the view axis to
- * something you are actually looking at. Taking the building's centre *along the view direction*
- * gives both, with no jump between them.
+ * Zoomed out, exactly the middle of the building, so it spins on the spot and never wanders to one
+ * side. Zoomed into a corridor, the spot you are looking at, because turning about a centre tens of
+ * metres away would sweep the camera off the route. The two blend smoothly with distance.
  */
 export function pivotFor(pose: Pose, modelCentre: Vec3, modelRadius: number): Vec3 {
-  const forward = normalize([pose.target[0] - pose.eye[0], pose.target[1] - pose.eye[1], pose.target[2] - pose.eye[2]]);
-  const toCentre: Vec3 = [modelCentre[0] - pose.eye[0], modelCentre[1] - pose.eye[1], modelCentre[2] - pose.eye[2]];
-  const ahead = dot(toCentre, forward);
-  const toTarget = Math.hypot(pose.target[0] - pose.eye[0], pose.target[1] - pose.eye[1], pose.target[2] - pose.eye[2]);
-  // Never behind the camera, never further than the centre itself, and never so close that a small
-  // drag spins the world around your nose.
-  const distance = Math.min(Math.max(ahead, Math.min(toTarget, modelRadius * 0.25)), Math.hypot(toCentre[0], toCentre[1], toCentre[2]));
-  return [pose.eye[0] + forward[0] * distance, pose.eye[1] + forward[1] * distance, pose.eye[2] + forward[2] * distance];
+  const t = zoomedOut(pose, modelRadius);
+  return [
+    pose.target[0] + (modelCentre[0] - pose.target[0]) * t,
+    pose.target[1] + (modelCentre[1] - pose.target[1]) * t,
+    pose.target[2] + (modelCentre[2] - pose.target[2]) * t,
+  ];
 }
 
 export function easeInOutCubic(t: number): number {
@@ -254,7 +257,8 @@ export function gesturePose(
  * carry the model out of sight with nothing to grab.
  */
 export function clampPose(pose: Pose, centre: Vec3, radius: number): Pose {
-  const limit = radius * 1.1;
+  // Zoomed out the building stays put in the middle; zoomed in there is room to wander along a corridor.
+  const limit = radius * (0.25 + 0.85 * (1 - zoomedOut(pose, radius)));
   let dx = pose.target[0] - centre[0];
   let dz = pose.target[2] - centre[2];
   const out = Math.hypot(dx, dz);
