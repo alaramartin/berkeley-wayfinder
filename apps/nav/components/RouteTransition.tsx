@@ -8,6 +8,7 @@ import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import type { MergedTransition } from "@/lib/route-geometry";
+import { advancePhase, riserArrows } from "@/lib/riser";
 import { ROUTE_COLOR, SLAB_THICKNESS, toScene } from "@/lib/scene";
 
 const RISER_RADIUS = 0.28;
@@ -65,15 +66,22 @@ export function RouteTransition({
     };
   }, [start, end]);
 
+  const phase = useRef(0);
   useFrame((_, delta) => {
     const g = arrows.current;
     if (!g) return;
-    // Arrows slide along the riser and wrap, so it reads as movement in the travel direction.
-    for (const child of g.children) {
-      child.position.y += (up ? 1 : -1) * delta * 1.6;
-      if (up && child.position.y > length / 2) child.position.y -= length;
-      if (!up && child.position.y < -length / 2) child.position.y += length;
-    }
+    phase.current = advancePhase(phase.current, delta, length);
+    // The riser's own +y already points from departure to arrival, climbing or descending, so the
+    // arrows always slide towards +y. Each one fades and shrinks near the ends, so it glides out of
+    // view at one end and glides in at the other instead of popping.
+    const state = riserArrows(phase.current, g.children.length, length);
+    g.children.forEach((child, i) => {
+      const arrow = state[i]!;
+      child.position.y = arrow.y;
+      child.scale.setScalar(Math.max(0.001, arrow.fade));
+      const material = (child as THREE.Mesh).material as THREE.MeshBasicMaterial;
+      material.opacity = arrow.fade;
+    });
   });
 
   if (!exploded) {
@@ -97,10 +105,11 @@ export function RouteTransition({
           <meshBasicMaterial color={ROUTE_COLOR} transparent opacity={0.45} side={THREE.DoubleSide} depthWrite={false} />
         </mesh>
         <group ref={arrows}>
+          {/* No flip for descending: the group is already rotated so +y is the way you are going. */}
           {Array.from({ length: count }, (_, i) => (
-            <mesh key={i} position={[0, -length / 2 + (i + 0.5) * (length / count), 0]} rotation={[up ? 0 : Math.PI, 0, 0]}>
+            <mesh key={i}>
               <coneGeometry args={[RISER_RADIUS * 1.9, 0.9, 10]} />
-              <meshBasicMaterial color={ROUTE_COLOR} />
+              <meshBasicMaterial color={ROUTE_COLOR} transparent depthWrite={false} />
             </mesh>
           ))}
         </group>

@@ -9,7 +9,9 @@ import { boundsOf, cameraFor, contrastRatio, labelColor, legendEntries, levelHei
 import { interiorPoint, pointInPolygon } from "@wf/geometry";
 import { route } from "@wf/routing";
 import { type Grab, type Pose, grabRotate, pivotFor, projectToScreen, stepPose } from "./camera";
+import * as THREE from "three";
 import { createWheelRouter } from "./input";
+import { ARROW_FADE_FRACTION, advancePhase, riserArrows } from "./riser";
 import { alphaAt, locateStep, routeGeometry } from "./route-geometry";
 import { RIBBON_WIDTH_M, buildRibbonMesh, ribbonWidths } from "./ribbon-mesh";
 import { buildIndex, search } from "./search";
@@ -410,6 +412,57 @@ describe("telling a trackpad from a mouse", () => {
     const router = createWheelRouter();
     expect(router.route(wheel({ deltaX: 120, deltaY: 0, shiftKey: true })).kind).toBe("zoom");
     expect(router.device()).not.toBe("trackpad");
+  });
+});
+
+describe("riser arrows", () => {
+  const length = 12;
+  const count = 5;
+
+  it("head the way you are going, whether the route climbs or descends", () => {
+    // The riser group is rotated so its local +y runs from departure to arrival. If that ever stops
+    // being true for a descent, the arrows point and slide the wrong way, as they once did.
+    for (const [from, to] of [
+      [new THREE.Vector3(0, 0, 0), new THREE.Vector3(3, 12, 1)], // up
+      [new THREE.Vector3(3, 12, 1), new THREE.Vector3(0, 0, 0)], // down
+    ]) {
+      const direction = to!.clone().sub(from!).normalize();
+      const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+      const local = new THREE.Vector3(0, 1, 0).applyQuaternion(q);
+      expect(local.distanceTo(direction)).toBeLessThan(1e-6);
+    }
+    // And the slide is always towards +y: positions only ever increase until an arrow wraps.
+    const a = riserArrows(0.30, count, length);
+    const b = riserArrows(0.31, count, length);
+    for (let i = 0; i < count; i++) expect(b[i]!.y).toBeGreaterThan(a[i]!.y);
+  });
+
+  it("glide in and out instead of popping when they wrap", () => {
+    // The pop: an arrow reaching the end jumped to the other end at full size. Where one wraps it must
+    // be invisible, and it must ease in from nothing at the start and out to nothing at the end.
+    let worstJump = 0;
+    let previous = riserArrows(0, count, length);
+    for (let step = 1; step <= 400; step++) {
+      const now = riserArrows(step / 400, count, length);
+      now.forEach((arrow, i) => {
+        const wrapped = arrow.y < previous[i]!.y;
+        if (wrapped) worstJump = Math.max(worstJump, arrow.fade, previous[i]!.fade);
+      });
+      previous = now;
+    }
+    expect(worstJump).toBeLessThan(0.05);
+
+    // Fully visible mid-way, and gone at both ends.
+    const middle = riserArrows(0, 1, length)[0]!;
+    expect(middle.fade).toBeLessThan(0.05);
+    expect(riserArrows(0.5, 1, length)[0]!.fade).toBeCloseTo(1, 5);
+    expect(riserArrows(ARROW_FADE_FRACTION / 2, 1, length)[0]!.fade).toBeLessThan(0.6);
+  });
+
+  it("moves at the same speed on a long riser as a short one", () => {
+    const shortRise = advancePhase(0, 1, 6) * 6;
+    const longRise = advancePhase(0, 1, 24) * 24;
+    expect(shortRise).toBeCloseTo(longRise, 6);
   });
 });
 
