@@ -9,7 +9,10 @@ export interface BuildingData {
 }
 
 async function json(url: string): Promise<unknown> {
-  const res = await fetch(url, { cache: "force-cache" });
+  // Revalidate every time. `force-cache` used the browser's stored copy without asking the server, so
+  // after a data change or a deploy a returning visitor kept seeing the old floor plans indefinitely.
+  // These files are small and static, so an unchanged one costs a 304.
+  const res = await fetch(url, { cache: "no-cache" });
   if (!res.ok) throw new Error(`could not load ${url} (${res.status})`);
   return res.json();
 }

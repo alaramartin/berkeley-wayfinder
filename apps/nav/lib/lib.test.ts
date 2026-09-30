@@ -11,6 +11,7 @@ import { instructions, route } from "@wf/routing";
 import { type Grab, type Pose, grabRotate, pivotFor, pointUnderCursor, projectToScreen, spanPose, zoomPose } from "./camera";
 import * as THREE from "three";
 import { createWheelRouter, zoomFactor } from "./input";
+import { loadBuilding } from "./data";
 import { ARROW_FADE_FRACTION, advancePhase, riserArrows } from "./riser";
 import { alphaAt, guideStepAt, pointAtDistance, ribbonActivity, riserEndingAt, routeGeometry, stepSpan } from "./route-geometry";
 import { RIBBON_WIDTH_M, buildRibbonMesh, ribbonWidths } from "./ribbon-mesh";
@@ -553,6 +554,26 @@ describe("riser arrows", () => {
     const shortRise = advancePhase(0, 1, 6) * 6;
     const longRise = advancePhase(0, 1, 24) * 24;
     expect(shortRise).toBeCloseTo(longRise, 6);
+  });
+});
+
+describe("loading building data", () => {
+  it("revalidates instead of trusting the browser's stored copy", async () => {
+    // With `force-cache` a returning visitor never saw an updated floor plan.
+    const seen: (RequestCache | undefined)[] = [];
+    const original = globalThis.fetch;
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      seen.push(init?.cache);
+      const file = path.join(root, String(input).replace(/^\/data\/wheeler\//, ""));
+      return new Response(await readFile(file, "utf8"), { status: 200 });
+    }) as typeof fetch;
+    try {
+      await loadBuilding("wheeler");
+    } finally {
+      globalThis.fetch = original;
+    }
+    expect(seen.length).toBeGreaterThan(1);
+    expect(seen.every((c) => c === "no-cache")).toBe(true);
   });
 });
 
