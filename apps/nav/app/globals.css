@@ -4,3 +4,13 @@
   --color-berkeley-blue: #002676;
   --color-california-gold: #fdb515;
 }
+
+/* The 3D view is a control surface, not text: no selection, callouts, tap flash, or browser panning. */
+canvas {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+  outline: none;
+}

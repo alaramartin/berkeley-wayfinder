@@ -7,7 +7,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Legend } from "@/components/Legend";
 import { ViewControls } from "@/components/ViewControls";
-import type { PointerDevice } from "@/lib/input";
 import { RoutePanel } from "@/components/RoutePanel";
 import { type GuideStep, guideStepAt, routeGeometry } from "@/lib/route-geometry";
 import { type BuildingData, loadBuilding } from "@/lib/data";
@@ -89,7 +88,6 @@ export function BuildingView({ buildingId }: { buildingId: string }) {
    * state, not URL state — a shared link should open on the overview, not mid-flight.
    */
   const [guide, setGuide] = useState<"off" | "overview" | "flying" | "following" | "manual">("off");
-  const [device, setDevice] = useState<PointerDevice>("auto");
   const zoomApi = useRef<((factor: number) => void) | null>(null);
   // Hooks must not live in the JSX below: it renders after the loading early-returns, so a hook
   // there changes the hook count between renders.
@@ -204,7 +202,7 @@ export function BuildingView({ buildingId }: { buildingId: string }) {
 
   return (
     <main className="flex h-dvh flex-col md:flex-row">
-      <div className="relative min-h-0 flex-1">
+      <div className="relative min-h-0 flex-1 select-none">
         <Scene
           data={data}
           view={state.view}
@@ -217,7 +215,6 @@ export function BuildingView({ buildingId }: { buildingId: string }) {
           onTakeover={() => setGuide((g) => (g === "off" ? g : "manual"))}
           focusLevel={state.level}
           onSelectLevel={(id) => update({ level: state.level === id ? null : id })}
-          device={device}
           onZoomApi={receiveZoomApi}
         />
         <ViewControls
@@ -227,8 +224,6 @@ export function BuildingView({ buildingId }: { buildingId: string }) {
             setGuide("overview");
             flyTo({ kind: "overview" }, 900);
           }}
-          device={device}
-          onDevice={setDevice}
         />
         <Legend levels={data.levels} focusLevel={state.level} />
         {state.level && (

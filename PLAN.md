@@ -322,6 +322,7 @@ If something looks wrong in the photo-to-plan conversion itself, use Corners (ne
 ## 12. Decision log
 | Date | Decision | Why |
 |---|---|---|
+| 2026-09-30 | One custom camera controller (`lib/controller.ts`) replaces OrbitControls and our extra handlers. One finger/left mouse turns; two fingers pinch, twist and slide together; right/Shift-drag slides; wheel and trackpad swipe zoom to the cursor; double-tap zooms; flings coast. Zoom and pinch hold the real surface under the fingers (raycast). No shadows; labels mount once and toggle visibility. Canvas is `user-select:none; touch-action:none` | Two handlers on one canvas fought over touches and left the camera dead until all fingers lifted ("stuck"); modelled on Sketchfab/Matterport/Google Maps. Trackpad swipe now zooms instead of panning, which the reference viewers do; the mouse/trackpad override is gone |
 | 2026-09-16 | Photos are directory placards; rely on printed room numbers + legend colors | Better source than evac maps; removes the "room numbers missing" gap |
 | 2026-09-16 | Rooms are polygons + doors on corridor edges | 3D view needs polygons; routing stays topological via doors |
 | 2026-09-16 | Canonical coords in building-local meters; px only in `data/work` | One frame for all levels; OSM fit gives real-world placement |

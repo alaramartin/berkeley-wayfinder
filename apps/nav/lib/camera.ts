@@ -78,13 +78,15 @@ export function zoomPose(
   viewport: { width: number; height: number },
   fovDegrees: number,
   limits: { min: number; max: number },
+  /** A point on the surface being zoomed into; without it the plane through the target stands in. */
+  depthAt?: Vec3,
 ): Pose {
   const distance = Math.hypot(pose.eye[0] - pose.target[0], pose.eye[1] - pose.target[1], pose.eye[2] - pose.target[2]);
   if (distance < 1e-6) return pose;
   // Never past a limit, but always able to move towards one you are not yet at.
   const wanted = Math.min(limits.max, Math.max(limits.min, distance * factor));
   const f = wanted / distance;
-  const anchor = cursor ? pointUnderCursor(pose, cursor, viewport, fovDegrees, pose.target) : pose.target;
+  const anchor = cursor ? pointUnderCursor(pose, cursor, viewport, fovDegrees, depthAt ?? pose.target) : pose.target;
   const scale = (p: Vec3): Vec3 => [anchor[0] + (p[0] - anchor[0]) * f, anchor[1] + (p[1] - anchor[1]) * f, anchor[2] + (p[2] - anchor[2]) * f];
   return { eye: scale(pose.eye), target: scale(pose.target) };
 }
@@ -171,47 +173,105 @@ export function pointUnderCursor(pose: Pose, cursor: { x: number; y: number }, v
 }
 
 /**
- * Turn the building about the point the user grabbed, keeping that point under the cursor.
- *
- * Rotation alone would slide the grabbed point away from the finger, which is what makes an orbit
- * control feel like it is fighting you; the second half of this shifts the camera so the point the
- * user is holding stays put.
+ * Turn the camera about `pivot` by `dTheta` (round) and `dPhi` (tip, clamped), rigidly: the eye and
+ * what it looks at move together, so the pivot stays on the same pixel. Incremental, so inertia and
+ * a live drag share one implementation.
  */
-export function grabRotate(grab: Grab, cursor: { x: number; y: number }): Pose {
-  // A flick can report a delta far outside the window; past a full drag across the viewport the
-  // compensation below would fling the camera somewhere absurd.
-  const dx = clamp(cursor.x - grab.cursor.x, grab.viewport.width);
-  const dy = clamp(cursor.y - grab.cursor.y, grab.viewport.height);
-
-  // How far to turn. The polar clamp is applied to the eye's angle about the pivot, and whatever it
-  // allows is the rotation the whole camera gets.
-  const { theta, phi } = toSpherical(grab.pose.eye, grab.pivot);
-  // Dragging the full width of the view turns the model half a turn, and the full height covers the
-  // whole range of tilt once. A full turn per width felt twitchy.
-  const turned = theta - (dx / Math.max(1, grab.viewport.width)) * Math.PI;
-  const tipped = clampPolar(phi - (dy / Math.max(1, grab.viewport.height)) * (Math.PI / 2));
-  const yaw = turned - theta;
-  const pitch = tipped - phi;
-
-  // Rotate the camera *and* what it is looking at, rigidly, about the grabbed point. Re-aiming at the
-  // pivot instead would make the view jump the instant a drag began, however small the movement.
+export function orbitBy(pose: Pose, pivot: Vec3, dTheta: number, dPhi: number): Pose {
+  const { phi } = toSpherical(pose.eye, pivot);
+  const pitch = clampPolar(phi + dPhi) - phi;
   const about = (p: Vec3, axis: Vec3, angle: number): Vec3 => {
-    const v: Vec3 = [p[0] - grab.pivot[0], p[1] - grab.pivot[1], p[2] - grab.pivot[2]];
+    const v: Vec3 = [p[0] - pivot[0], p[1] - pivot[1], p[2] - pivot[2]];
     const r = rotateAbout(v, axis, angle);
-    return [grab.pivot[0] + r[0], grab.pivot[1] + r[1], grab.pivot[2] + r[2]];
+    return [pivot[0] + r[0], pivot[1] + r[1], pivot[2] + r[2]];
   };
-
-  const yawedEye = about(grab.pose.eye, [0, 1, 0], yaw);
-  const yawedTarget = about(grab.pose.target, [0, 1, 0], yaw);
+  const yawedEye = about(pose.eye, [0, 1, 0], dTheta);
+  const yawedTarget = about(pose.target, [0, 1, 0], dTheta);
   // Tilt about the camera's own horizontal axis, so dragging up and down tips the model towards you.
   const forward = normalize([yawedTarget[0] - yawedEye[0], 0, yawedTarget[2] - yawedEye[2]]);
   const right = normalize(cross(forward, [0, 1, 0]));
-  const eye = about(yawedEye, right, pitch);
-  const target = about(yawedTarget, right, pitch);
+  return { eye: about(yawedEye, right, pitch), target: about(yawedTarget, right, pitch) };
+}
 
-  // No translation on top. A rigid rotation of the camera about the pivot already leaves the pivot at
-  // exactly the same place on screen, so the building turns in place instead of wandering off-frame.
-  return { eye, target };
+/** Radians of turn per screen width (round) and per screen height (tip). */
+export const TURN_PER_WIDTH = Math.PI;
+export const TIP_PER_HEIGHT = Math.PI / 2;
+
+/**
+ * Turn the building for a drag of (dx, dy) pixels. Dragging right brings the near side of the model
+ * to the right; dragging down tips the top towards you.
+ */
+export function grabRotate(grab: Grab, cursor: { x: number; y: number }): Pose {
+  // A flick can report a delta far outside the window.
+  const dx = clamp(cursor.x - grab.cursor.x, grab.viewport.width);
+  const dy = clamp(cursor.y - grab.cursor.y, grab.viewport.height);
+  return orbitBy(grab.pose, grab.pivot, -(dx / Math.max(1, grab.viewport.width)) * TURN_PER_WIDTH, -(dy / Math.max(1, grab.viewport.height)) * TIP_PER_HEIGHT);
+}
+
+/** Where fingers (or a cursor) are: their midpoint, spread and the angle between them. */
+export interface Touchpoint {
+  x: number;
+  y: number;
+  spread: number;
+  angle: number;
+}
+
+/**
+ * Pinch, twist and slide at once, the way a map does: the spot between the fingers when they went
+ * down stays between them. Spread scales the distance, twist turns the model about the vertical, and
+ * the midpoint's own movement slides it. Computed from the pose at the start of the gesture, so it
+ * never drifts however long the fingers stay down.
+ */
+export function gesturePose(
+  start: { pose: Pose; pivot: Vec3; viewport: { width: number; height: number }; fovDegrees: number; limits: { min: number; max: number } },
+  from: Touchpoint,
+  to: Touchpoint,
+): Pose {
+  const { pose, viewport, fovDegrees, limits } = start;
+  const anchor = pointUnderCursor(pose, from, viewport, fovDegrees, start.pivot);
+  const distance = Math.hypot(pose.eye[0] - pose.target[0], pose.eye[1] - pose.target[1], pose.eye[2] - pose.target[2]);
+  const spread = Math.max(1, to.spread);
+  const wanted = Math.min(limits.max, Math.max(limits.min, distance * (Math.max(1, from.spread) / spread)));
+  const f = distance > 1e-6 ? wanted / distance : 1;
+  let twist = to.angle - from.angle;
+  while (twist > Math.PI) twist -= 2 * Math.PI;
+  while (twist < -Math.PI) twist += 2 * Math.PI;
+
+  const move = (p: Vec3): Vec3 => {
+    const v: Vec3 = [(p[0] - anchor[0]) * f, (p[1] - anchor[1]) * f, (p[2] - anchor[2]) * f];
+    const r = rotateAbout(v, [0, 1, 0], twist);
+    return [anchor[0] + r[0], anchor[1] + r[1], anchor[2] + r[2]];
+  };
+  const scaled: Pose = { eye: move(pose.eye), target: move(pose.target) };
+  const under = pointUnderCursor(scaled, to, viewport, fovDegrees, anchor);
+  const shift: Vec3 = [anchor[0] - under[0], anchor[1] - under[1], anchor[2] - under[2]];
+  const add = (p: Vec3): Vec3 => [p[0] + shift[0], p[1] + shift[1], p[2] + shift[2]];
+  return { eye: add(scaled.eye), target: add(scaled.target) };
+}
+
+/**
+ * Keep what the camera looks at inside the building's neighbourhood, so a slide or a fling can never
+ * carry the model out of sight with nothing to grab.
+ */
+export function clampPose(pose: Pose, centre: Vec3, radius: number): Pose {
+  const limit = radius * 1.1;
+  let dx = pose.target[0] - centre[0];
+  let dz = pose.target[2] - centre[2];
+  const out = Math.hypot(dx, dz);
+  let sx = 0;
+  let sz = 0;
+  if (out > limit) {
+    dx /= out;
+    dz /= out;
+    sx = -dx * (out - limit);
+    sz = -dz * (out - limit);
+  }
+  const sy = Math.min(centre[1] + radius, Math.max(centre[1] - radius, pose.target[1])) - pose.target[1];
+  if (!sx && !sz && !sy) return pose;
+  return {
+    eye: [pose.eye[0] + sx, pose.eye[1] + sy, pose.eye[2] + sz],
+    target: [pose.target[0] + sx, pose.target[1] + sy, pose.target[2] + sz],
+  };
 }
 
 /** Rodrigues rotation of a vector about a unit axis. */

@@ -8,9 +8,10 @@ import type { Vec3 } from "./scene";
 import { boundsOf, cameraFor, contrastRatio, labelColor, legendEntries, levelHeights, levelVisibility, planToShape, routePoints, shapeToScene, toScene, CATEGORY_COLOR } from "./scene";
 import { interiorPoint, pointInPolygon } from "@wf/geometry";
 import { instructions, route } from "@wf/routing";
-import { type Grab, type Pose, grabRotate, pivotFor, pointUnderCursor, projectToScreen, spanPose, zoomPose } from "./camera";
+import { type Grab, type Pose, type Touchpoint, clampPose, gesturePose, grabRotate, pivotFor, pointUnderCursor, projectToScreen, spanPose, zoomPose } from "./camera";
 import * as THREE from "three";
-import { createWheelRouter, zoomFactor } from "./input";
+import { zoomFactor } from "./input";
+import { createController } from "./controller";
 import { loadBuilding } from "./data";
 import { ARROW_FADE_FRACTION, advancePhase, riserArrows } from "./riser";
 import { alphaAt, guideStepAt, pointAtDistance, ribbonActivity, riserEndingAt, routeGeometry, stepSpan } from "./route-geometry";
@@ -458,54 +459,6 @@ describe("grab and turn", () => {
   });
 });
 
-describe("telling a trackpad from a mouse", () => {
-  const wheel = (over: Partial<Parameters<ReturnType<typeof createWheelRouter>["route"]>[0]>, at = 0) => ({
-    deltaX: 0,
-    deltaY: 0,
-    deltaMode: 0,
-    ctrlKey: false,
-    shiftKey: false,
-    metaKey: false,
-    timeStamp: at,
-    ...over,
-  });
-
-  it("keeps zoom working for a mouse, forever", () => {
-    // The failure that matters: mapping plain wheels to panning would leave a mouse with no zoom.
-    const router = createWheelRouter();
-    for (let i = 0; i < 50; i++) {
-      const intent = router.route(wheel({ deltaY: i % 2 ? 100 : -120 }, i * 30));
-      expect(intent.kind).toBe("zoom");
-    }
-    expect(router.device()).not.toBe("trackpad");
-  });
-
-  it("switches to panning once a trackpad gives itself away", () => {
-    const router = createWheelRouter();
-    expect(router.route(wheel({ deltaY: 2.5 }, 0)).kind).toBe("pan");
-    expect(router.route(wheel({ deltaY: 4, deltaX: -1 }, 16)).kind).toBe("pan");
-    expect(router.device()).toBe("trackpad");
-  });
-
-  it("treats a pinch as zoom without mistaking it for a trackpad swipe", () => {
-    const router = createWheelRouter();
-    expect(router.route(wheel({ deltaY: -2.5, ctrlKey: true }, 0)).kind).toBe("zoom");
-    // A pinch must not latch the router, or a mouse plugged in later would pan instead of zoom.
-    expect(router.route(wheel({ deltaY: 120 }, 100)).kind).toBe("zoom");
-  });
-
-  it("honours an explicit device choice", () => {
-    expect(createWheelRouter("mouse").route(wheel({ deltaY: 1.5, deltaX: 0.2 })).kind).toBe("zoom");
-    expect(createWheelRouter("trackpad").route(wheel({ deltaY: 120 })).kind).toBe("pan");
-  });
-
-  it("does not latch on a shift-wheel, which mice send sideways", () => {
-    const router = createWheelRouter();
-    expect(router.route(wheel({ deltaX: 120, deltaY: 0, shiftKey: true })).kind).toBe("zoom");
-    expect(router.device()).not.toBe("trackpad");
-  });
-});
-
 describe("riser arrows", () => {
   const length = 12;
   const count = 5;
@@ -687,5 +640,228 @@ describe("search", () => {
     const serviceIds = new Set(data.levels.flatMap((l) => l.rooms.filter((r) => r.category === "service").map((r) => r.id)));
     const hits = search(index, "wheeler", 50).filter((r) => r.target.type === "room" && serviceIds.has(r.target.id));
     expect(hits).toEqual([]);
+  });
+});
+
+describe("camera controller", () => {
+  const viewport = { width: 800, height: 600 };
+  const start: Pose = { eye: [0, 50, 60], target: [0, 0, 0] };
+  const world = (pose: Pose, p: Vec3, viewportSize = viewport) => projectToScreen(pose, p, viewportSize, 45);
+  const build = () => {
+    const log = { pose: start, takeovers: 0, glides: [] as Pose[] };
+    const controller = createController({
+      getPose: () => log.pose,
+      setPose: (p) => (log.pose = p),
+      viewport: () => viewport,
+      fovDegrees: 45,
+      limits: () => ({ min: 2, max: 400 }),
+      centre: [0, 0, 0],
+      radius: 60,
+      onTakeover: () => log.takeovers++,
+      animateTo: (p) => log.glides.push(p),
+    });
+    return { controller, log };
+  };
+  const finger = (id: number, x: number, y: number, time: number, extra: object = {}) => ({ id, x, y, time, type: "touch" as const, button: 0, ...extra });
+  const eyeAngle = (pose: Pose) => Math.atan2(pose.eye[0] - pose.target[0], pose.eye[2] - pose.target[2]);
+
+  it("turns on a one-finger drag, and not before the finger has really moved", () => {
+    const { controller, log } = build();
+    controller.down(finger(1, 400, 300, 0));
+    controller.move(finger(1, 402, 301, 10));
+    expect(log.pose).toBe(start);
+    expect(log.takeovers).toBe(0);
+    controller.move(finger(1, 500, 300, 30));
+    controller.move(finger(1, 600, 300, 50));
+    expect(log.takeovers).toBe(1);
+    expect(eyeAngle(log.pose)).not.toBeCloseTo(eyeAngle(start), 2);
+  });
+
+  it("a tap does not take the camera from the guide", () => {
+    const { controller, log } = build();
+    controller.down(finger(1, 400, 300, 0));
+    controller.up(finger(1, 400, 300, 80));
+    expect(log.takeovers).toBe(0);
+  });
+
+  it("two quick taps zoom in on the spot", () => {
+    const { controller, log } = build();
+    controller.down(finger(1, 400, 300, 0));
+    controller.up(finger(1, 400, 300, 60));
+    controller.down(finger(1, 404, 302, 200));
+    controller.up(finger(1, 404, 302, 260));
+    expect(log.glides).toHaveLength(1);
+    const d = (p: Pose) => Math.hypot(p.eye[0] - p.target[0], p.eye[1] - p.target[1], p.eye[2] - p.target[2]);
+    expect(d(log.glides[0]!)).toBeLessThan(d(start));
+  });
+
+  it("two slow taps are two taps, not a zoom", () => {
+    const { controller, log } = build();
+    controller.down(finger(1, 400, 300, 0));
+    controller.up(finger(1, 400, 300, 60));
+    controller.down(finger(1, 400, 300, 900));
+    controller.up(finger(1, 400, 300, 960));
+    expect(log.glides).toHaveLength(0);
+  });
+
+  it("pinch keeps the spot between the fingers under them", () => {
+    const { controller, log } = build();
+    controller.down(finger(1, 350, 300, 0));
+    controller.down(finger(2, 450, 300, 5));
+    const before = log.pose;
+    const anchor = pointUnderCursor(before, { x: 400, y: 300 }, viewport, 45, [0, 0, 0]);
+    // Spread apart, drift right and down a little, and twist.
+    controller.move(finger(1, 380, 340, 30));
+    controller.move(finger(2, 560, 360, 35));
+    const seenAt = world(log.pose, anchor);
+    const mid = { x: (380 + 560) / 2, y: (340 + 360) / 2 };
+    expect(Math.hypot(seenAt.x - mid.x, seenAt.y - mid.y)).toBeLessThan(2);
+  });
+
+  it("spreading the fingers zooms in and bringing them together zooms out", () => {
+    const dist = (p: Pose) => Math.hypot(p.eye[0] - p.target[0], p.eye[1] - p.target[1], p.eye[2] - p.target[2]);
+    const a = build();
+    a.controller.down(finger(1, 350, 300, 0));
+    a.controller.down(finger(2, 450, 300, 5));
+    a.controller.move(finger(1, 300, 300, 20));
+    a.controller.move(finger(2, 500, 300, 25));
+    expect(dist(a.log.pose)).toBeLessThan(dist(start) * 0.6);
+    const b = build();
+    b.controller.down(finger(1, 300, 300, 0));
+    b.controller.down(finger(2, 500, 300, 5));
+    b.controller.move(finger(1, 350, 300, 20));
+    b.controller.move(finger(2, 450, 300, 25));
+    expect(dist(b.log.pose)).toBeGreaterThan(dist(start) * 1.6);
+  });
+
+  it("a clockwise twist turns the model clockwise on screen", () => {
+    const { controller, log } = build();
+    const point: Vec3 = [15, 0, 0];
+    const before = world(start, point);
+    controller.down(finger(1, 300, 300, 0));
+    controller.down(finger(2, 500, 300, 5));
+    // Same midpoint and spread; the right finger moves down and the left up: clockwise on screen.
+    controller.move(finger(1, 306, 280, 20));
+    controller.move(finger(2, 494, 320, 25));
+    const after = world(log.pose, point);
+    // Anything to the right of the middle should swing downwards.
+    expect(after.y).toBeGreaterThan(before.y);
+  });
+
+  it("lifting one finger of a pinch carries on turning with the other, without a jump", () => {
+    const { controller, log } = build();
+    controller.down(finger(1, 300, 300, 0));
+    controller.down(finger(2, 500, 300, 5));
+    controller.move(finger(2, 520, 300, 20));
+    controller.up(finger(1, 300, 300, 30));
+    expect(controller.pointerCount).toBe(1);
+    expect(controller.mode).toBe("orbit");
+    const held = log.pose;
+    controller.move(finger(2, 520, 300, 40));
+    expect(log.pose).toEqual(held);
+    controller.move(finger(2, 620, 300, 60));
+    expect(log.pose).not.toEqual(held);
+  });
+
+  it("never gets stuck: a cancelled pointer, then a fresh touch, still moves the camera", () => {
+    const { controller, log } = build();
+    controller.down(finger(1, 300, 300, 0));
+    controller.down(finger(2, 500, 300, 5));
+    controller.cancel(1);
+    controller.cancel(2);
+    expect(controller.mode).toBe("idle");
+    expect(controller.pointerCount).toBe(0);
+    controller.down(finger(3, 400, 300, 100));
+    controller.move(finger(3, 500, 300, 120));
+    controller.move(finger(3, 600, 300, 140));
+    expect(log.pose).not.toBe(start);
+  });
+
+  it("ignores a third finger instead of scrambling the pinch", () => {
+    const { controller } = build();
+    controller.down(finger(1, 300, 300, 0));
+    controller.down(finger(2, 500, 300, 5));
+    controller.down(finger(3, 400, 100, 8));
+    expect(controller.pointerCount).toBe(2);
+  });
+
+  it("coasts after a flick and then stops", () => {
+    const { controller, log } = build();
+    controller.down(finger(1, 300, 300, 0));
+    for (let i = 1; i <= 6; i++) controller.move(finger(1, 300 + i * 30, 300, i * 10));
+    controller.up(finger(1, 480, 300, 65));
+    const released = eyeAngle(log.pose);
+    let frames = 0;
+    while (controller.tick(16) && frames < 600) frames++;
+    expect(eyeAngle(log.pose)).not.toBeCloseTo(released, 2);
+    expect(frames).toBeGreaterThan(5);
+    expect(frames).toBeLessThan(600);
+  });
+
+  it("does not coast after holding still", () => {
+    const { controller } = build();
+    controller.down(finger(1, 300, 300, 0));
+    for (let i = 1; i <= 6; i++) controller.move(finger(1, 300 + i * 30, 300, i * 10));
+    controller.up(finger(1, 480, 300, 400));
+    expect(controller.tick(16)).toBe(false);
+  });
+
+  it("mouse: left turns, right slides, and neither jumps", () => {
+    const turn = build();
+    turn.controller.down({ id: 1, x: 400, y: 300, time: 0, type: "mouse", button: 0 });
+    turn.controller.move({ id: 1, x: 500, y: 300, time: 20, type: "mouse" });
+    turn.controller.move({ id: 1, x: 600, y: 300, time: 40, type: "mouse" });
+    expect(eyeAngle(turn.log.pose)).not.toBeCloseTo(eyeAngle(start), 2);
+    const slide = build();
+    slide.controller.down({ id: 1, x: 400, y: 300, time: 0, type: "mouse", button: 2 });
+    slide.controller.move({ id: 1, x: 500, y: 300, time: 20, type: "mouse" });
+    slide.controller.move({ id: 1, x: 500, y: 320, time: 40, type: "mouse" });
+    // Sliding moves the view without turning it.
+    expect(eyeAngle(slide.log.pose)).toBeCloseTo(eyeAngle(start), 5);
+    expect(slide.log.pose.target).not.toEqual(start.target);
+    const point = pointUnderCursor(start, { x: 400, y: 300 }, viewport, 45, [0, 0, 0]);
+    const now = world(slide.log.pose, point);
+    expect(Math.hypot(now.x - 500, now.y - 320)).toBeLessThan(2);
+  });
+
+  it("the wheel zooms towards the cursor", () => {
+    const { controller, log } = build();
+    const point = pointUnderCursor(start, { x: 200, y: 150 }, viewport, 45, [0, 0, 0]);
+    controller.wheel({ deltaY: -100, deltaMode: 0, ctrlKey: false, x: 200, y: 150 });
+    const after = world(log.pose, point);
+    expect(Math.hypot(after.x - 200, after.y - 150)).toBeLessThan(2);
+    expect(log.pose.eye[1]).toBeLessThan(start.eye[1]);
+  });
+
+  it("cannot be thrown out of sight", () => {
+    const { controller, log } = build();
+    controller.down({ id: 1, x: 400, y: 300, time: 0, type: "mouse", button: 2 });
+    controller.move({ id: 1, x: 400, y: 320, time: 20, type: "mouse" });
+    controller.move({ id: 1, x: 5000, y: -4000, time: 40, type: "mouse" });
+    expect(Math.hypot(log.pose.target[0], log.pose.target[2])).toBeLessThanOrEqual(60 * 1.1 + 1e-6);
+  });
+});
+
+describe("gesture maths", () => {
+  const viewport = { width: 800, height: 600 };
+  const pose: Pose = { eye: [0, 40, 50], target: [0, 0, 0] };
+  const base = { pose, pivot: [0, 0, 0] as Vec3, viewport, fovDegrees: 45, limits: { min: 2, max: 300 } };
+  const at = (x: number, y: number, spread = 100, angle = 0): Touchpoint => ({ x, y, spread, angle });
+
+  it("does nothing when the fingers have not moved", () => {
+    const out = gesturePose(base, at(400, 300), at(400, 300));
+    for (let i = 0; i < 3; i++) {
+      expect(out.eye[i]).toBeCloseTo(pose.eye[i]!, 6);
+      expect(out.target[i]).toBeCloseTo(pose.target[i]!, 6);
+    }
+  });
+
+  it("respects the distance limits however far the fingers spread", () => {
+    const out = gesturePose(base, at(400, 300, 10), at(400, 300, 100000));
+    expect(Math.hypot(out.eye[0] - out.target[0], out.eye[1] - out.target[1], out.eye[2] - out.target[2])).toBeGreaterThanOrEqual(2 - 1e-6);
+  });
+
+  it("clampPose leaves a pose that is already in range alone", () => {
+    expect(clampPose(pose, [0, 0, 0], 60)).toBe(pose);
   });
 });
