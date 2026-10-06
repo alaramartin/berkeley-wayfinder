@@ -55,7 +55,7 @@ export function Inspector({
           {selection.kind === "shaft" && <p className="text-base font-semibold">{shaftName(view, selection.shaftId)}</p>}
           {selection.kind === "edge" && <p className="text-base font-semibold">Corridor {selection.edgeId.replace(/^.*-e/, "e")}</p>}
         </div>
-        <button className={btn} onClick={onClose} aria-label="Close">
+        <button className={btn} onClick={onClose}>
           Done
         </button>
       </div>

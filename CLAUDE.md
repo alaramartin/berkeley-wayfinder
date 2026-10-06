@@ -21,7 +21,8 @@ pnpm dev:nav                              # nav app  → http://localhost:3000
 pnpm dev:author                           # author tool → http://localhost:3001/b/wheeler (local only)
 pnpm typecheck                            # tsc across workspaces (TypeScript 7)
 pnpm test                                 # vitest across workspaces
-pnpm --filter @wf/nav build               # production build (what Vercel runs)
+pnpm --filter @wf/nav build               # production build (what Vercel runs). Has NO /field: it 404s.
+NEXT_PUBLIC_FIELD_MODE=1 pnpm --filter @wf/nav build   # a build for the walk: adds /field and its service worker. Never deploy this to production.
 pnpm --filter @wf/schema gen:jsonschema   # regenerate packages/schema/schema/*.json. Commit the result; CI fails if stale
 
 cd pipeline                               # Python 3.12 via uv
@@ -47,11 +48,12 @@ uv run ruff check src tests
 
 ## Repo map
 ```
-apps/nav/          public Next.js app (routes /, /[building], /field). Deployed to Vercel.
+apps/nav/          public Next.js app (routes /, /[building]; /field only in walk builds). Deployed to Vercel.
 apps/author/       local-only Next.js desk tool. Reads/writes data/ via route handlers (lib/server/data.ts). NEVER deployed.
 packages/schema/   zod schemas + types + generated JSON Schema. SINGLE SOURCE OF TRUTH for data shapes.
 packages/geometry/ similarity transforms, polygon utils, ENU<->lat/lon. Pure.
 packages/routing/  graph build, A*, nearest-POI, instructions. Pure TS (no DOM, no three).
+packages/field/    field patches: apply ops, base hash, elevations from step counts, corridor geometry. Pure TS.
 pipeline/          Python 3.12 (uv). `wf` CLI stages: ingest → rectify → crop → classify → regions → graph → ocr → icons → connect → emit
 data/raw/<b>/      source photos, config.yaml, golden.yaml                       (committed)
 data/work/<b>/<l>/ intermediates: *.png, stage *.json, OCR caches, debug/        (gitignored)
@@ -66,6 +68,7 @@ data/buildings/<b>/ canonical data: building.json, levels/<l>.json, osm.json    
 - **Coordinates:** `data/work` uses image pixels. `data/buildings` uses **meters in the building-local frame** (x east, y north, origin at footprint centroid). Convert with the level's `imageTransform`, never ad hoc.
 - **Rooms** have a `polygon` (for rendering) and `doors` placed on corridor edges with `t` and `side` (for routing). Routing never goes through room polygons.
 - **Low-confidence OCR or icon results go to `review-queue.json`**, never silently into the proposal.
+- **`/field` is never on the public site.** It exists only in builds made with `NEXT_PUBLIC_FIELD_MODE=1` (`apps/nav/lib/field/gate.ts`). CI checks the normal build answers 404 for `/field` and `/field-sw.js`. Never set that variable on the Vercel project; the walk build is a protected preview (see the PLAN.md M5 runbook).
 - **Unverified stays flagged.** Auto-guessed doors, entrances, level M placement and default heights keep `verified:false` or `heightSource:"default"` until confirmed by a human or field patch.
 - **Distances are approximate.** The UI says "about 30 m" and never implies precision.
 - **Building-specific values live in `data/raw/<b>/config.yaml`**: level list, legend labels, heights, thresholds when they differ. No `if building === "wheeler"` in code.

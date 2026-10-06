@@ -12,12 +12,12 @@
 - [ ] **M6 — UI redesign** (not started: the user is still deciding what it should look like)
 
 ## Status
-- **Current milestone:** M5 — Field mode + verification walk (just started)
-- **Last completed task:** M4 closed 2026-10-06: nav app live at https://berkeley-wayfinder.vercel.app (login-protected), auto-deploys from `main`; routing no longer cuts through rooms; L2 220/222/224 split and fixed; DWA markers removed; camera controls reworked and checked on a real phone
+- **Current milestone:** M5 — Field mode + verification walk (**tooling built and tested; waiting on the user's walk**)
+- **Last completed task:** M5 tooling (2026-10-07): `/field` (map, to-check lists, edits with undo, offline, patch export), author patch import with review, elevations from step counts; hidden from the public site. See the M5 runbook for how to do the walk
 - **M6 — UI redesign** added to the plan; waiting on the user's direction before it starts
 - **Previously:** M4 scene rounds 1–2 — mirror fix, floor ribbon, floor-change risers, guided camera, labels, legend; corridor straightening measured and declined
 - **Vercel:** project `berkeley-wayfinder` (root `apps/nav`, team alara-martins-projects). Production deployed 2026-10-06 at https://berkeley-wayfinder.vercel.app, login-protected (Deployment Protection = *all* deployments; the default "all except custom domains" leaves the production domain public). It was public for a few minutes on 2026-10-06 and put back at the user's request. GitHub is connected (2026-10-06): a push to `main` deploys to production, other branches get protected previews; manual deploys still work with `vercel deploy --prod` from the repo root
-- **Blocked on user:** nothing yet
+- **Blocked on user:** the walk itself (and a try of `/field` on a real phone first, from a protected preview: see the M5 runbook); then the M5 review gate
 - **Previously:** M4 nav app: search, 3D scene, route panel, URL state
 - **Previously:** M3 built — routing graph, A*, accessible mode, nearest-POI, instructions; 14 routing tests including real Wheeler data; `pnpm routes wheeler` prints samples
 - **Previously:** M2 review gate passed — six levels accepted (188 rooms), aligned + OSM-fitted, 11 shafts (9 stairs, 2 elevators), 4 entrances; all canonical files validate
@@ -297,13 +297,22 @@ If something looks wrong in the photo-to-plan conversion itself, use Corners (ne
 - **Review gate M4.** Passed 2026-10-06 (the user tried it on a real phone).
 
 ### M5 — Field mode + verification walk
-- [ ] `/field` offline shell (service worker, IndexedDB).
-- [ ] door confirm/move, room number fix, access flags, step counts, entrance confirm.
-- [ ] patch export (share sheet / download).
-- [ ] author-tool patch import with diff review.
-- [ ] elevation recompute from step counts; resolve Level M placement.
+- [x] `/field` offline shell (service worker, IndexedDB). Only in builds made with `NEXT_PUBLIC_FIELD_MODE=1`; the public build 404s it and CI checks that. Checked headless: edits survive a reload, and the page reloads with the network off.
+- [x] door confirm/move/add, room number fix, access flags (corridor card/hours/locked), step counts per flight, entrance confirm, notes. Edits are a list on the phone with undo; the screen is the data with those edits applied to a copy.
+- [x] patch export (share sheet where the phone has one, else a download).
+- [x] author-tool patch import with diff review (`/b/<building>/patch`): every edit listed with before/after and a checkbox, base-hash warning, floor-height preview. Writes the accepted data, the proposals (so a re-accept keeps the corrections), the building's shafts/entrances, and any notes (`data/work/<b>/field-notes.json`).
+- [x] elevation recompute from step counts (`packages/field` `deriveElevations`); Level M resolves from the flights that touch it (see the runbook).
 - [ ] **User does the walk** → import → redeploy.
 - **Review gate M5.** Wheeler v1 done.
+
+#### M5 runbook — the walk
+1. **Build for the walk, not for production.** From the repo root: `vercel deploy --build-env NEXT_PUBLIC_FIELD_MODE=1` (a *preview*, no `--prod`). It is login-protected like the rest, and https, which the offline service worker requires (it will not register over `http://<laptop-ip>`). Never put that variable in the Vercel project's settings: every push to `main` would then publish `/field`.
+2. **On the phone**, logged into Vercel, open `<preview url>/field` once on Wi-Fi and wait for "works offline" in the header. Add it to the home screen if you like. It then works with no signal; edits are saved on the phone as you go.
+3. **Walk.** "To check" lists what is left: stairs to count, entrances, and every door. Tap a row to jump to it. Confirm a door, move it (tap the corridor where it really is), add a second door, fix a number, mark a corridor card-only/locked, count each flight's steps **walking up**, confirm each entrance and whether it is step-free.
+4. **Level M:** count the flights that touch it (B→M and M→L1 on stair s3 and s4, M→L1 on s5, and the lift if it opens there). Those fix M's height; a flight that skips M (B→L1) is reported, not guessed.
+5. **Send patch** (Edits tab) → AirDrop/share it to the laptop. Close any open author level pages, then open `http://localhost:3001/b/wheeler/patch`, choose the file, review, **Apply**. Then commit, and push to deploy the corrected data.
+6. Counting a stair on two stairwells for the same pair of floors is useful: heights use the median and the import warns when they disagree by more than 0.5 m.
+
 
 ### M6 — UI redesign
 Not started. The user dislikes how the app looks now and needs time to decide what it should look like, so **do not begin M6 until they bring a direction** (references, sketches or a description). When they do, write the agreed direction here first, as tasks, before touching code. M5's `/field` screens should stay plain and functional so they are not redesign work twice.
@@ -321,13 +330,17 @@ Not started. The user dislikes how the app looks now and needs time to decide wh
 - [x] Levels beyond B–4? Photos cover B, M, 1, 2, 3, 4 only.
 - [ ] Door locations for every room (esp. large rooms: 150 auditorium, 100, 130).
 - [ ] Locked, card-only or hours-restricted doors and entrances.
-- [ ] Real floor-to-floor heights (step counts per flight, per shaft).
+- [ ] Real floor-to-floor heights (step counts per flight, per shaft). Tooling built in M5; the numbers come from the walk.
 - [ ] Which entrances are accessible (placard wheelchair icons suggest the east side on L1; verify).
 - [ ] Wheeler's OSM way ID (look up in M2).
 
 ## 12. Decision log
 | Date | Decision | Why |
 |---|---|---|
+| 2026-10-07 | `/field` is compiled in only with `NEXT_PUBLIC_FIELD_MODE=1` (page and `/field-sw.js` 404 otherwise); the walk is done from a login-protected *preview* deployed with `--build-env`, never from production. CI builds without the flag and checks both answer 404 | The user wants the field tool off the live site. The offline service worker needs https, so a laptop-IP link on Wi-Fi cannot be used for the walk. The flag lives on the command, not in the Vercel project, so a push cannot publish it |
+| 2026-10-07 | Field edits are stored on the phone as a list of ops (IndexedDB); the display applies them to a copy of the bundled data; export is a `Patch` with a base hash over rooms/doors/numbers, corridor access, entrances and step counts (not polygons or elevations) | Undo is just removing an op; re-accepting a level in the author tool changes geometry all the time and must not make a patch look stale |
+| 2026-10-07 | Importing a patch writes the accepted data **and** the proposals; proposals and accept now carry door `verified`, corridor `access` and entrance `verified` | `acceptLevels` rebuilds canonical levels from proposals and used to reset every `verified` to false, so field confirmations would have been lost the next time anyone accepted a level. Tested: import, then re-accept, keeps them |
+| 2026-10-07 | Floor heights from step counts: height = median over stairwells of steps × 0.17 m for each pair of neighbouring levels; a level with no count keeps its current distance to the level above (not `heightM`); a flight that skips a level is reported, not used | `heightM` is a floor-to-floor default and the mezzanine sits half a floor up, so re-stacking from `heightM` shoved everything above M up by 2.25 m (caught by the first test on real data) |
 | 2026-10-06 | Routes may no longer pass through a room: leaving a room node is allowed only from the route's start, or on into a room entered through it (`enteredVia`). Both the A* search and nearest-POI search enforce it | A room with two doors joined two corridors with a zero-length edge, so routes cut through it (found when the L2 220/222/224 split gave 222 and 224 second doors: a 74 m restroom walk became a 43 m shortcut through classrooms; the same bug already existed on B, 31 -> 10 crossing 24). A regression test sweeps real-data routes for it |
 | 2026-10-06 | DWA ("designated waiting area") markers removed from the data: the stray `DWA` room on L2 (printed text read as a room) and the `dwa` icons/POI on L2 and B. The `dwa` kind stays in the schema and the pipeline's icon matcher still detects it, so a fresh pipeline run would propose it again (hand-edited proposals are never overwritten) | The user asked for them gone; the label showed in search and over the 3D map |
 | 2026-10-06 | A two-finger swipe turns the model on a trackpad too, as on a phone (pinch and the mouse wheel zoom). The on-screen Move/Turn toggle was built and removed the same day | The user disliked the toggle and asked for two-finger swipe = rotate everywhere; plain drag still moves, Shift/right-drag still turns |

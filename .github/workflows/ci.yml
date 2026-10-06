@@ -23,6 +23,15 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm --filter @wf/nav build
+      - name: The field tool is not in the public build
+        # /field exists only in builds made with NEXT_PUBLIC_FIELD_MODE=1 (the walk). The deployed site
+        # is built without it, and must answer 404 for the page and its service worker.
+        run: |
+          pnpm --filter @wf/nav exec next start --port 3100 &
+          sleep 8
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3100/wheeler)" = 200
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3100/field)" = 404
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3100/field-sw.js)" = 404
 
   pipeline:
     runs-on: ubuntu-latest
