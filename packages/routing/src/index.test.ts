@@ -273,6 +273,30 @@ describe("routing on real Wheeler data", () => {
     if (loo.ok) expect(graph.rooms.get(loo.roomId!)?.category).toBe("restroom");
   });
 
+  it("never walks through a room on the way to somewhere else", async () => {
+    // A room with two doors is two corridors joined by free edges. If a route may cross it, it takes
+    // that zero-length shortcut however far apart the corridors are (L2 222 and 224 once did).
+    const graph = await load();
+    const ids = [...graph.rooms.keys()];
+    let checked = 0;
+    for (let i = 0; i < ids.length; i += 3) {
+      for (let j = 1; j < ids.length; j += 7) {
+        if (ids[i] === ids[j]) continue;
+        const found = route(graph, { type: "room", id: ids[i]! }, { type: "room", id: ids[j]! });
+        if (!found.ok) continue;
+        checked++;
+        const middle = found.route.nodes.slice(1, -1);
+        middle.forEach((node, k) => {
+          if (node.kind !== "room") return;
+          // The only legitimate pass-through is into a room entered through this one.
+          const next = found.route.nodes[k + 2]!;
+          expect(next.kind, `${ids[i]} -> ${ids[j]} crosses ${node.id}`).toBe("room");
+        });
+      }
+    }
+    expect(checked).toBeGreaterThan(200);
+  });
+
   it("keeps the nearest restroom on the same floor when there is one", async () => {
     const graph = await load();
     const found = nearest(graph, { type: "room", id: "wheeler-L1-r108" }, "restroom");

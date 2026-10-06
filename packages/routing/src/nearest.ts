@@ -3,7 +3,7 @@ import type { PoiKind } from "@wf/schema";
 import type { RouteGraph } from "./graph";
 import { resolveEndpoint, roomNodeId } from "./graph";
 import type { Endpoint, Route, RouteOptions } from "./route";
-import { edgeAllowed, edgeSeconds, route } from "./route";
+import { edgeAllowed, edgeSeconds, mayLeave, route } from "./route";
 
 export interface NearestResult {
   ok: true;
@@ -64,7 +64,7 @@ export function nearest(graph: RouteGraph, from: Endpoint, kind: PoiKind | PoiKi
       return { ok: true, route: leg.route, poiId: hit.poiId, roomId: hit.roomId, nodeId: current.id };
     }
     for (const edge of graph.adjacency.get(current.id) ?? []) {
-      if (!edgeAllowed(graph, edge, opts)) continue;
+      if (!edgeAllowed(graph, edge, opts) || !mayLeave(graph, current.id, edge, start.nodeId)) continue;
       const next = current.c + edgeSeconds(graph, edge);
       if (next >= (cost.get(edge.to) ?? Infinity)) continue;
       cost.set(edge.to, next);

@@ -65,6 +65,18 @@ export function edgeAllowed(graph: RouteGraph, edge: GraphEdge, opts: RouteOptio
   return true;
 }
 
+/**
+ * Rooms are places to arrive at, never corridors. A room with two doors is two nodes joined by free
+ * edges to the room node, so a search that may walk through it gets a zero-length shortcut between
+ * two corridors, however far apart they are. Leaving a room is allowed only from where the route
+ * started, or on into a room entered through it (a suite's inner room).
+ */
+export function mayLeave(graph: RouteGraph, fromId: string, edge: GraphEdge, startId: string): boolean {
+  if (fromId === startId) return true;
+  if (graph.nodes.get(fromId)?.kind !== "room") return true;
+  return graph.nodes.get(edge.to)?.kind === "room";
+}
+
 /** Straight-line lower bound on the remaining time, in seconds. */
 function heuristic(a: GraphNode, b: GraphNode): number {
   return Math.hypot(b.x - a.x, b.y - a.y, b.z - a.z) / WALK_SPEED_MPS;
@@ -156,7 +168,7 @@ export function route(graph: RouteGraph, from: Endpoint, to: Endpoint, opts: Rou
     if (done.has(current.id)) continue;
     done.add(current.id);
     for (const edge of graph.adjacency.get(current.id) ?? []) {
-      if (!edgeAllowed(graph, edge, opts)) continue;
+      if (!edgeAllowed(graph, edge, opts) || !mayLeave(graph, current.id, edge, a.nodeId)) continue;
       const next = graph.nodes.get(edge.to);
       if (!next) continue;
       const cost = (search.cost.get(current.id) ?? Infinity) + edgeSeconds(graph, edge);
