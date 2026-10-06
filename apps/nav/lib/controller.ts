@@ -3,9 +3,12 @@
  *
  * The scheme is the one the viewers people already know use (Sketchfab, Matterport, Google Maps):
  *
- *   one finger / left mouse   turn the model on the spot
- *   two fingers               pinch to zoom, twist to turn and slide, all at once
- *   right / middle / shift    slide (mouse)
+ * Touch:
+ *   one finger                slide the model
+ *   two fingers               swipe to turn (sideways rounds it, up and down tips it), pinch to zoom, both at once
+ * Mouse:
+ *   left drag                 turn the model on the spot
+ *   right / middle / shift    slide
  *   wheel, trackpad swipe     zoom towards the cursor
  *   double tap / click        zoom in on that spot
  *   let go mid-swipe          it keeps coasting, then settles
@@ -94,6 +97,9 @@ export function createController(env: ControllerEnv, device: PointerDevice = "au
   let coasting: { pivot: Vec3 } | null = null;
   let lastTap: { x: number; y: number; time: number } | null = null;
   let pivot: Vec3 = env.centre;
+  /** Fingers, not a mouse: one finger slides and two turn. */
+  let touch = false;
+  let pinchLast = { x: 0, y: 0, spread: 1 };
 
   const set = (pose: Pose) => env.setPose(clampPose(pose, env.centre, env.radius));
   const take = () => {
@@ -120,6 +126,7 @@ export function createController(env: ControllerEnv, device: PointerDevice = "au
     // Pinch and slide hold the actual surface under the fingers; without a hit, the model's middle.
     start = { pose, pivot: next === "orbit" ? pivot : (env.pick?.(from.x, from.y) ?? pivot), from };
     velocity = { theta: 0, phi: 0 };
+    pinchLast = { x: from.x, y: from.y, spread: Math.max(1, from.spread) };
   };
 
   /**
@@ -153,7 +160,8 @@ export function createController(env: ControllerEnv, device: PointerDevice = "au
         taken = false;
         origin = { x: p.x, y: p.y, time: p.time, moved: false };
         last = { x: p.x, y: p.y, time: p.time };
-        const slide = p.type === "mouse" && (p.button === 1 || p.button === 2 || p.shift === true);
+        touch = p.type === "touch";
+        const slide = touch || (p.type === "mouse" && (p.button === 1 || p.button === 2 || p.shift === true));
         begin(slide ? "slide" : "orbit");
       } else {
         // Second finger: hand over from turning to pinching, from wherever the camera is now.
@@ -169,8 +177,26 @@ export function createController(env: ControllerEnv, device: PointerDevice = "au
       tracked.x = p.x;
       tracked.y = p.y;
 
-      if (mode === "pinch" || mode === "slide") {
-        if (mode === "slide" && origin && !origin.moved) {
+      if (mode === "pinch") {
+        take();
+        const now = touchpoint();
+        const { width, height } = env.viewport();
+        // Swiping with two fingers turns the model; spreading them zooms. Each step is applied to
+        // where the camera is now, so both can happen at once.
+        const dTheta = (-(now.x - pinchLast.x) / Math.max(1, width)) * TURN_PER_WIDTH;
+        const dPhi = (-(now.y - pinchLast.y) / Math.max(1, height)) * TIP_PER_HEIGHT;
+        let pose = turn(env.getPose(), pivot, dTheta, dPhi, height);
+        const spread = Math.max(1, now.spread);
+        if (spread !== pinchLast.spread) {
+          pose = zoomPose(pose, pinchLast.spread / spread, { x: now.x, y: now.y }, env.viewport(), env.fovDegrees, env.limits(), start.pivot);
+        }
+        pinchLast = { x: now.x, y: now.y, spread };
+        set(pose);
+        return;
+      }
+
+      if (mode === "slide") {
+        if (origin && !origin.moved) {
           if (Math.hypot(p.x - origin.x, p.y - origin.y) < TAP_SLOP_PX) return;
           origin.moved = true;
         }
@@ -197,7 +223,6 @@ export function createController(env: ControllerEnv, device: PointerDevice = "au
       velocity = { theta: velocity.theta * 0.5 + (dTheta / dt) * 0.5, phi: velocity.phi * 0.5 + (dPhi / dt) * 0.5 };
       velocityAt = p.time;
       last = { x: p.x, y: p.y, time: p.time };
-      // While turning, the building eases towards the middle of the screen, so it never ends up off to a side.
       set(turn(env.getPose(), pivot, dTheta, dPhi, height));
     },
 
@@ -207,11 +232,11 @@ export function createController(env: ControllerEnv, device: PointerDevice = "au
       const wasMode = mode;
 
       if (pointers.size === 1) {
-        // Back to one finger after a pinch: carry on turning from the finger that is left, without a jump.
+        // Back to one finger after a pinch: carry on from the finger that is left, without a jump.
         const rest = [...pointers.values()][0]!;
         last = { x: rest.x, y: rest.y, time: p.time };
         if (origin) origin.moved = true;
-        begin("orbit");
+        begin(touch ? "slide" : "orbit");
         return;
       }
       if (pointers.size > 0) return;
@@ -220,7 +245,7 @@ export function createController(env: ControllerEnv, device: PointerDevice = "au
       start = null;
       const o = origin;
       origin = null;
-      if (wasMode === "orbit" && o && !o.moved && p.time - o.time < TAP_MAX_MS) {
+      if ((wasMode === "orbit" || (touch && wasMode === "slide")) && o && !o.moved && p.time - o.time < TAP_MAX_MS) {
         const double = lastTap && p.time - lastTap.time < DOUBLE_TAP_MS && Math.hypot(p.x - lastTap.x, p.y - lastTap.y) < DOUBLE_TAP_DISTANCE_PX;
         if (double) {
           lastTap = null;
@@ -246,7 +271,7 @@ export function createController(env: ControllerEnv, device: PointerDevice = "au
       } else if (pointers.size === 1) {
         const rest = [...pointers.values()][0]!;
         last = { x: rest.x, y: rest.y, time: last?.time ?? 0 };
-        begin("orbit");
+        begin(touch ? "slide" : "orbit");
       }
     },
 

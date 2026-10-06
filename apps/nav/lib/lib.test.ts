@@ -713,16 +713,20 @@ describe("camera controller", () => {
   const finger = (id: number, x: number, y: number, time: number, extra: object = {}) => ({ id, x, y, time, type: "touch" as const, button: 0, ...extra });
   const eyeAngle = (pose: Pose) => Math.atan2(pose.eye[0] - pose.target[0], pose.eye[2] - pose.target[2]);
 
-  it("turns on a one-finger drag, and not before the finger has really moved", () => {
+  it("one finger slides the model with the finger, and not before it has really moved", () => {
     const { controller, log } = build();
     controller.down(finger(1, 400, 300, 0));
     controller.move(finger(1, 402, 301, 10));
     expect(log.pose).toBe(start);
     expect(log.takeovers).toBe(0);
-    controller.move(finger(1, 500, 300, 30));
-    controller.move(finger(1, 600, 300, 50));
+    const point = pointUnderCursor(start, { x: 400, y: 300 }, viewport, 45, [0, 0, 0]);
+    controller.move(finger(1, 500, 340, 30));
+    controller.move(finger(1, 600, 360, 50));
     expect(log.takeovers).toBe(1);
-    expect(eyeAngle(log.pose)).not.toBeCloseTo(eyeAngle(start), 2);
+    // It slides rather than turns, and the spot under the finger stays under it.
+    expect(eyeAngle(log.pose)).toBeCloseTo(eyeAngle(start), 5);
+    const now = world(log.pose, point);
+    expect(Math.hypot(now.x - 600, now.y - 360)).toBeLessThan(2);
   });
 
   it("a tap does not take the camera from the guide", () => {
@@ -752,18 +756,28 @@ describe("camera controller", () => {
     expect(log.glides).toHaveLength(0);
   });
 
-  it("pinch keeps the spot between the fingers under them", () => {
+  it("swiping with two fingers turns the model without zooming", () => {
+    const dist = (p: Pose) => Math.hypot(p.eye[0] - p.target[0], p.eye[1] - p.target[1], p.eye[2] - p.target[2]);
     const { controller, log } = build();
     controller.down(finger(1, 350, 300, 0));
     controller.down(finger(2, 450, 300, 5));
-    const before = log.pose;
-    const anchor = pointUnderCursor(before, { x: 400, y: 300 }, viewport, 45, [0, 0, 0]);
-    // Spread apart, drift right and down a little, and twist.
-    controller.move(finger(1, 380, 340, 30));
-    controller.move(finger(2, 560, 360, 35));
-    const seenAt = world(log.pose, anchor);
-    const mid = { x: (380 + 560) / 2, y: (340 + 360) / 2 };
-    expect(Math.hypot(seenAt.x - mid.x, seenAt.y - mid.y)).toBeLessThan(2);
+    for (let i = 1; i <= 10; i++) {
+      controller.move(finger(1, 350 + i * 15, 300, 10 + i * 10));
+      controller.move(finger(2, 450 + i * 15, 300, 10 + i * 10));
+    }
+    expect(eyeAngle(log.pose)).not.toBeCloseTo(eyeAngle(start), 2);
+    expect(dist(log.pose)).toBeCloseTo(dist(start), 3);
+  });
+
+  it("swiping up and down with two fingers tips the model", () => {
+    const { controller, log } = build();
+    controller.down(finger(1, 350, 300, 0));
+    controller.down(finger(2, 450, 300, 5));
+    for (let i = 1; i <= 8; i++) {
+      controller.move(finger(1, 350, 300 + i * 12, 10 + i * 10));
+      controller.move(finger(2, 450, 300 + i * 12, 10 + i * 10));
+    }
+    expect(log.pose.eye[1]).toBeGreaterThan(start.eye[1]);
   });
 
   it("spreading the fingers zooms in and bringing them together zooms out", () => {
@@ -782,33 +796,29 @@ describe("camera controller", () => {
     expect(dist(b.log.pose)).toBeGreaterThan(dist(start) * 1.6);
   });
 
-  it("a clockwise twist turns the model clockwise on screen", () => {
+  it("twisting alone does nothing; only swipe and spread act", () => {
     const { controller, log } = build();
-    const point: Vec3 = [15, 0, 0];
-    const before = world(start, point);
     controller.down(finger(1, 300, 300, 0));
     controller.down(finger(2, 500, 300, 5));
-    // Same midpoint and spread; the right finger moves down and the left up: clockwise on screen.
+    const before = log.pose;
     controller.move(finger(1, 306, 280, 20));
     controller.move(finger(2, 494, 320, 25));
-    const after = world(log.pose, point);
-    // Anything to the right of the middle should swing downwards.
-    expect(after.y).toBeGreaterThan(before.y);
+    expect(eyeAngle(log.pose)).toBeCloseTo(eyeAngle(before), 3);
   });
 
-  it("lifting one finger of a pinch carries on turning with the other, without a jump", () => {
+  it("lifting one finger of a pinch carries on sliding with the other, without a jump", () => {
     const { controller, log } = build();
     controller.down(finger(1, 300, 300, 0));
     controller.down(finger(2, 500, 300, 5));
     controller.move(finger(2, 520, 300, 20));
     controller.up(finger(1, 300, 300, 30));
     expect(controller.pointerCount).toBe(1);
-    expect(controller.mode).toBe("orbit");
+    expect(controller.mode).toBe("slide");
     const held = log.pose;
     controller.move(finger(2, 520, 300, 40));
-    expect(log.pose).toEqual(held);
+    for (let i = 0; i < 3; i++) expect(log.pose.eye[i]).toBeCloseTo(held.eye[i]!, 4);
     controller.move(finger(2, 620, 300, 60));
-    expect(log.pose).not.toEqual(held);
+    expect(log.pose.eye[0]).not.toBeCloseTo(held.eye[0]!, 1);
   });
 
   it("never gets stuck: a cancelled pointer, then a fresh touch, still moves the camera", () => {
@@ -835,9 +845,10 @@ describe("camera controller", () => {
 
   it("coasts after a flick and then stops", () => {
     const { controller, log } = build();
-    controller.down(finger(1, 300, 300, 0));
-    for (let i = 1; i <= 6; i++) controller.move(finger(1, 300 + i * 30, 300, i * 10));
-    controller.up(finger(1, 480, 300, 65));
+    const mouse = (x: number, time: number) => ({ id: 1, x, y: 300, time, type: "mouse" as const, button: 0 });
+    controller.down(mouse(300, 0));
+    for (let i = 1; i <= 6; i++) controller.move(mouse(300 + i * 30, i * 10));
+    controller.up(mouse(480, 65));
     const released = eyeAngle(log.pose);
     let frames = 0;
     while (controller.tick(16) && frames < 600) frames++;

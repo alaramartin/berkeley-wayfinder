@@ -25,19 +25,19 @@ export function ViewControls({
           <p className="mb-2 font-medium text-neutral-900">Moving around</p>
           <ul className="space-y-1">
             <li>
-              <strong>Drag</strong> — turn the building
+              <strong>One finger</strong> — slide the building
             </li>
             <li>
-              <strong>Pinch</strong> — zoom; twist and slide with two fingers
-            </li>
-            <li>
-              <strong>Trackpad</strong> — pinch to zoom, two-finger swipe to slide
-            </li>
-            <li>
-              <strong>Mouse</strong> — wheel to zoom, right-drag or Shift-drag to slide
+              <strong>Two fingers</strong> — swipe to turn it, pinch to zoom
             </li>
             <li>
               <strong>Double-tap</strong> — zoom in on that spot
+            </li>
+            <li>
+              <strong>Mouse</strong> — drag to turn, right-drag or Shift-drag to slide, wheel to zoom
+            </li>
+            <li>
+              <strong>Trackpad</strong> — pinch to zoom, two-finger swipe to slide
             </li>
           </ul>
         </div>
