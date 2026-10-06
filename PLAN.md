@@ -11,10 +11,10 @@
 - [ ] **M5 — Field mode + verification walk**
 
 ## Status
-- **Current milestone:** M4 — Nav app + deploy (app built and tested locally; **waiting on user** to approve the Vercel deploy)
-- **Last completed task:** M4 scene round 2 — ribbon rebuilt, floor-change risers, grab-and-turn camera; corridor straightening measured and declined
-- **Previously:** M4 scene rework — mirror fix, floor ribbon, guided camera, room labels, legend; all driven in Chrome
-- **Blocked on user:** whether to straighten the bowed corridor centrelines, and approval for the Vercel deploy
+- **Current milestone:** M4 — Nav app + deploy (app built and tested locally and pushed; **waiting on user** to approve the Vercel deploy and then the M4 review gate)
+- **Last completed task:** M4 camera controls rework (2026-10-05) — one controller for touch/mouse/trackpad: touch = one finger slides, two fingers swipe to turn + pinch to zoom; mouse = drag turns, right/Shift-drag slides, wheel zooms; trackpad = pinch zooms, swipe slides
+- **Previously:** M4 scene rounds 1–2 — mirror fix, floor ribbon, floor-change risers, guided camera, labels, legend; corridor straightening measured and declined
+- **Blocked on user:** approval for the Vercel deploy; hands-on check of the controls on a real phone
 - **Previously:** M4 nav app: search, 3D scene, route panel, URL state
 - **Previously:** M3 built — routing graph, A*, accessible mode, nearest-POI, instructions; 14 routing tests including real Wheeler data; `pnpm routes wheeler` prints samples
 - **Previously:** M2 review gate passed — six levels accepted (188 rooms), aligned + OSM-fitted, 11 shafts (9 stairs, 2 elevators), 4 entrances; all canonical files validate
