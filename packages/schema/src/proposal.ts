@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { Id, Point, Polygon, Polyline } from "./primitives";
-import { EdgeKind, NodeKind, Restroom, RoomCategory, Side } from "./building";
+import { Access, EdgeKind, NodeKind, Restroom, RoomCategory, Side } from "./building";
 
 /** Pipeline output. Same concepts as canonical data, but in rectified-image pixels and with confidences. */
 const Confidence = z.number().min(0).max(1);
@@ -13,6 +13,8 @@ export const ProposalEdge = z.object({
   kind: EdgeKind,
   polyline: Polyline,
   confidence: Confidence,
+  /** Set by a field patch; carried into the accepted level so a re-accept keeps it. */
+  access: Access.optional(),
 });
 export const ProposalRoom = z.object({
   id: Id,
@@ -26,7 +28,7 @@ export const ProposalRoom = z.object({
   category: RoomCategory,
   group: z.string().nullable(),
   polygon: Polygon,
-  doors: z.array(z.object({ edgeId: Id, t: z.number().min(0).max(1), side: Side, confidence: Confidence })),
+  doors: z.array(z.object({ edgeId: Id, t: z.number().min(0).max(1), side: Side, confidence: Confidence, /** Set by a field patch; carried into the accepted level so a re-accept keeps it. */ verified: z.boolean().optional() })),
   aliases: z.array(z.string()).default([]),
   /** Room this one is entered through (its `id`), when it has no door of its own onto a corridor. */
   enteredVia: Id.optional(),
@@ -41,6 +43,8 @@ export const ProposalEntrance = z.object({
   /** What suggested it: an exit sign, an accessibility icon, or a corridor reaching the facade. */
   evidence: z.array(z.enum(["exit-icon", "accessible-icon", "corridor-end"])),
   confidence: Confidence,
+  /** Set by a field patch. */
+  verified: z.boolean().optional(),
 });
 export const ProposalIcon = z.object({
   id: Id,

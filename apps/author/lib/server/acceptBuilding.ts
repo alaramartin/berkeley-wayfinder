@@ -74,7 +74,7 @@ export async function acceptLevels(b: string, requested?: string[]): Promise<{ r
   for (const [levelId, p] of proposals) {
     if (!accepted.some((l) => l.id === levelId)) continue;
     (p.entrances ?? []).forEach((e, i) => {
-      if (nodeIds.has(e.nodeId)) entrances.push({ id: e.id, nodeId: e.nodeId, name: e.name ?? `Level ${levelId} entrance ${i + 1}`, accessible: e.accessible, verified: false });
+      if (nodeIds.has(e.nodeId)) entrances.push({ id: e.id, nodeId: e.nodeId, name: e.name ?? `Level ${levelId} entrance ${i + 1}`, accessible: e.accessible, verified: e.verified ?? false });
     });
   }
   const origin = alignment.osm.origin;

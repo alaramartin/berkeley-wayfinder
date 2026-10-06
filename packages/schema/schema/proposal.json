@@ -171,6 +171,15 @@
             "type": "number",
             "minimum": 0,
             "maximum": 1
+          },
+          "access": {
+            "type": "string",
+            "enum": [
+              "open",
+              "card",
+              "hours",
+              "locked"
+            ]
           }
         },
         "required": [
@@ -290,6 +299,9 @@
                   "type": "number",
                   "minimum": 0,
                   "maximum": 1
+                },
+                "verified": {
+                  "type": "boolean"
                 }
               },
               "required": [
@@ -428,6 +440,9 @@
             "type": "number",
             "minimum": 0,
             "maximum": 1
+          },
+          "verified": {
+            "type": "boolean"
           }
         },
         "required": [

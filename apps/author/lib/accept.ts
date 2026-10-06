@@ -67,8 +67,8 @@ export function proposalToLevel(p: Proposal, meta: LevelMeta, imageTransform: Si
     kind: e.kind,
     polyline: e.polyline.map(w),
     accessible: true,
-    access: "open" as const,
-    verified: false,
+    access: e.access ?? ("open" as const),
+    verified: e.access !== undefined,
   }));
   const rooms = p.rooms.map((r) => ({
     id: r.id,
@@ -84,7 +84,7 @@ export function proposalToLevel(p: Proposal, meta: LevelMeta, imageTransform: Si
       edgeId: d.edgeId,
       t: d.t,
       side: d.side,
-      verified: false,
+      verified: d.verified ?? false,
     })),
     ...(r.enteredVia ? { enteredVia: r.enteredVia } : {}),
     ...(r.restroom ? { restroom: r.restroom } : {}),
