@@ -107,8 +107,6 @@ export function BuildingView({ buildingId }: { buildingId: string }) {
 
   /** The user pressed "show all": every level lit, whatever the route would otherwise dim. */
   const [showAll, setShowAll] = useState(false);
-  /** Dragging turns the building instead of moving it. */
-  const [turnMode, setTurnMode] = useState(false);
 
   /** A new route restarts the guide from the overview. */
   const signature = `${state.from ?? ""}|${state.to ?? ""}|${state.nearest ?? ""}|${state.accessible}`;
@@ -233,11 +231,8 @@ export function BuildingView({ buildingId }: { buildingId: string }) {
           focusRoomId={result?.route ? null : data.graph.rooms.has(state.to ?? state.from ?? "") ? (state.to ?? state.from) : null}
           onSelectLevel={(id) => update({ level: state.level === id ? null : id })}
           onZoomApi={receiveZoomApi}
-          turnMode={turnMode}
         />
         <ViewControls
-          turnMode={turnMode}
-          onTurnMode={setTurnMode}
           onZoomIn={() => zoomApi.current?.(0.75)}
           onZoomOut={() => zoomApi.current?.(1.35)}
           onOverview={() => {

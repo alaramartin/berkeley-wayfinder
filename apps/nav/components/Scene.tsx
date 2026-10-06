@@ -255,7 +255,6 @@ function CameraRig({
   maxDistance,
   onTakeover,
   onZoomApi,
-  turnMode,
   modelCentre,
   modelRadius,
 }: {
@@ -263,8 +262,6 @@ function CameraRig({
   maxDistance: number;
   onTakeover: () => void;
   onZoomApi: (zoom: (factor: number) => void) => void;
-  /** One finger or the left button turns the model instead of moving it. */
-  turnMode: boolean;
   modelCentre: Vec3;
   modelRadius: number;
 }) {
@@ -274,8 +271,6 @@ function CameraRig({
   const target = useRef(new THREE.Vector3(...modelCentre));
   const takeoverRef = useRef(onTakeover);
   takeoverRef.current = onTakeover;
-  const turnRef = useRef(turnMode);
-  turnRef.current = turnMode;
   const sizeRef = useRef(size);
   sizeRef.current = size;
   const limitsRef = useRef({ min: MIN_ZOOM_DISTANCE, max: maxDistance });
@@ -328,7 +323,6 @@ function CameraRig({
         fovDegrees: (camera as THREE.PerspectiveCamera).fov ?? 45,
         limits: () => limitsRef.current,
         pick,
-        turnMode: () => turnRef.current,
         centre: modelCentre,
         radius: modelRadius,
         onTakeover: () => {
@@ -497,7 +491,6 @@ export interface SceneProps {
   onSelectLevel: (levelId: string) => void;
   /** Overrides the trackpad/mouse guess when the user tells us which they have. */
   onZoomApi: (zoom: (factor: number) => void) => void;
-  turnMode: boolean;
 }
 
 export function Scene({
@@ -514,7 +507,6 @@ export function Scene({
   focusRoomId,
   onSelectLevel,
   onZoomApi,
-  turnMode,
 }: SceneProps) {
   const heights = useMemo(() => levelHeights(data.building, data.levels, view), [data, view]);
   const { size } = useThreeSafe();
@@ -647,7 +639,6 @@ export function Scene({
         maxDistance={buildingBounds.radius * 4}
         onTakeover={onTakeover}
         onZoomApi={onZoomApi}
-        turnMode={turnMode}
         modelCentre={buildingBounds.center}
         modelRadius={buildingBounds.radius}
       />
