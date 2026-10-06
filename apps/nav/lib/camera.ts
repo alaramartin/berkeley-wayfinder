@@ -265,6 +265,56 @@ export function grabRotate(grab: Grab, cursor: { x: number; y: number }): Pose {
   return orbitBy(grab.pose, grab.pivot, -(dx / Math.max(1, grab.viewport.width)) * TURN_PER_WIDTH, -(dy / Math.max(1, grab.viewport.height)) * TIP_PER_HEIGHT);
 }
 
+/**
+ * Drag the ground: the point `anchor` (a spot on a floor or a room's roof) ends up under `cursor`, and
+ * the camera only moves parallel to that surface, so panning across a floor never changes your height
+ * however steeply you are looking. This is how Mapbox and Google Maps pan a tilted view.
+ *
+ * `from` is where the cursor was when the drag began and `anchor` any point on the surface being
+ * dragged (only its height is used). `pose` is where the camera was then, so nothing drifts. Near the horizon the
+ * cursor's ray meets the plane very far away; the move is capped so a tiny drag there cannot hurl the
+ * camera across the map.
+ */
+export function panOnPlane(
+  pose: Pose,
+  anchor: Vec3,
+  from: { x: number; y: number },
+  cursor: { x: number; y: number },
+  viewport: { width: number; height: number },
+  fovDegrees: number,
+): Pose {
+  const forward = normalize([pose.target[0] - pose.eye[0], pose.target[1] - pose.eye[1], pose.target[2] - pose.eye[2]]);
+  const right = normalize(cross(forward, [0, 1, 0]));
+  const up = cross(right, forward);
+  const halfHeight = Math.tan((fovDegrees * Math.PI) / 360);
+  const halfWidth = halfHeight * (viewport.width / Math.max(1, viewport.height));
+  const reach = Math.hypot(anchor[0] - pose.eye[0], anchor[1] - pose.eye[1], anchor[2] - pose.eye[2]);
+  /** Where the ray through a screen position meets the plane at the anchor's height. */
+  const onPlane = (c: { x: number; y: number }): [number, number] | null => {
+    const nx = (c.x / Math.max(1, viewport.width)) * 2 - 1;
+    const ny = 1 - (c.y / Math.max(1, viewport.height)) * 2;
+    const dir: Vec3 = [
+      forward[0] + right[0] * nx * halfWidth + up[0] * ny * halfHeight,
+      forward[1] + right[1] * nx * halfWidth + up[1] * ny * halfHeight,
+      forward[2] + right[2] * nx * halfWidth + up[2] * ny * halfHeight,
+    ];
+    // The ray must be heading towards the plane, not away from it.
+    const rise = anchor[1] - pose.eye[1];
+    if (Math.abs(dir[1]) < 1e-4 || rise / dir[1] <= 0) return null;
+    const t = Math.min(rise / dir[1], (reach * 8) / Math.hypot(dir[0], dir[1], dir[2]));
+    return [pose.eye[0] + dir[0] * t, pose.eye[2] + dir[2] * t];
+  };
+  const a = onPlane(from);
+  const b = onPlane(cursor);
+  if (!a || !b) return pose;
+  // Moving the camera by (a - b) puts what was under `from` under `cursor`.
+  const shift: Vec3 = [a[0] - b[0], 0, a[1] - b[1]];
+  return {
+    eye: [pose.eye[0] + shift[0], pose.eye[1], pose.eye[2] + shift[2]],
+    target: [pose.target[0] + shift[0], pose.target[1], pose.target[2] + shift[2]],
+  };
+}
+
 /** Where fingers (or a cursor) are: their midpoint, spread and the angle between them. */
 export interface Touchpoint {
   x: number;

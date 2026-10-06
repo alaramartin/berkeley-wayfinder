@@ -6,9 +6,9 @@
  * Touch:
  *   one finger                slide the model
  *   two fingers               swipe to turn (sideways rounds it, up and down tips it), pinch to zoom, both at once
- * Mouse:
- *   left drag                 turn the model on the spot
- *   right / middle / shift    slide
+ * Mouse (as in Google Maps, Mapbox and every map viewer):
+ *   left drag                 grab the floor and move it
+ *   right / middle / Shift    turn and tip the model
  *   wheel, trackpad swipe     zoom towards the cursor
  *   double tap / click        zoom in on that spot
  *   let go mid-swipe          it keeps coasting, then settles
@@ -18,7 +18,7 @@
  * fingers lifted. Here there is a single state machine, so that cannot happen, and it is pure — no
  * DOM, no three — so the transitions are unit-tested.
  */
-import { type Pose, type Touchpoint, clampPose, gesturePose, orbitBy, orbitStep, pivotFor, slideScreen, slideVertical, zoomPose, TIP_PER_HEIGHT, TURN_PER_WIDTH } from "./camera";
+import { type Pose, type Touchpoint, clampPose, orbitBy, orbitStep, pivotFor, panOnPlane, slideVertical, zoomPose, TIP_PER_HEIGHT, TURN_PER_WIDTH } from "./camera";
 import { type PointerDevice, createWheelRouter, zoomFactor } from "./input";
 import type { Vec3 } from "./scene";
 
@@ -97,8 +97,8 @@ export function createController(env: ControllerEnv, device: PointerDevice = "au
   let coasting: { pivot: Vec3 } | null = null;
   let lastTap: { x: number; y: number; time: number } | null = null;
   let pivot: Vec3 = env.centre;
-  /** Fingers, not a mouse: one finger slides and two turn. */
-  let touch = false;
+  /** This gesture moves the map (touch, or a plain mouse drag) rather than turning it. */
+  let grabs = false;
   let pinchLast = { x: 0, y: 0, spread: 1 };
 
   const set = (pose: Pose) => env.setPose(clampPose(pose, env.centre, env.radius));
@@ -140,8 +140,6 @@ export function createController(env: ControllerEnv, device: PointerDevice = "au
     return step.pose;
   };
 
-  const geometry = () => ({ viewport: env.viewport(), fovDegrees: env.fovDegrees, limits: env.limits() });
-
   return {
     get mode() {
       return mode;
@@ -160,9 +158,10 @@ export function createController(env: ControllerEnv, device: PointerDevice = "au
         taken = false;
         origin = { x: p.x, y: p.y, time: p.time, moved: false };
         last = { x: p.x, y: p.y, time: p.time };
-        touch = p.type === "touch";
-        const slide = touch || (p.type === "mouse" && (p.button === 1 || p.button === 2 || p.shift === true));
-        begin(slide ? "slide" : "orbit");
+        // Touch and a plain mouse drag move the map; the right or middle button, or Shift, turn it.
+        const rotate = p.type === "mouse" && (p.button === 1 || p.button === 2 || p.shift === true);
+        grabs = !rotate;
+        begin(rotate ? "orbit" : "slide");
       } else {
         // Second finger: hand over from turning to pinching, from wherever the camera is now.
         if (origin) origin.moved = true;
@@ -201,7 +200,8 @@ export function createController(env: ControllerEnv, device: PointerDevice = "au
           origin.moved = true;
         }
         take();
-        set(gesturePose({ pose: start.pose, pivot: start.pivot, ...geometry() }, start.from, touchpoint()));
+        const now = touchpoint();
+        set(panOnPlane(start.pose, start.pivot, { x: start.from.x, y: start.from.y }, { x: now.x, y: now.y }, env.viewport(), env.fovDegrees));
         return;
       }
 
@@ -236,7 +236,7 @@ export function createController(env: ControllerEnv, device: PointerDevice = "au
         const rest = [...pointers.values()][0]!;
         last = { x: rest.x, y: rest.y, time: p.time };
         if (origin) origin.moved = true;
-        begin(touch ? "slide" : "orbit");
+        begin("slide");
         return;
       }
       if (pointers.size > 0) return;
@@ -245,7 +245,7 @@ export function createController(env: ControllerEnv, device: PointerDevice = "au
       start = null;
       const o = origin;
       origin = null;
-      if ((wasMode === "orbit" || (touch && wasMode === "slide")) && o && !o.moved && p.time - o.time < TAP_MAX_MS) {
+      if ((wasMode === "orbit" || (grabs && wasMode === "slide")) && o && !o.moved && p.time - o.time < TAP_MAX_MS) {
         const double = lastTap && p.time - lastTap.time < DOUBLE_TAP_MS && Math.hypot(p.x - lastTap.x, p.y - lastTap.y) < DOUBLE_TAP_DISTANCE_PX;
         if (double) {
           lastTap = null;
@@ -271,7 +271,7 @@ export function createController(env: ControllerEnv, device: PointerDevice = "au
       } else if (pointers.size === 1) {
         const rest = [...pointers.values()][0]!;
         last = { x: rest.x, y: rest.y, time: last?.time ?? 0 };
-        begin(touch ? "slide" : "orbit");
+        begin("slide");
       }
     },
 
@@ -285,10 +285,9 @@ export function createController(env: ControllerEnv, device: PointerDevice = "au
       const intent = router.route({ deltaX: e.deltaX ?? 0, deltaY: e.deltaY, deltaMode: e.deltaMode, ctrlKey: e.ctrlKey, shiftKey: e.shiftKey ?? false, metaKey: e.metaKey ?? false, timeStamp: e.timeStamp ?? 0 });
       if (intent.kind === "pan") {
         const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1;
-        const { height } = env.viewport();
-        const depthAt = env.pick?.(e.x, e.y) ?? pivotFor(pose, env.centre, env.radius);
-        // Natural scrolling: fingers moving up (positive delta) carry the model up with them.
-        set(slideScreen(pose, depthAt, -intent.dx * unit, intent.dy * unit, height, env.fovDegrees));
+        const anchor = env.pick?.(e.x, e.y) ?? pivotFor(pose, env.centre, env.radius);
+        // Natural scrolling: fingers moving up (positive delta) carry the floor up with them.
+        set(panOnPlane(pose, anchor, { x: e.x, y: e.y }, { x: e.x - intent.dx * unit, y: e.y - intent.dy * unit }, env.viewport(), env.fovDegrees));
         return;
       }
       set(zoomPose(pose, zoomFactor(e), { x: e.x, y: e.y }, env.viewport(), env.fovDegrees, env.limits(), env.pick?.(e.x, e.y) ?? undefined));
