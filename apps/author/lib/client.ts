@@ -32,8 +32,28 @@ export const api = {
   fetchOsm: (b: string) => call<OsmFootprint>(`/api/b/${b}/osm`, { method: "POST" }),
   accept: (b: string, levels?: string[]) =>
     call<{ results: { level: string; ok: boolean; blockers: string[] }[]; building: Building | null }>(`/api/b/${b}/accept`, { method: "POST", body: JSON.stringify({ levels }) }),
+  patch: (b: string, body: { action: "preview"; patch: unknown } | { action: "apply"; patch: unknown; accept: number[] }) =>
+    call<PatchPreview & Partial<PatchApplied>>(`/api/b/${b}/patch`, { method: "POST", body: JSON.stringify(body) }),
   canonical: (b: string) => call<{ building: Building | null; levels: Level[] }>(`/api/b/${b}/canonical`),
   saveCanonical: (b: string, building: Building, levels: Level[]) => call(`/api/b/${b}/canonical`, { method: "PUT", body: JSON.stringify({ building, levels }) }),
 };
 
 export const fileUrl = (b: string, l: string, rel: string, bust?: string | number) => `${lvl(b, l)}/files/${rel}${bust ? `?v=${bust}` : ""}`;
+
+export interface PatchPreview {
+  results: { index: number; status: "applied" | "skipped"; summary: string; before: string; after: string; reason?: string; op: { op: string } }[];
+  baseMatches: boolean;
+  currentHash: string;
+  changedLevels: string[];
+  changedProposals: string[];
+  buildingChanged: boolean;
+  elevations: { levelId: string; before: { elevationM: number; heightM: number; heightSource: string }; after: { elevationM: number; heightM: number; heightSource: string } }[];
+  elevationNotes: string[];
+  notes: { levelId: string; text: string }[];
+}
+
+export interface PatchApplied {
+  applied: number;
+  skipped: number;
+  written: string[];
+}

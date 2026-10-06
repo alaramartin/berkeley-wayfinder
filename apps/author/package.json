@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
+    "@wf/field": "workspace:*",
     "@wf/geometry": "workspace:*",
     "@wf/routing": "workspace:*",
     "@wf/schema": "workspace:*",

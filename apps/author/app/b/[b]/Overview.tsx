@@ -158,6 +158,9 @@ export function Overview({ building }: { building: string }) {
             <Link href={`/b/${building}/shafts`} className="text-blue-700 hover:underline">
               Shafts & heights →
             </Link>
+            <Link href={`/b/${building}/patch`} className="text-blue-700 hover:underline">
+              Import a field patch →
+            </Link>
           </div>
         </div>
       </section>

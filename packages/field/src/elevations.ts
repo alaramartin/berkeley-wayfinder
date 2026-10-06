@@ -3,8 +3,8 @@
  *
  * A stairwell's step count between two floors, times the height of one step, is the height between
  * them. Counts from every stairwell that joins the same two neighbouring levels are combined by median,
- * so one miscounted flight does not move a floor. Levels with no count keep what they had (the default
- * guess), and the whole stack is re-stacked bottom to top so the elevations stay consistent.
+ * so one miscounted flight does not move a floor. Levels with no count keep the distance they had to the
+ * level above (the default guess), and the stack is re-stacked bottom to top so the elevations stay consistent.
  *
  * A stairwell that skips a level (Wheeler's basement-to-ground flights pass the mezzanine) says nothing
  * about the levels in between on its own, so it is reported instead of guessed at.
@@ -58,11 +58,19 @@ export function deriveElevations(levels: LevelHeight[], shafts: ShaftLike[], lev
   }
 
   const out = ordered.map((l) => ({ ...l }));
+  // The distance to the level above, measured where there is a count and otherwise what it already
+  // was. Not `heightM`: that is a floor-to-floor default, and a mezzanine sits half a floor up, so
+  // re-stacking from it would shove everything above the mezzanine up by the difference.
+  const gapAbove = ordered.map((l, i) => {
+    const measured = gaps.get(i);
+    const next = ordered[i + 1];
+    return measured?.length ? Math.round(median(measured) * 100) / 100 : next ? next.elevationM - l.elevationM : l.heightM;
+  });
   for (let i = 0; i < out.length; i++) {
     const level = out[i]!;
     const measured = gaps.get(i);
     if (measured?.length) {
-      level.heightM = Math.round(median(measured) * 100) / 100;
+      level.heightM = gapAbove[i]!;
       level.heightSource = "stair-count";
       if (measured.length > 1) {
         const spread = Math.max(...measured) - Math.min(...measured);
@@ -70,7 +78,7 @@ export function deriveElevations(levels: LevelHeight[], shafts: ShaftLike[], lev
       }
     }
     const above = out[i + 1];
-    if (above) above.elevationM = Math.round((level.elevationM + level.heightM) * 100) / 100;
+    if (above) above.elevationM = Math.round((level.elevationM + gapAbove[i]!) * 100) / 100;
   }
   return { levels: out, notes };
 }

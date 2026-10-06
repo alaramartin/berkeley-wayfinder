@@ -12,6 +12,8 @@ import { type Grab, type Pose, type Touchpoint, clampPose, gesturePose, roomPose
 import * as THREE from "three";
 import { createWheelRouter, zoomFactor } from "./input";
 import { createController } from "./controller";
+import { buildView, doorPoints, nearestCorridor, pickAt, toCheck } from "./field/model";
+import { memoryStore } from "./field/store";
 import { loadBuilding } from "./data";
 import { ARROW_FADE_FRACTION, advancePhase, riserArrows } from "./riser";
 import { alphaAt, guideStepAt, pointAtDistance, ribbonActivity, riserEndingAt, routeGeometry, stepSpan } from "./route-geometry";
@@ -1076,5 +1078,69 @@ describe("dragging down brings higher levels into view", () => {
     for (let i = 1; i <= 20; i++) c.move({ id: 1, x: 400, y: 100 + i * 25, time: i * 16, type: "mouse" });
     c.up({ id: 1, x: 400, y: 600, time: 2000, type: "mouse" });
     expect(projectToScreen(state.pose, high, viewport, 45).y).toBeGreaterThan(before + 200);
+  });
+});
+
+describe("the field tool", () => {
+  it("shows the data with the recorded edits applied, and undoing an edit removes it", async () => {
+    const base = await wheeler();
+    const before = toCheck(buildView(base, []));
+    const target = before.doors[0]!;
+    const op = { op: "confirmDoor", roomId: target.roomId, doorIndex: target.doorIndex } as const;
+    const after = toCheck(buildView(base, [op]));
+    expect(after.confirmed).toBe(before.confirmed + 1);
+    expect(after.doors.find((d) => d.roomId === target.roomId && d.doorIndex === target.doorIndex)).toBeUndefined();
+    // The bundled data is never touched; the view is a copy.
+    expect(toCheck(buildView(base, [])).confirmed).toBe(before.confirmed);
+  });
+
+  it("lists what is left to check: doors, entrances, and stairs that still need counting", async () => {
+    const base = await wheeler();
+    const check = toCheck(buildView(base, []));
+    expect(check.total).toBeGreaterThan(100);
+    expect(check.entrances.length).toBe(base.building.entrances.filter((e) => !e.verified).length);
+    const stair = base.building.shafts.find((s) => s.kind === "stair")!;
+    expect(check.stairs.some((s) => s.shaftId === stair.id)).toBe(true);
+    const counted = toCheck(buildView(base, stair.nodeIds.slice(0, -1).map((_, index) => ({ op: "setStepCount", shaftId: stair.id, index, steps: 20 }) as const)));
+    expect(counted.stairs.some((s) => s.shaftId === stair.id)).toBe(false);
+  });
+
+  it("a tap on a door picks the door, not the room around it", async () => {
+    const base = await wheeler();
+    const view = buildView(base, []);
+    const level = view.levels.find((l) => l.id === "L1")!;
+    const door = doorPoints(level)[0]!;
+    expect(pickAt(view, "L1", door.point, 1)).toEqual({ kind: "door", roomId: door.roomId, doorIndex: door.doorIndex });
+    // In the middle of a room, away from any door: the room.
+    const room = level.rooms.find((r) => r.polygon.length >= 4 && !r.doors.length ? false : true)!;
+    const [cx, cy] = interiorPoint(room.polygon);
+    const hit = pickAt(view, "L1", [cx, cy], 0.01);
+    expect(hit && hit.kind).toBeTruthy();
+    // Out in the courtyard, far from everything.
+    expect(pickAt(view, "L1", [1000, 1000], 1)).toBeNull();
+  });
+
+  it("finds the corridor nearest a tap and which side of it you are on", async () => {
+    const base = await wheeler();
+    const level = base.levels.find((l) => l.id === "L1")!;
+    const door = level.rooms.flatMap((r) => r.doors.map((d) => ({ d, r })))[0]!;
+    const edge = level.edges.find((e) => e.id === door.d.edgeId)!;
+    const [x, y] = doorPoints(level).find((p) => p.roomId === door.r.id)!.point;
+    const hit = nearestCorridor(level, [x, y])!;
+    expect(hit.distance).toBeLessThan(1);
+    expect(hit.edgeId).toBe(edge.id);
+    expect(hit.side).toBe(door.d.side);
+    expect(hit.t).toBeCloseTo(door.d.t, 1);
+  });
+
+  it("the on-phone store keeps edits in order, and removes and clears them", async () => {
+    const store = memoryStore();
+    const a = await store.add({ op: "note", levelId: "L1", text: "a" });
+    const b = await store.add({ op: "note", levelId: "L1", text: "b" });
+    expect((await store.list()).map((s) => s.id)).toEqual([a.id, b.id]);
+    await store.remove(a.id);
+    expect((await store.list()).map((s) => s.id)).toEqual([b.id]);
+    await store.clear();
+    expect(await store.list()).toEqual([]);
   });
 });

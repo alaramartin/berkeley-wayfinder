@@ -134,6 +134,24 @@ describe("floor heights from step counts", () => {
     expect(building.levels.length).toBe(out.levels.length);
   });
 
+  it("leaves the levels below a counted flight where they were, including the half-floor mezzanine", async () => {
+    const { levels, data } = await wheeler();
+    const copy = clone(data);
+    applyOps(copy, [{ op: "setStepCount", shaftId: "wheeler-shaft-s6", index: 0, steps: 25 }]); // L1 -> L2 only
+    const nodeLevel = new Map(levels.flatMap((l) => l.nodes.map((n) => [n.id, l.id] as const)));
+    const out = deriveElevations(
+      levels.map((l) => ({ id: l.id, sortIndex: l.sortIndex, elevationM: l.elevationM, heightM: l.heightM, heightSource: l.heightSource })),
+      copy.shafts,
+      (id) => nodeLevel.get(id),
+    );
+    const at = (id: string) => out.levels.find((l) => l.id === id)!.elevationM;
+    const was = (id: string) => levels.find((l) => l.id === id)!.elevationM;
+    for (const id of ["B", "M", "L1"]) expect(at(id)).toBe(was(id));
+    // Only what is above the counted flight moves, and by exactly the difference.
+    expect(at("L2")).toBeCloseTo(was("L1") + 25 * STEP_RISE_M, 2);
+    expect(at("L3") - at("L2")).toBeCloseTo(was("L3") - was("L2"), 2);
+  });
+
   it("reports a flight that skips a level instead of guessing", async () => {
     const { levels, data } = await wheeler();
     const copy = clone(data);
@@ -158,5 +176,52 @@ describe("floor heights from step counts", () => {
       (id) => id.toUpperCase(),
     );
     expect(out.levels[0]!.heightM).toBe(4.5);
+  });
+});
+
+import { doorMarker, inPolygon, pointAlong, polylineLength, projectOnPolyline } from "./geometry";
+
+describe("corridor geometry", () => {
+  const line: [number, number][] = [
+    [0, 0],
+    [10, 0],
+    [10, 10],
+  ];
+
+  it("measures and walks a bent corridor", () => {
+    expect(polylineLength(line)).toBe(20);
+    expect(pointAlong(line, 0.5).point).toEqual([10, 0]);
+    expect(pointAlong(line, 0.75).point).toEqual([10, 5]);
+    expect(pointAlong(line, 0.25).direction).toEqual([1, 0]);
+    expect(pointAlong(line, 1).point).toEqual([10, 10]);
+  });
+
+  it("projects a tap onto the corridor and says which side it is on", () => {
+    const above = projectOnPolyline(line, [4, 3]);
+    expect(above.point[0]).toBeCloseTo(4);
+    expect(above.t).toBeCloseTo(0.2);
+    expect(above.distance).toBeCloseTo(3);
+    // Walking east, north (y up) is on the left.
+    expect(above.side).toBe("left");
+    expect(projectOnPolyline(line, [4, -3]).side).toBe("right");
+    // On the second leg, heading north, east is on the right.
+    expect(projectOnPolyline(line, [13, 5]).side).toBe("right");
+    expect(projectOnPolyline(line, [13, 5]).t).toBeCloseTo(0.75);
+  });
+
+  it("draws a door on the side it was marked, and a projection round-trips", () => {
+    const left = doorMarker(line, 0.2, "left");
+    const right = doorMarker(line, 0.2, "right");
+    expect(left[1]).toBeGreaterThan(0);
+    expect(right[1]).toBeLessThan(0);
+    const back = projectOnPolyline(line, left);
+    expect(back.t).toBeCloseTo(0.2);
+    expect(back.side).toBe("left");
+  });
+
+  it("finds the room a tap is in", () => {
+    const square: [number, number][] = [[0, 0], [4, 0], [4, 4], [0, 4]];
+    expect(inPolygon(square, [2, 2])).toBe(true);
+    expect(inPolygon(square, [5, 2])).toBe(false);
   });
 });
