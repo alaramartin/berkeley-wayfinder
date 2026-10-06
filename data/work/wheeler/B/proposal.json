@@ -6,7 +6,7 @@
     3000
   ],
   "generatedAt": "2026-09-18T00:29:14+00:00",
-  "editedAt": "2026-09-24T08:48:43.306Z",
+  "editedAt": "2026-10-06T05:46:44.792Z",
   "pipelineVersion": "0.1.0",
   "outline": [
     [
@@ -2545,15 +2545,6 @@
     {
       "id": "wheeler-B-i000",
       "kind": "accessible",
-      "at": [
-        1371.5,
-        1846.5
-      ],
-      "confidence": 0.939
-    },
-    {
-      "id": "wheeler-B-i001",
-      "kind": "dwa",
       "at": [
         1371.5,
         1846.5

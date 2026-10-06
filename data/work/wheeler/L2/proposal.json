@@ -6,7 +6,7 @@
     3000
   ],
   "generatedAt": "2026-09-17T05:05:26+00:00",
-  "editedAt": "2026-10-06T05:03:47.266Z",
+  "editedAt": "2026-10-06T05:46:44.355Z",
   "pipelineVersion": "0.1.0",
   "outline": [
     [
@@ -2136,93 +2136,6 @@
       "aliases": []
     },
     {
-      "id": "wheeler-L2-rDWA",
-      "regionId": "wheeler-L2-g008",
-      "number": "DWA",
-      "numberConfidence": 1,
-      "category": "other",
-      "group": "Academic Innovation Studio @ Wheeler",
-      "polygon": [
-        [
-          477.5,
-          709
-        ],
-        [
-          477.5,
-          731
-        ],
-        [
-          491,
-          731
-        ],
-        [
-          496,
-          723
-        ],
-        [
-          502,
-          733
-        ],
-        [
-          506,
-          728
-        ],
-        [
-          500,
-          726
-        ],
-        [
-          508,
-          723
-        ],
-        [
-          513,
-          734
-        ],
-        [
-          519.5,
-          730
-        ],
-        [
-          519.5,
-          709
-        ],
-        [
-          513,
-          717
-        ],
-        [
-          506,
-          709
-        ],
-        [
-          495,
-          720
-        ],
-        [
-          491,
-          715
-        ],
-        [
-          500,
-          713
-        ],
-        [
-          499,
-          709
-        ]
-      ],
-      "doors": [
-        {
-          "edgeId": "wheeler-L2-v01-link",
-          "t": 0.0861,
-          "side": "left",
-          "confidence": 0.5
-        }
-      ],
-      "aliases": []
-    },
-    {
       "id": "wheeler-L2-r208",
       "regionId": "wheeler-L2-g013",
       "number": "208",
@@ -4210,17 +4123,7 @@
       "aliases": []
     }
   ],
-  "icons": [
-    {
-      "id": "wheeler-L2-i000",
-      "kind": "dwa",
-      "at": [
-        510,
-        720.5
-      ],
-      "confidence": 0.92
-    }
-  ],
+  "icons": [],
   "entrances": [],
   "directory": []
 }

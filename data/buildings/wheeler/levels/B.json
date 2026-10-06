@@ -2560,12 +2560,6 @@
       "nodeId": "wheeler-B-v05"
     },
     {
-      "id": "wheeler-B-i001-poi",
-      "kind": "dwa",
-      "levelId": "B",
-      "nodeId": "wheeler-B-n011"
-    },
-    {
       "id": "wheeler-B-i002-poi",
       "kind": "evac-chair",
       "levelId": "B",
