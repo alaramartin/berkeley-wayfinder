@@ -7,15 +7,17 @@
 - [x] **M1 — Pipeline** (done 2026-09-16)
 - [x] **M2 — Authoring tool** (done 2026-09-24)
 - [x] **M3 — Routing + complete Wheeler data** (done 2026-09-24)
-- [ ] **M4 — Nav app + deploy** ← current
-- [ ] **M5 — Field mode + verification walk**
+- [x] **M4 — Nav app + deploy** (done 2026-10-06)
+- [ ] **M5 — Field mode + verification walk** ← current
+- [ ] **M6 — UI redesign** (not started: the user is still deciding what it should look like)
 
 ## Status
-- **Current milestone:** M4 — Nav app + deploy (app built and tested locally and pushed; **waiting on user** to approve the Vercel deploy and then the M4 review gate)
-- **Last completed task:** M4 3D navigation + search polish (2026-10-06) — camera controller (drag moves the model in the screen plane, Shift/right-drag turns, two-finger swipe turns on phone and trackpad, pinch/wheel zoom), picking a room flies to it with a pin, L2 220/222/224 reclassified as classrooms (they were missing from search), pointer cursors; production live and auto-deploying from `main`
+- **Current milestone:** M5 — Field mode + verification walk (just started)
+- **Last completed task:** M4 closed 2026-10-06: nav app live at https://berkeley-wayfinder.vercel.app (login-protected), auto-deploys from `main`; routing no longer cuts through rooms; L2 220/222/224 split and fixed; DWA markers removed; camera controls reworked and checked on a real phone
+- **M6 — UI redesign** added to the plan; waiting on the user's direction before it starts
 - **Previously:** M4 scene rounds 1–2 — mirror fix, floor ribbon, floor-change risers, guided camera, labels, legend; corridor straightening measured and declined
 - **Vercel:** project `berkeley-wayfinder` (root `apps/nav`, team alara-martins-projects). Production deployed 2026-10-06 at https://berkeley-wayfinder.vercel.app, login-protected (Deployment Protection = *all* deployments; the default "all except custom domains" leaves the production domain public). It was public for a few minutes on 2026-10-06 and put back at the user's request. GitHub is connected (2026-10-06): a push to `main` deploys to production, other branches get protected previews; manual deploys still work with `vercel deploy --prod` from the repo root
-- **Blocked on user:** M4 review gate sign-off (the user tried the controls on a real phone and says they work); splitting the shared 220/222 room shape in the author tool
+- **Blocked on user:** nothing yet
 - **Previously:** M4 nav app: search, 3D scene, route panel, URL state
 - **Previously:** M3 built — routing graph, A*, accessible mode, nearest-POI, instructions; 14 routing tests including real Wheeler data; `pnpm routes wheeler` prints samples
 - **Previously:** M2 review gate passed — six levels accepted (188 rooms), aligned + OSM-fitted, 11 shafts (9 stairs, 2 elevators), 4 entrances; all canonical files validate
@@ -279,7 +281,7 @@ If something looks wrong in the photo-to-plan conversion itself, use Corners (ne
 - [x] `pnpm routes wheeler` prints sample routes as text (`--from`/`--to`/`--accessible`).
 - **Review gate M3.** Print sample routes as text for the user to sanity-check.
 
-### M4 — Nav app + deploy
+### M4 — Nav app + deploy ✅
 - [x] data bundling from `data/buildings` (`apps/nav/scripts/bundle-data.mts` → `public/data`, runs before dev/build/test; gitignored).
 - [x] search (numbers, names, aliases, entrances, nearest-X) with fuse.js; service rooms excluded.
 - [x] 3D scene: level slabs (outline minus voids), room blocks merged per colour, billboard labels, exploded layout.
@@ -290,9 +292,9 @@ If something looks wrong in the photo-to-plan conversion itself, use Corners (ne
 - [x] phone-width checks + performance pass: layout verified at ~500 px and desktop. (fps readings on this machine are capped at ~31 by the browser — a plain HTML page reports the same, so it is not the scene.)
 - [x] **Scene rework after review** (2026-09-25): fixed the mirrored building, replaced the floating dashed line with a floor ribbon, freed the camera and added a guided fly-in, put labels on rooms, added a legend. Detail in the Decision log.
 - [x] **Corridor centrelines: measured, and deliberately left alone** (2026-09-29). See the Decision log.
-- [ ] ~~Corridor centrelines still bow~~ (L4's trunk 38.9 m along a 34.0 m chord; L1 `e026` sags 6.7 m). Visible as the ribbon drifting diagonally across a straight corridor. Decision pending — see Decision log 2026-09-24 for the agreed shape of the fix.
-- [ ] **confirm with user**, then create the Vercel project (root `apps/nav`) and deploy.
-- **Review gate M4.** Share the deployed URL + test routes.
+- [x] ~~Corridor centrelines still bow~~ (declined; see Decision log) (L4's trunk 38.9 m along a 34.0 m chord; L1 `e026` sags 6.7 m). Visible as the ribbon drifting diagonally across a straight corridor. Decision pending — see Decision log 2026-09-24 for the agreed shape of the fix.
+- [x] confirmed with the user, then created the Vercel project (root `apps/nav`) and deployed: https://berkeley-wayfinder.vercel.app (login-protected), automatic on push to `main`.
+- **Review gate M4.** Passed 2026-10-06 (the user tried it on a real phone).
 
 ### M5 — Field mode + verification walk
 - [ ] `/field` offline shell (service worker, IndexedDB).
@@ -302,6 +304,9 @@ If something looks wrong in the photo-to-plan conversion itself, use Corners (ne
 - [ ] elevation recompute from step counts; resolve Level M placement.
 - [ ] **User does the walk** → import → redeploy.
 - **Review gate M5.** Wheeler v1 done.
+
+### M6 — UI redesign
+Not started. The user dislikes how the app looks now and needs time to decide what it should look like, so **do not begin M6 until they bring a direction** (references, sketches or a description). When they do, write the agreed direction here first, as tasks, before touching code. M5's `/field` screens should stay plain and functional so they are not redesign work twice.
 
 ## 10. Verification (end to end)
 - `pnpm -r typecheck && pnpm -r test`: schema round-trips, geometry, routing on fixtures + real Wheeler data.
