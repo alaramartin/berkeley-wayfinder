@@ -216,12 +216,23 @@ export function orbitStep(pose: Pose, pivot: Vec3, dTheta: number, dPhi: number)
 
 /** Slide the view up the screen by `pixels` (positive moves the model up), at the depth of `pivot`. */
 export function slideVertical(pose: Pose, pivot: Vec3, pixels: number, viewportHeight: number, fovDegrees: number): Pose {
+  return slideScreen(pose, pivot, 0, pixels, viewportHeight, fovDegrees);
+}
+
+/**
+ * Move the model across the screen by (`right`, `up`) pixels at the depth of `pivot`, so it follows
+ * the fingers one for one: the camera moves the opposite way.
+ */
+export function slideScreen(pose: Pose, pivot: Vec3, rightPx: number, upPx: number, viewportHeight: number, fovDegrees: number): Pose {
+  const pixels = upPx;
   const forward = normalize([pose.target[0] - pose.eye[0], pose.target[1] - pose.eye[1], pose.target[2] - pose.eye[2]]);
-  const up = cross(normalize(cross(forward, [0, 1, 0])), forward);
+  const rightAxis = normalize(cross(forward, [0, 1, 0]));
+  const up = cross(rightAxis, forward);
   const depth = Math.max(1, dot([pivot[0] - pose.eye[0], pivot[1] - pose.eye[1], pivot[2] - pose.eye[2]], forward));
   const metres = ((2 * Math.tan((fovDegrees * Math.PI) / 360) * depth) / Math.max(1, viewportHeight)) * pixels;
   // The model moves up the screen when the camera moves down.
-  const shift: Vec3 = [-up[0] * metres, -up[1] * metres, -up[2] * metres];
+  const side = ((2 * Math.tan((fovDegrees * Math.PI) / 360) * depth) / Math.max(1, viewportHeight)) * rightPx;
+  const shift: Vec3 = [-up[0] * metres - rightAxis[0] * side, -up[1] * metres - rightAxis[1] * side, -up[2] * metres - rightAxis[2] * side];
   return { eye: [pose.eye[0] + shift[0], pose.eye[1] + shift[1], pose.eye[2] + shift[2]], target: [pose.target[0] + shift[0], pose.target[1] + shift[1], pose.target[2] + shift[2]] };
 }
 

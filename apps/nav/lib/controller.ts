@@ -15,8 +15,8 @@
  * fingers lifted. Here there is a single state machine, so that cannot happen, and it is pure — no
  * DOM, no three — so the transitions are unit-tested.
  */
-import { type Pose, type Touchpoint, clampPose, gesturePose, orbitBy, orbitStep, pivotFor, slideVertical, zoomPose, TIP_PER_HEIGHT, TURN_PER_WIDTH } from "./camera";
-import { zoomFactor } from "./input";
+import { type Pose, type Touchpoint, clampPose, gesturePose, orbitBy, orbitStep, pivotFor, slideScreen, slideVertical, zoomPose, TIP_PER_HEIGHT, TURN_PER_WIDTH } from "./camera";
+import { type PointerDevice, createWheelRouter, zoomFactor } from "./input";
 import type { Vec3 } from "./scene";
 
 export interface ControllerEnv {
@@ -71,7 +71,7 @@ export interface Controller {
   move(p: PointerInfo): void;
   up(p: PointerInfo): void;
   cancel(id: number): void;
-  wheel(e: { deltaY: number; deltaMode: number; ctrlKey: boolean; x: number; y: number }): void;
+  wheel(e: { deltaY: number; deltaX?: number; deltaMode: number; ctrlKey: boolean; shiftKey?: boolean; metaKey?: boolean; timeStamp?: number; x: number; y: number }): void;
   /** Advance coasting; returns true while the camera is still moving on its own. */
   tick(dtMs: number): boolean;
   /** Cancel everything (blur, lost capture, unmount). */
@@ -80,7 +80,8 @@ export interface Controller {
   readonly pointerCount: number;
 }
 
-export function createController(env: ControllerEnv): Controller {
+export function createController(env: ControllerEnv, device: PointerDevice = "auto"): Controller {
+  const router = createWheelRouter(device);
   const pointers = new Map<number, Tracked>();
   let mode: Mode = "idle";
   let start: { pose: Pose; pivot: Vec3; from: Touchpoint } | null = null;
@@ -254,6 +255,17 @@ export function createController(env: ControllerEnv): Controller {
       taken = true;
       env.onTakeover();
       const pose = env.getPose();
+      // A pinch and a mouse wheel zoom. A two-finger swipe on a trackpad slides the model instead, the
+      // way scrolling moves a page, so pinch is the only thing on a trackpad that zooms.
+      const intent = router.route({ deltaX: e.deltaX ?? 0, deltaY: e.deltaY, deltaMode: e.deltaMode, ctrlKey: e.ctrlKey, shiftKey: e.shiftKey ?? false, metaKey: e.metaKey ?? false, timeStamp: e.timeStamp ?? 0 });
+      if (intent.kind === "pan") {
+        const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1;
+        const { height } = env.viewport();
+        const depthAt = env.pick?.(e.x, e.y) ?? pivotFor(pose, env.centre, env.radius);
+        // Natural scrolling: fingers moving up (positive delta) carry the model up with them.
+        set(slideScreen(pose, depthAt, -intent.dx * unit, intent.dy * unit, height, env.fovDegrees));
+        return;
+      }
       set(zoomPose(pose, zoomFactor(e), { x: e.x, y: e.y }, env.viewport(), env.fovDegrees, env.limits(), env.pick?.(e.x, e.y) ?? undefined));
     },
 

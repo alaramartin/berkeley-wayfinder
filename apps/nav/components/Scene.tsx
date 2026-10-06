@@ -362,7 +362,7 @@ function CameraRig({
     };
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      controller.wheel({ deltaY: e.deltaY, deltaMode: e.deltaMode, ctrlKey: e.ctrlKey, ...local(e) });
+      controller.wheel({ deltaX: e.deltaX, deltaY: e.deltaY, deltaMode: e.deltaMode, ctrlKey: e.ctrlKey, shiftKey: e.shiftKey, metaKey: e.metaKey, timeStamp: e.timeStamp, ...local(e) });
     };
     const stop = (e: Event) => e.preventDefault();
     const onBlur = () => controller.reset();

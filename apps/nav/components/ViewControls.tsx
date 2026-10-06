@@ -31,7 +31,10 @@ export function ViewControls({
               <strong>Pinch</strong> — zoom; twist and slide with two fingers
             </li>
             <li>
-              <strong>Scroll</strong> — zoom; <strong>right-drag</strong> or <strong>Shift-drag</strong> slides
+              <strong>Trackpad</strong> — pinch to zoom, two-finger swipe to slide
+            </li>
+            <li>
+              <strong>Mouse</strong> — wheel to zoom, right-drag or Shift-drag to slide
             </li>
             <li>
               <strong>Double-tap</strong> — zoom in on that spot

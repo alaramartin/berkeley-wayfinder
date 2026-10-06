@@ -10,7 +10,7 @@ import { interiorPoint, pointInPolygon } from "@wf/geometry";
 import { instructions, route } from "@wf/routing";
 import { type Grab, type Pose, type Touchpoint, clampPose, gesturePose, grabRotate, pivotFor, pointUnderCursor, projectToScreen, spanPose, zoomPose } from "./camera";
 import * as THREE from "three";
-import { zoomFactor } from "./input";
+import { createWheelRouter, zoomFactor } from "./input";
 import { createController } from "./controller";
 import { loadBuilding } from "./data";
 import { ARROW_FADE_FRACTION, advancePhase, riserArrows } from "./riser";
@@ -456,6 +456,54 @@ describe("grab and turn", () => {
     const after = Math.hypot(pose.eye[0] - grab.pivot[0], pose.eye[1] - grab.pivot[1], pose.eye[2] - grab.pivot[2]);
     expect(Math.abs(after - before)).toBeLessThan(before * 0.1);
     expect(pose.target).not.toEqual(grab.pivot);
+  });
+});
+
+describe("telling a trackpad from a mouse", () => {
+  const wheel = (over: Partial<Parameters<ReturnType<typeof createWheelRouter>["route"]>[0]>, at = 0) => ({
+    deltaX: 0,
+    deltaY: 0,
+    deltaMode: 0,
+    ctrlKey: false,
+    shiftKey: false,
+    metaKey: false,
+    timeStamp: at,
+    ...over,
+  });
+
+  it("keeps zoom working for a mouse, forever", () => {
+    // The failure that matters: mapping plain wheels to panning would leave a mouse with no zoom.
+    const router = createWheelRouter();
+    for (let i = 0; i < 50; i++) {
+      const intent = router.route(wheel({ deltaY: i % 2 ? 100 : -120 }, i * 30));
+      expect(intent.kind).toBe("zoom");
+    }
+    expect(router.device()).not.toBe("trackpad");
+  });
+
+  it("switches to panning once a trackpad gives itself away", () => {
+    const router = createWheelRouter();
+    expect(router.route(wheel({ deltaY: 2.5 }, 0)).kind).toBe("pan");
+    expect(router.route(wheel({ deltaY: 4, deltaX: -1 }, 16)).kind).toBe("pan");
+    expect(router.device()).toBe("trackpad");
+  });
+
+  it("treats a pinch as zoom without mistaking it for a trackpad swipe", () => {
+    const router = createWheelRouter();
+    expect(router.route(wheel({ deltaY: -2.5, ctrlKey: true }, 0)).kind).toBe("zoom");
+    // A pinch must not latch the router, or a mouse plugged in later would pan instead of zoom.
+    expect(router.route(wheel({ deltaY: 120 }, 100)).kind).toBe("zoom");
+  });
+
+  it("honours an explicit device choice", () => {
+    expect(createWheelRouter("mouse").route(wheel({ deltaY: 1.5, deltaX: 0.2 })).kind).toBe("zoom");
+    expect(createWheelRouter("trackpad").route(wheel({ deltaY: 120 })).kind).toBe("pan");
+  });
+
+  it("does not latch on a shift-wheel, which mice send sideways", () => {
+    const router = createWheelRouter();
+    expect(router.route(wheel({ deltaX: 120, deltaY: 0, shiftKey: true })).kind).toBe("zoom");
+    expect(router.device()).not.toBe("trackpad");
   });
 });
 
@@ -909,5 +957,50 @@ describe("running out of tilt", () => {
     c.up({ id: 1, x: 400, y: 300, time: 2000, type: "mouse" });
     const after = projectToScreen(state.pose, [0, 0, 0], viewport, 45).y;
     expect(after).toBeLessThan(before - 20);
+  });
+});
+
+describe("scroll on a trackpad", () => {
+  const viewport = { width: 800, height: 600 };
+  const make = () => {
+    const state = { pose: { eye: [0, 40, 60], target: [0, 0, 0] } as Pose };
+    const c = createController({
+      getPose: () => state.pose,
+      setPose: (p) => (state.pose = p),
+      viewport: () => viewport,
+      fovDegrees: 45,
+      limits: () => ({ min: 2, max: 400 }),
+      centre: [0, 0, 0],
+      radius: 80,
+      onTakeover: () => {},
+      animateTo: () => {},
+    });
+    return { state, c };
+  };
+  const dist = (p: Pose) => Math.hypot(p.eye[0] - p.target[0], p.eye[1] - p.target[1], p.eye[2] - p.target[2]);
+  const swipe = (deltaX: number, deltaY: number, at: number) => ({ deltaX, deltaY, deltaMode: 0, ctrlKey: false, x: 400, y: 300, timeStamp: at });
+
+  it("a swipe slides the model with the fingers and never zooms", () => {
+    const { state, c } = make();
+    const d0 = dist(state.pose);
+    const y0 = projectToScreen(state.pose, [0, 0, 0], viewport, 45).y;
+    for (let i = 0; i < 6; i++) c.wheel(swipe(0, 3.5, i * 16));
+    expect(dist(state.pose)).toBeCloseTo(d0, 3);
+    // Fingers up (positive delta) carry the model up the screen.
+    expect(projectToScreen(state.pose, [0, 0, 0], viewport, 45).y).toBeLessThan(y0 - 5);
+  });
+
+  it("sideways swipes slide sideways", () => {
+    const { state, c } = make();
+    const x0 = projectToScreen(state.pose, [0, 0, 0], viewport, 45).x;
+    for (let i = 0; i < 6; i++) c.wheel(swipe(4.5, 0.5, i * 16));
+    expect(projectToScreen(state.pose, [0, 0, 0], viewport, 45).x).toBeLessThan(x0 - 5);
+  });
+
+  it("a pinch still zooms", () => {
+    const { state, c } = make();
+    const d0 = dist(state.pose);
+    c.wheel({ deltaX: 0, deltaY: -8, deltaMode: 0, ctrlKey: true, x: 400, y: 300, timeStamp: 0 });
+    expect(dist(state.pose)).toBeLessThan(d0);
   });
 });
