@@ -122,23 +122,6 @@ function axisPoint(pose: Pose, p: Vec3): Vec3 {
   return [pose.eye[0] + forward[0] * along, pose.eye[1] + forward[1] * along, pose.eye[2] + forward[2] * along];
 }
 
-/**
- * Slide the view so the building's middle drifts back to the middle of the screen. `rate` is the
- * fraction of the offset to remove now; it is weighted by how far out the camera is, so a close-up of
- * a corridor is left alone.
- */
-export function recentre(pose: Pose, modelCentre: Vec3, modelRadius: number, rate: number): Pose {
-  const t = zoomedOut(pose, modelRadius);
-  const on = axisPoint(pose, modelCentre);
-  const k = Math.min(1, rate) * t;
-  const shift: Vec3 = [(modelCentre[0] - on[0]) * k, (modelCentre[1] - on[1]) * k, (modelCentre[2] - on[2]) * k];
-  if (Math.hypot(shift[0], shift[1], shift[2]) < 1e-4) return pose;
-  return {
-    eye: [pose.eye[0] + shift[0], pose.eye[1] + shift[1], pose.eye[2] + shift[2]],
-    target: [pose.target[0] + shift[0], pose.target[1] + shift[1], pose.target[2] + shift[2]],
-  };
-}
-
 export function easeInOutCubic(t: number): number {
   const c = Math.min(1, Math.max(0, t));
   return c < 0.5 ? 4 * c * c * c : 1 - (-2 * c + 2) ** 3 / 2;

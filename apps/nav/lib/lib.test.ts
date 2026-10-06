@@ -8,7 +8,7 @@ import type { Vec3 } from "./scene";
 import { boundsOf, cameraFor, contrastRatio, labelColor, legendEntries, levelHeights, levelVisibility, planToShape, routePoints, shapeToScene, toScene, CATEGORY_COLOR } from "./scene";
 import { interiorPoint, pointInPolygon } from "@wf/geometry";
 import { instructions, route } from "@wf/routing";
-import { type Grab, type Pose, type Touchpoint, clampPose, gesturePose, recentre, grabRotate, pivotFor, pointUnderCursor, projectToScreen, spanPose, zoomPose } from "./camera";
+import { type Grab, type Pose, type Touchpoint, clampPose, gesturePose, grabRotate, pivotFor, pointUnderCursor, projectToScreen, spanPose, zoomPose } from "./camera";
 import * as THREE from "three";
 import { zoomFactor } from "./input";
 import { createController } from "./controller";
@@ -866,61 +866,25 @@ describe("gesture maths", () => {
   });
 });
 
-describe("staying centred", () => {
+describe("staying put", () => {
   const viewport = { width: 800, height: 600 };
-  const centre: Vec3 = [0, 8, 0];
-  const make = (pose: Pose) => {
-    const state = { pose };
+  it("never moves the camera on its own", () => {
+    const state = { pose: { eye: [60, 90, 120], target: [40, 0, 10] } as Pose };
     const c = createController({
       getPose: () => state.pose,
       setPose: (p) => (state.pose = p),
       viewport: () => viewport,
       fovDegrees: 45,
       limits: () => ({ min: 2, max: 400 }),
-      centre,
+      centre: [0, 8, 0],
       radius: 60,
       onTakeover: () => {},
       animateTo: () => {},
     });
-    return { state, c };
-  };
-  const offset = (pose: Pose) => {
-    const s = projectToScreen(pose, centre, viewport, 45);
-    return Math.hypot(s.x - 400, s.y - 300);
-  };
-
-  it("recentre pulls an off-centre building back to the middle of the view", () => {
-    let pose: Pose = { eye: [60, 90, 120], target: [40, 0, 10] };
-    const before = offset(pose);
-    expect(before).toBeGreaterThan(100);
-    for (let i = 0; i < 60; i++) pose = recentre(pose, centre, 60, 0.1);
-    expect(offset(pose)).toBeLessThan(before * 0.1);
-  });
-
-  it("leaves a close-up alone", () => {
-    const pose: Pose = { eye: [10, 4, 12], target: [10, 1, 2] };
-    expect(recentre(pose, centre, 60, 1)).toEqual(pose);
-  });
-
-  it("many wide drags never walk the building out of the middle", () => {
-    const { state, c } = make({ eye: [0, 120, 150], target: [10, 0, -5] });
-    let t = 0;
-    for (let round = 0; round < 12; round++) {
-      c.down({ id: 1, x: 100, y: 300, time: t, type: "mouse", button: 0 });
-      for (let i = 1; i <= 20; i++) c.move({ id: 1, x: 100 + i * 30, y: 300 + (round % 2 ? -1 : 1) * i * 3, time: (t += 16), type: "mouse" });
-      c.up({ id: 1, x: 700, y: 300, time: (t += 500), type: "mouse" });
-    }
-    expect(offset(state.pose)).toBeLessThan(120);
-  });
-
-  it("settles back to the middle once let go, but only after the user moved it", () => {
-    const { state, c } = make({ eye: [60, 90, 120], target: [40, 0, 10] });
-    const start = offset(state.pose);
-    for (let i = 0; i < 100; i++) c.tick(16);
-    expect(offset(state.pose)).toBe(start);
     c.wheel({ deltaY: 0, deltaMode: 0, ctrlKey: false, x: 400, y: 300 });
-    for (let i = 0; i < 200; i++) c.tick(16);
-    expect(offset(state.pose)).toBeLessThan(start * 0.2);
+    const afterWheel = state.pose;
+    for (let i = 0; i < 300; i++) c.tick(16);
+    expect(state.pose).toBe(afterWheel);
   });
 });
 

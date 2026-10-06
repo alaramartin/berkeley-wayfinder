@@ -15,7 +15,7 @@
  * fingers lifted. Here there is a single state machine, so that cannot happen, and it is pure — no
  * DOM, no three — so the transitions are unit-tested.
  */
-import { type Pose, type Touchpoint, clampPose, gesturePose, orbitBy, orbitStep, pivotFor, recentre, slideVertical, zoomPose, TIP_PER_HEIGHT, TURN_PER_WIDTH } from "./camera";
+import { type Pose, type Touchpoint, clampPose, gesturePose, orbitBy, orbitStep, pivotFor, slideVertical, zoomPose, TIP_PER_HEIGHT, TURN_PER_WIDTH } from "./camera";
 import { zoomFactor } from "./input";
 import type { Vec3 } from "./scene";
 
@@ -76,8 +76,6 @@ export interface Controller {
   tick(dtMs: number): boolean;
   /** Cancel everything (blur, lost capture, unmount). */
   reset(): void;
-  /** A guided flight took over: stop treating the camera as user-placed. */
-  release(): void;
   readonly mode: Mode;
   readonly pointerCount: number;
 }
@@ -124,15 +122,14 @@ export function createController(env: ControllerEnv): Controller {
   };
 
   /**
-   * One step of turning. Tilt the limits refuse becomes a slide, so a drag never goes dead; when
-   * nothing was refused the building eases towards the middle of the screen as it turns.
+   * One step of turning. Tilt the limits refuse becomes a slide, so a drag never goes dead.
    */
   const turn = (pose: Pose, about: Vec3, dTheta: number, dPhi: number, height: number): Pose => {
     const step = orbitStep(pose, about, dTheta, dPhi);
     if (Math.abs(step.spare) > 1e-6) {
       return slideVertical(step.pose, about, (step.spare / TIP_PER_HEIGHT) * height, height, env.fovDegrees);
     }
-    return recentre(step.pose, env.centre, env.radius, 0.06);
+    return step.pose;
   };
 
   const geometry = () => ({ viewport: env.viewport(), fovDegrees: env.fovDegrees, limits: env.limits() });
@@ -261,16 +258,7 @@ export function createController(env: ControllerEnv): Controller {
     },
 
     tick(dtMs) {
-      if (!coasting) {
-        // At rest and zoomed out, drift back so the whole building is framed.
-        // Only after the user has moved things themselves: a guided step's framing is left alone.
-        if (taken && pointers.size === 0 && mode === "idle") {
-          const pose = env.getPose();
-          const next = recentre(pose, env.centre, env.radius, 1 - Math.exp(-dtMs / 500));
-          if (next !== pose) env.setPose(next);
-        }
-        return false;
-      }
+      if (!coasting) return false;
       const decay = Math.exp(-dtMs / COAST_TIME_MS);
       velocity = { theta: velocity.theta * decay, phi: velocity.phi * decay };
       if (Math.hypot(velocity.theta, velocity.phi) < COAST_STOP) {
@@ -279,10 +267,6 @@ export function createController(env: ControllerEnv): Controller {
       }
       set(turn(env.getPose(), coasting.pivot, velocity.theta * dtMs, velocity.phi * dtMs, env.viewport().height));
       return true;
-    },
-
-    release() {
-      taken = false;
     },
 
     reset() {
