@@ -34,7 +34,7 @@ export function ViewControls({
               <strong>Two fingers</strong> — swipe to turn, pinch to zoom
             </li>
             <li>
-              <strong>Scroll or pinch</strong> — zoom; on a trackpad a two-finger swipe moves
+              <strong>Trackpad</strong> — two-finger swipe turns, pinch zooms; <strong>mouse wheel</strong> zooms
             </li>
             <li>
               <strong>Double-tap</strong> — zoom in on that spot

@@ -1,15 +1,15 @@
 /**
  * One camera controller for every input device.
  *
- * The scheme is the one the viewers people already know use (Sketchfab, Matterport, Google Maps):
+ * The scheme follows the viewers people already know (Google Maps, Mapbox, Matterport):
  *
  * Touch:
  *   one finger                slide the model
  *   two fingers               swipe to turn (sideways rounds it, up and down tips it), pinch to zoom, both at once
+ * Trackpad: two-finger swipe turns the model, pinch zooms.
  * Mouse (as in Google Maps, Mapbox and every map viewer):
  *   left drag                 grab the model and move it
  *   right / middle / Shift    turn and tip the model
- *   wheel, trackpad swipe     zoom towards the cursor
  *   double tap / click        zoom in on that spot
  *   let go mid-swipe          it keeps coasting, then settles
  *
@@ -18,7 +18,7 @@
  * fingers lifted. Here there is a single state machine, so that cannot happen, and it is pure — no
  * DOM, no three — so the transitions are unit-tested.
  */
-import { type Pose, type Touchpoint, clampPose, gesturePose, orbitBy, orbitStep, pivotFor, slideScreen, slideVertical, zoomPose, TIP_PER_HEIGHT, TURN_PER_WIDTH } from "./camera";
+import { type Pose, type Touchpoint, clampPose, gesturePose, orbitBy, orbitStep, pivotFor, slideVertical, zoomPose, TIP_PER_HEIGHT, TURN_PER_WIDTH } from "./camera";
 import { type PointerDevice, createWheelRouter, zoomFactor } from "./input";
 import type { Vec3 } from "./scene";
 
@@ -285,10 +285,14 @@ export function createController(env: ControllerEnv, device: PointerDevice = "au
       // way scrolling moves a page, so pinch is the only thing on a trackpad that zooms.
       const intent = router.route({ deltaX: e.deltaX ?? 0, deltaY: e.deltaY, deltaMode: e.deltaMode, ctrlKey: e.ctrlKey, shiftKey: e.shiftKey ?? false, metaKey: e.metaKey ?? false, timeStamp: e.timeStamp ?? 0 });
       if (intent.kind === "pan") {
+        // A two-finger swipe turns the model, exactly as it does on a phone: it moves as if you had
+        // dragged it by the same amount (natural scrolling reports fingers moving right as negative).
         const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1;
-        const anchor = env.pick?.(e.x, e.y) ?? pivotFor(pose, env.centre, env.radius);
-        // Natural scrolling: fingers moving up (positive delta) carry the model up with them.
-        set(slideScreen(pose, anchor, -intent.dx * unit, intent.dy * unit, env.viewport().height, env.fovDegrees));
+        const { width, height } = env.viewport();
+        const about = pivotFor(pose, env.centre, env.radius, env.pick?.(width / 2, height / 2));
+        const dTheta = ((intent.dx * unit) / Math.max(1, width)) * TURN_PER_WIDTH;
+        const dPhi = ((intent.dy * unit) / Math.max(1, height)) * TIP_PER_HEIGHT;
+        set(turn(pose, about, dTheta, dPhi, height));
         return;
       }
       set(zoomPose(pose, zoomFactor(e), { x: e.x, y: e.y }, env.viewport(), env.fovDegrees, env.limits(), env.pick?.(e.x, e.y) ?? undefined));

@@ -997,21 +997,28 @@ describe("scroll on a trackpad", () => {
   const dist = (p: Pose) => Math.hypot(p.eye[0] - p.target[0], p.eye[1] - p.target[1], p.eye[2] - p.target[2]);
   const swipe = (deltaX: number, deltaY: number, at: number) => ({ deltaX, deltaY, deltaMode: 0, ctrlKey: false, x: 400, y: 300, timeStamp: at });
 
-  it("a swipe slides the model with the fingers and never zooms", () => {
+  const angle = (p: Pose) => Math.atan2(p.eye[0] - p.target[0], p.eye[2] - p.target[2]);
+
+  it("a sideways swipe turns the model the way a drag would, and never zooms", () => {
     const { state, c } = make();
     const d0 = dist(state.pose);
-    const y0 = projectToScreen(state.pose, [0, 0, 0], viewport, 45).y;
-    for (let i = 0; i < 6; i++) c.wheel(swipe(0, 3.5, i * 16));
+    const a0 = angle(state.pose);
+    for (let i = 0; i < 8; i++) c.wheel(swipe(-6, 0.5, i * 16));
     expect(dist(state.pose)).toBeCloseTo(d0, 3);
-    // Fingers up (positive delta) carry the model up the screen.
-    expect(projectToScreen(state.pose, [0, 0, 0], viewport, 45).y).toBeLessThan(y0 - 5);
+    const rightSwipe = angle(state.pose) - a0;
+    expect(Math.abs(rightSwipe)).toBeGreaterThan(0.01);
+    // The opposite swipe turns it back the other way.
+    const second = make();
+    const b0 = angle(second.state.pose);
+    for (let i = 0; i < 8; i++) second.c.wheel(swipe(6, 0.5, i * 16));
+    expect(Math.sign(angle(second.state.pose) - b0)).toBe(-Math.sign(rightSwipe));
   });
 
-  it("sideways swipes slide sideways", () => {
+  it("an up-and-down swipe tips the model", () => {
     const { state, c } = make();
-    const x0 = projectToScreen(state.pose, [0, 0, 0], viewport, 45).x;
-    for (let i = 0; i < 6; i++) c.wheel(swipe(4.5, 0.5, i * 16));
-    expect(projectToScreen(state.pose, [0, 0, 0], viewport, 45).x).toBeLessThan(x0 - 5);
+    const h0 = state.pose.eye[1];
+    for (let i = 0; i < 8; i++) c.wheel(swipe(0.5, -6, i * 16));
+    expect(state.pose.eye[1]).toBeGreaterThan(h0);
   });
 
   it("a pinch still zooms", () => {
