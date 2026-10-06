@@ -10,7 +10,7 @@ import type { Level, Point, Room } from "@wf/schema";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { BuildingData } from "@/lib/data";
-import { type Pose, lerpPose, overviewPose, spanPose, zoomPose } from "@/lib/camera";
+import { type Pose, lerpPose, overviewPose, roomPose, spanPose, zoomPose } from "@/lib/camera";
 import { createController } from "@/lib/controller";
 import { type GuideStep, type LevelRibbon, type RouteGeometry, ribbonActivity, riserEndingAt, stepSpan } from "@/lib/route-geometry";
 import { CATEGORY_COLOR, EXPLODE_GAP_M, ROOM_HEIGHT, SLAB_THICKNESS, type Vec3, boundsOf, labelColor, levelHeights, levelVisibility, planToShape, toScene } from "@/lib/scene";
@@ -205,6 +205,21 @@ function mergeGeometries(geometries: THREE.BufferGeometry[]): THREE.BufferGeomet
   merged.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
   merged.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
   return merged;
+}
+
+/** A pin over the room the user picked, so it can be found from any distance. */
+function RoomPin({ room }: { room: Room | null }) {
+  if (!room) return null;
+  const [x, , z] = toScene(interiorPoint(room.polygon), 0);
+  const y = SLAB_THICKNESS + ROOM_HEIGHT;
+  return (
+    <group position={[x, y, z]}>
+      <mesh position={[0, 2.2, 0]} rotation={[Math.PI, 0, 0]}>
+        <coneGeometry args={[0.9, 2.2, 20]} />
+        <meshStandardMaterial color="#dc2626" />
+      </mesh>
+    </group>
+  );
 }
 
 /** Start and destination markers, sitting on the floor of their own level. */
@@ -465,12 +480,14 @@ export interface SceneProps {
   /** The guide step being shown, used to frame the camera and to highlight its stretch of path. */
   activeStep: GuideStep | null;
   /** Bumped when the guide wants a new flight; null means "leave the camera alone". */
-  flightRequest: { kind: "overview" } & FlightTiming | ({ kind: "step"; step: GuideStep } & FlightTiming) | null;
+  flightRequest: ({ kind: "overview" } & FlightTiming) | ({ kind: "step"; step: GuideStep } & FlightTiming) | ({ kind: "room"; roomId: string } & FlightTiming) | null;
   /** The user asked to see every level, which overrides the route's own dimming and cutaway. */
   showAll: boolean;
   onFlightArrive: () => void;
   onTakeover: () => void;
   focusLevel: string | null;
+  /** The one place the user has picked, when there is no route yet: it gets a pin. */
+  focusRoomId: string | null;
   onSelectLevel: (levelId: string) => void;
   /** Overrides the trackpad/mouse guess when the user tells us which they have. */
   onZoomApi: (zoom: (factor: number) => void) => void;
@@ -487,6 +504,7 @@ export function Scene({
   onFlightArrive,
   onTakeover,
   focusLevel,
+  focusRoomId,
   onSelectLevel,
   onZoomApi,
 }: SceneProps) {
@@ -501,6 +519,20 @@ export function Scene({
   const flight = useMemo<Flight | null>(() => {
     if (!flightRequest) return null;
     const aspect = size.width / Math.max(1, size.height);
+    if (flightRequest.kind === "room") {
+      // Fly to one room: wherever the camera is now, however far away it is.
+      const room = data.graph.rooms.get(flightRequest.roomId) as Room | undefined;
+      const level = room && data.levels.find((l) => l.id === room.levelId);
+      if (!room || !level) return null;
+      const [x, , z] = toScene(interiorPoint(room.polygon), 0);
+      const axis = labelAngle(level.imageTransform.rotation);
+      const { along, across } = orientedExtent(room.polygon, axis);
+      const levelY = heights.get(level.id) ?? 0;
+      const ceiling = view === "solid" ? levelY + level.heightM - 0.6 : undefined;
+      const pose = roomPose([x, levelY + SLAB_THICKNESS + ROOM_HEIGHT, z], Math.max(along, across), axis);
+      if (ceiling !== undefined) pose.eye[1] = Math.min(pose.eye[1], ceiling);
+      return { to: pose, ms: flightRequest.ms, key: flightRequest.key, immediate: flightRequest.immediate, onArrive: onFlightArrive };
+    }
     if (flightRequest.kind === "overview" || !geometry) {
       return {
         to: overviewPose(buildingBounds.center, buildingBounds.radius, aspect),
@@ -566,6 +598,7 @@ export function Scene({
     else ribbonsByLevel.set(ribbon.levelId, [ribbon]);
   }
   const lastRibbon = geometry?.ribbons[geometry.ribbons.length - 1];
+  const focusRoom = (focusRoomId ? (data.graph.rooms.get(focusRoomId) as Room | undefined) : undefined) ?? null;
 
   return (
     <Canvas camera={{ fov: 45, near: 0.5, far: 4000 }} dpr={[1, 1.5]} gl={{ antialias: true, powerPreference: "high-performance" }}>
@@ -582,6 +615,7 @@ export function Scene({
           hidden={hidden(level.id)}
           onSelect={onSelectLevel}
         >
+          <RoomPin room={focusRoom && focusRoom.levelId === level.id ? focusRoom : null} />
           {(ribbonsByLevel.get(level.id) ?? []).map((ribbon, i) => (
             <group key={`${ribbon.levelId}-${i}`}>
               <RouteRibbon ribbon={ribbon} active={geometry ? ribbonActivity(geometry, activeStep, ribbon) : null} />

@@ -58,6 +58,20 @@ export function spanPose(ribbon: LevelRibbon, startDistance: number, endDistance
   };
 }
 
+/**
+ * A close three-quarter view of one room, upright for its label: the camera sits behind the label's
+ * baseline looking along its "up", so the room number reads the right way round on arrival.
+ * `sizeM` is the room's longest side, so a small office and a lecture hall both fill the view.
+ */
+export function roomPose(centre: Vec3, sizeM: number, labelAxis: number): Pose {
+  const behind = Math.min(60, Math.max(9, sizeM * 1.1 + 6));
+  const height = Math.min(45, Math.max(8, sizeM * 0.9 + 5));
+  return {
+    eye: [centre[0] + Math.sin(labelAxis) * behind, centre[1] + height, centre[2] + Math.cos(labelAxis) * behind],
+    target: centre,
+  };
+}
+
 export function overviewPose(center: Vec3, radius: number, aspect: number): Pose {
   return { eye: cameraFor(center, radius, 45, aspect), target: center };
 }

@@ -1245,7 +1245,8 @@
       "id": "wheeler-L2-r220",
       "number": "220",
       "aliases": [],
-      "category": "service",
+      "category": "classroom",
+      "group": "General Assignment Classrooms",
       "levelId": "L2",
       "polygon": [
         [
@@ -1522,7 +1523,8 @@
       "id": "wheeler-L2-r222",
       "number": "222",
       "aliases": [],
-      "category": "service",
+      "category": "classroom",
+      "group": "General Assignment Classrooms",
       "levelId": "L2",
       "polygon": [
         [
@@ -2919,7 +2921,8 @@
       "id": "wheeler-L2-r224",
       "number": "224",
       "aliases": [],
-      "category": "service",
+      "category": "classroom",
+      "group": "General Assignment Classrooms",
       "levelId": "L2",
       "polygon": [
         [

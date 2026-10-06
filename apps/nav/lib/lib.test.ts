@@ -8,7 +8,7 @@ import type { Vec3 } from "./scene";
 import { boundsOf, cameraFor, contrastRatio, labelColor, legendEntries, levelHeights, levelVisibility, planToShape, routePoints, shapeToScene, toScene, CATEGORY_COLOR } from "./scene";
 import { interiorPoint, pointInPolygon } from "@wf/geometry";
 import { instructions, route } from "@wf/routing";
-import { type Grab, type Pose, type Touchpoint, clampPose, gesturePose, grabRotate, pivotFor, pointUnderCursor, projectToScreen, spanPose, zoomPose } from "./camera";
+import { type Grab, type Pose, type Touchpoint, clampPose, gesturePose, roomPose, grabRotate, pivotFor, pointUnderCursor, projectToScreen, spanPose, zoomPose } from "./camera";
 import * as THREE from "three";
 import { createWheelRouter, zoomFactor } from "./input";
 import { createController } from "./controller";
@@ -1013,5 +1013,28 @@ describe("scroll on a trackpad", () => {
     const d0 = dist(state.pose);
     c.wheel({ deltaX: 0, deltaY: -8, deltaMode: 0, ctrlKey: true, x: 400, y: 300, timeStamp: 0 });
     expect(dist(state.pose)).toBeLessThan(d0);
+  });
+});
+
+describe("flying to a room", () => {
+  it("looks at the room from behind its label, so the number reads the right way up", () => {
+    for (const axis of [0, 0.4, -1.2, 1.5]) {
+      const pose = roomPose([10, 3, -4], 8, axis);
+      const forward = [pose.target[0] - pose.eye[0], pose.target[2] - pose.eye[2]];
+      const length = Math.hypot(forward[0]!, forward[1]!);
+      // The label's own "up" on the floor (see LevelMesh: rotation [-PI/2, 0, axis]).
+      expect(forward[0]! / length).toBeCloseTo(-Math.sin(axis), 5);
+      expect(forward[1]! / length).toBeCloseTo(-Math.cos(axis), 5);
+      expect(pose.eye[1]).toBeGreaterThan(pose.target[1]);
+    }
+  });
+
+  it("stands further back for a big room than a small one, within limits", () => {
+    const dist = (size: number) => {
+      const p = roomPose([0, 0, 0], size, 0);
+      return Math.hypot(p.eye[0], p.eye[1], p.eye[2]);
+    };
+    expect(dist(40)).toBeGreaterThan(dist(4));
+    expect(dist(1000)).toBeLessThan(120);
   });
 });

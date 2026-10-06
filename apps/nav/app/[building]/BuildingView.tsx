@@ -96,11 +96,11 @@ export function BuildingView({ buildingId }: { buildingId: string }) {
   }, []);
   const [stepIndex, setStepIndex] = useState(0);
   const [flightRequest, setFlightRequest] = useState<
-    ({ kind: "overview" } | { kind: "step"; step: GuideStep }) & { ms: number; key: number; immediate?: boolean } | null
+    ({ kind: "overview" } | { kind: "step"; step: GuideStep } | { kind: "room"; roomId: string }) & { ms: number; key: number; immediate?: boolean } | null
   >(null);
   const flightKey = useRef(0);
 
-  const flyTo = useCallback((target: { kind: "overview" } | { kind: "step"; step: GuideStep }, ms: number, immediate = false) => {
+  const flyTo = useCallback((target: { kind: "overview" } | { kind: "step"; step: GuideStep } | { kind: "room"; roomId: string }, ms: number, immediate = false) => {
     flightKey.current += 1;
     setFlightRequest({ ...target, ms, key: flightKey.current, immediate });
   }, []);
@@ -164,9 +164,23 @@ export function BuildingView({ buildingId }: { buildingId: string }) {
   );
 
   const pick = (which: "from" | "to") => (r: SearchResult) => {
-    if (r.target.type === "nearest") update({ nearest: r.target.kind, to: null });
-    else if (which === "from") update({ from: r.target.id });
-    else update({ to: r.target.id, nearest: null });
+    if (r.target.type === "nearest") {
+      update({ nearest: r.target.kind, to: null });
+      return;
+    }
+    const patch: Partial<NavState> = which === "from" ? { from: r.target.id } : { to: r.target.id, nearest: null };
+    // Picking a place on its own takes you there: its level lights up and the camera flies to it. When
+    // the other end is already set this becomes a route and the guide takes over instead. One update,
+    // because two in a row would each build on the same stale URL.
+    const otherEnd = which === "from" ? state.to || state.nearest : state.from;
+    const room = data?.graph.rooms.get(r.target.id);
+    if (!otherEnd && room) {
+      patch.level = room.levelId;
+      setGuide("off");
+      setShowAll(false);
+      flyTo({ kind: "room", roomId: room.id }, 1100);
+    }
+    update(patch);
   };
 
   if (loadError) return <main className="p-6 text-red-700">Could not load {buildingId}: {loadError}</main>;
@@ -214,6 +228,7 @@ export function BuildingView({ buildingId }: { buildingId: string }) {
           onFlightArrive={() => setGuide((g) => (g === "flying" ? "following" : g))}
           onTakeover={() => setGuide((g) => (g === "off" ? g : "manual"))}
           focusLevel={state.level}
+          focusRoomId={result?.route ? null : data.graph.rooms.has(state.to ?? state.from ?? "") ? (state.to ?? state.from) : null}
           onSelectLevel={(id) => update({ level: state.level === id ? null : id })}
           onZoomApi={receiveZoomApi}
         />
