@@ -269,8 +269,10 @@ function CameraRig({
     [camera],
   );
 
+  const controllerRef = useRef<ReturnType<typeof createController> | null>(null);
   const startFlight = useCallback(
     (f: Flight) => {
+      controllerRef.current?.release();
       if (f.immediate) {
         apply(camera, target.current, f.to);
         active.current = null;
@@ -320,6 +322,8 @@ function CameraRig({
       }),
     [camera, poseNow, pick, modelCentre, modelRadius],
   );
+
+  controllerRef.current = controller;
 
   useEffect(() => {
     const element = gl.domElement;

@@ -15,7 +15,7 @@
  * fingers lifted. Here there is a single state machine, so that cannot happen, and it is pure — no
  * DOM, no three — so the transitions are unit-tested.
  */
-import { type Pose, type Touchpoint, clampPose, gesturePose, orbitBy, pivotFor, zoomPose, TIP_PER_HEIGHT, TURN_PER_WIDTH } from "./camera";
+import { type Pose, type Touchpoint, clampPose, gesturePose, orbitBy, orbitStep, pivotFor, recentre, slideVertical, zoomPose, TIP_PER_HEIGHT, TURN_PER_WIDTH } from "./camera";
 import { zoomFactor } from "./input";
 import type { Vec3 } from "./scene";
 
@@ -76,6 +76,8 @@ export interface Controller {
   tick(dtMs: number): boolean;
   /** Cancel everything (blur, lost capture, unmount). */
   reset(): void;
+  /** A guided flight took over: stop treating the camera as user-placed. */
+  release(): void;
   readonly mode: Mode;
   readonly pointerCount: number;
 }
@@ -113,11 +115,24 @@ export function createController(env: ControllerEnv): Controller {
   const begin = (next: Mode) => {
     mode = next;
     const pose = env.getPose();
-    pivot = pivotFor(pose, env.centre, env.radius);
+    const { width, height } = env.viewport();
+    pivot = pivotFor(pose, env.centre, env.radius, env.pick?.(width / 2, height / 2));
     const from = touchpoint();
     // Pinch and slide hold the actual surface under the fingers; without a hit, the model's middle.
     start = { pose, pivot: next === "orbit" ? pivot : (env.pick?.(from.x, from.y) ?? pivot), from };
     velocity = { theta: 0, phi: 0 };
+  };
+
+  /**
+   * One step of turning. Tilt the limits refuse becomes a slide, so a drag never goes dead; when
+   * nothing was refused the building eases towards the middle of the screen as it turns.
+   */
+  const turn = (pose: Pose, about: Vec3, dTheta: number, dPhi: number, height: number): Pose => {
+    const step = orbitStep(pose, about, dTheta, dPhi);
+    if (Math.abs(step.spare) > 1e-6) {
+      return slideVertical(step.pose, about, (step.spare / TIP_PER_HEIGHT) * height, height, env.fovDegrees);
+    }
+    return recentre(step.pose, env.centre, env.radius, 0.06);
   };
 
   const geometry = () => ({ viewport: env.viewport(), fovDegrees: env.fovDegrees, limits: env.limits() });
@@ -178,12 +193,14 @@ export function createController(env: ControllerEnv): Controller {
       const { width, height } = env.viewport();
       const dTheta = (-(p.x - last.x) / Math.max(1, width)) * TURN_PER_WIDTH;
       const dPhi = (-(p.y - last.y) / Math.max(1, height)) * TIP_PER_HEIGHT;
+      if (dTheta === 0 && dPhi === 0) return;
       const dt = Math.max(1, p.time - last.time);
       // Smoothed, so one jittery sample does not become the fling.
       velocity = { theta: velocity.theta * 0.5 + (dTheta / dt) * 0.5, phi: velocity.phi * 0.5 + (dPhi / dt) * 0.5 };
       velocityAt = p.time;
       last = { x: p.x, y: p.y, time: p.time };
-      set(orbitBy(env.getPose(), pivot, dTheta, dPhi));
+      // While turning, the building eases towards the middle of the screen, so it never ends up off to a side.
+      set(turn(env.getPose(), pivot, dTheta, dPhi, height));
     },
 
     up(p) {
@@ -237,21 +254,35 @@ export function createController(env: ControllerEnv): Controller {
 
     wheel(e) {
       coasting = null;
+      taken = true;
       env.onTakeover();
       const pose = env.getPose();
       set(zoomPose(pose, zoomFactor(e), { x: e.x, y: e.y }, env.viewport(), env.fovDegrees, env.limits(), env.pick?.(e.x, e.y) ?? undefined));
     },
 
     tick(dtMs) {
-      if (!coasting) return false;
+      if (!coasting) {
+        // At rest and zoomed out, drift back so the whole building is framed.
+        // Only after the user has moved things themselves: a guided step's framing is left alone.
+        if (taken && pointers.size === 0 && mode === "idle") {
+          const pose = env.getPose();
+          const next = recentre(pose, env.centre, env.radius, 1 - Math.exp(-dtMs / 500));
+          if (next !== pose) env.setPose(next);
+        }
+        return false;
+      }
       const decay = Math.exp(-dtMs / COAST_TIME_MS);
       velocity = { theta: velocity.theta * decay, phi: velocity.phi * decay };
       if (Math.hypot(velocity.theta, velocity.phi) < COAST_STOP) {
         coasting = null;
         return false;
       }
-      set(orbitBy(env.getPose(), coasting.pivot, velocity.theta * dtMs, velocity.phi * dtMs));
+      set(turn(env.getPose(), coasting.pivot, velocity.theta * dtMs, velocity.phi * dtMs, env.viewport().height));
       return true;
+    },
+
+    release() {
+      taken = false;
     },
 
     reset() {

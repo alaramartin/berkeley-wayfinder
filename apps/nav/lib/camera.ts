@@ -94,7 +94,8 @@ export function zoomPose(
 /** 0 when close in, 1 once the camera is far enough back to see the whole building. */
 function zoomedOut(pose: Pose, modelRadius: number): number {
   const distance = Math.hypot(pose.eye[0] - pose.target[0], pose.eye[1] - pose.target[1], pose.eye[2] - pose.target[2]);
-  const t = Math.min(1, Math.max(0, distance / (modelRadius * 2)));
+  // Nothing until the camera is a fair way back, so close-ups and guided steps are never pulled around.
+  const t = Math.min(1, Math.max(0, (distance - modelRadius * 0.6) / (modelRadius * 1.4)));
   return t * t * (3 - 2 * t);
 }
 
@@ -105,13 +106,37 @@ function zoomedOut(pose: Pose, modelRadius: number): number {
  * side. Zoomed into a corridor, the spot you are looking at, because turning about a centre tens of
  * metres away would sweep the camera off the route. The two blend smoothly with distance.
  */
-export function pivotFor(pose: Pose, modelCentre: Vec3, modelRadius: number): Vec3 {
+export function pivotFor(pose: Pose, modelCentre: Vec3, modelRadius: number, centreHit?: Vec3 | null): Vec3 {
   const t = zoomedOut(pose, modelRadius);
-  return [
-    pose.target[0] + (modelCentre[0] - pose.target[0]) * t,
-    pose.target[1] + (modelCentre[1] - pose.target[1]) * t,
-    pose.target[2] + (modelCentre[2] - pose.target[2]) * t,
-  ];
+  // What is at the middle of the screen: the surface there if there is one, else the building's middle
+  // projected onto the view axis. Turning about a point on the view axis keeps it in the middle of the
+  // screen, which is why every viewer people like uses it.
+  const base = centreHit ?? axisPoint(pose, modelCentre);
+  return [base[0] + (modelCentre[0] - base[0]) * t, base[1] + (modelCentre[1] - base[1]) * t, base[2] + (modelCentre[2] - base[2]) * t];
+}
+
+/** The point on the view axis nearest `p`, never behind the camera. */
+function axisPoint(pose: Pose, p: Vec3): Vec3 {
+  const forward = normalize([pose.target[0] - pose.eye[0], pose.target[1] - pose.eye[1], pose.target[2] - pose.eye[2]]);
+  const along = Math.max(1, dot([p[0] - pose.eye[0], p[1] - pose.eye[1], p[2] - pose.eye[2]], forward));
+  return [pose.eye[0] + forward[0] * along, pose.eye[1] + forward[1] * along, pose.eye[2] + forward[2] * along];
+}
+
+/**
+ * Slide the view so the building's middle drifts back to the middle of the screen. `rate` is the
+ * fraction of the offset to remove now; it is weighted by how far out the camera is, so a close-up of
+ * a corridor is left alone.
+ */
+export function recentre(pose: Pose, modelCentre: Vec3, modelRadius: number, rate: number): Pose {
+  const t = zoomedOut(pose, modelRadius);
+  const on = axisPoint(pose, modelCentre);
+  const k = Math.min(1, rate) * t;
+  const shift: Vec3 = [(modelCentre[0] - on[0]) * k, (modelCentre[1] - on[1]) * k, (modelCentre[2] - on[2]) * k];
+  if (Math.hypot(shift[0], shift[1], shift[2]) < 1e-4) return pose;
+  return {
+    eye: [pose.eye[0] + shift[0], pose.eye[1] + shift[1], pose.eye[2] + shift[2]],
+    target: [pose.target[0] + shift[0], pose.target[1] + shift[1], pose.target[2] + shift[2]],
+  };
 }
 
 export function easeInOutCubic(t: number): number {
@@ -181,8 +206,18 @@ export function pointUnderCursor(pose: Pose, cursor: { x: number; y: number }, v
  * a live drag share one implementation.
  */
 export function orbitBy(pose: Pose, pivot: Vec3, dTheta: number, dPhi: number): Pose {
+  return orbitStep(pose, pivot, dTheta, dPhi).pose;
+}
+
+/**
+ * Like `orbitBy`, but also says how much of the tip the limits refused (`spare`, radians). A drag
+ * that has run out of tilt should not just die under the finger; the caller turns the spare into a
+ * slide, so the model keeps following the finger.
+ */
+export function orbitStep(pose: Pose, pivot: Vec3, dTheta: number, dPhi: number): { pose: Pose; spare: number } {
   const { phi } = toSpherical(pose.eye, pivot);
   const pitch = clampPolar(phi + dPhi) - phi;
+  const spare = dPhi - pitch;
   const about = (p: Vec3, axis: Vec3, angle: number): Vec3 => {
     const v: Vec3 = [p[0] - pivot[0], p[1] - pivot[1], p[2] - pivot[2]];
     const r = rotateAbout(v, axis, angle);
@@ -193,7 +228,18 @@ export function orbitBy(pose: Pose, pivot: Vec3, dTheta: number, dPhi: number): 
   // Tilt about the camera's own horizontal axis, so dragging up and down tips the model towards you.
   const forward = normalize([yawedTarget[0] - yawedEye[0], 0, yawedTarget[2] - yawedEye[2]]);
   const right = normalize(cross(forward, [0, 1, 0]));
-  return { eye: about(yawedEye, right, pitch), target: about(yawedTarget, right, pitch) };
+  return { pose: { eye: about(yawedEye, right, pitch), target: about(yawedTarget, right, pitch) }, spare };
+}
+
+/** Slide the view up the screen by `pixels` (positive moves the model up), at the depth of `pivot`. */
+export function slideVertical(pose: Pose, pivot: Vec3, pixels: number, viewportHeight: number, fovDegrees: number): Pose {
+  const forward = normalize([pose.target[0] - pose.eye[0], pose.target[1] - pose.eye[1], pose.target[2] - pose.eye[2]]);
+  const up = cross(normalize(cross(forward, [0, 1, 0])), forward);
+  const depth = Math.max(1, dot([pivot[0] - pose.eye[0], pivot[1] - pose.eye[1], pivot[2] - pose.eye[2]], forward));
+  const metres = ((2 * Math.tan((fovDegrees * Math.PI) / 360) * depth) / Math.max(1, viewportHeight)) * pixels;
+  // The model moves up the screen when the camera moves down.
+  const shift: Vec3 = [-up[0] * metres, -up[1] * metres, -up[2] * metres];
+  return { eye: [pose.eye[0] + shift[0], pose.eye[1] + shift[1], pose.eye[2] + shift[2]], target: [pose.target[0] + shift[0], pose.target[1] + shift[1], pose.target[2] + shift[2]] };
 }
 
 /** Radians of turn per screen width (round) and per screen height (tip). */
