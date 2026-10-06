@@ -14,3 +14,26 @@ canvas {
   touch-action: none;
   outline: none;
 }
+
+/* Tailwind 4 stopped giving buttons a pointer cursor. Anything you can press should say so, and react. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+[role="option"],
+a[href],
+summary {
+  cursor: pointer;
+}
+button:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+button:not(:disabled),
+a[href] {
+  transition: filter 120ms, background-color 120ms, color 120ms;
+}
+button:not(:disabled):hover {
+  filter: brightness(0.95);
+}
+button:not(:disabled):active {
+  filter: brightness(0.9);
+}
