@@ -8,7 +8,7 @@ import type { Vec3 } from "./scene";
 import { boundsOf, cameraFor, contrastRatio, labelColor, legendEntries, levelHeights, levelVisibility, planToShape, routePoints, shapeToScene, toScene, CATEGORY_COLOR } from "./scene";
 import { interiorPoint, pointInPolygon } from "@wf/geometry";
 import { instructions, route } from "@wf/routing";
-import { type Grab, type Pose, type Touchpoint, clampPose, gesturePose, panOnPlane, roomPose, grabRotate, pivotFor, pointUnderCursor, projectToScreen, spanPose, zoomPose } from "./camera";
+import { type Grab, type Pose, type Touchpoint, clampPose, gesturePose, roomPose, grabRotate, pivotFor, pointUnderCursor, projectToScreen, spanPose, zoomPose } from "./camera";
 import * as THREE from "three";
 import { createWheelRouter, zoomFactor } from "./input";
 import { createController } from "./controller";
@@ -865,15 +865,14 @@ describe("camera controller", () => {
     expect(controller.tick(16)).toBe(false);
   });
 
-  it("mouse: left drag moves the floor with the cursor, right drag turns, and neither jumps", () => {
+  it("mouse: left drag moves the model with the cursor, right drag turns, and neither jumps", () => {
     const move = build();
     move.controller.down({ id: 1, x: 400, y: 300, time: 0, type: "mouse", button: 0 });
     const point = pointUnderCursor(start, { x: 400, y: 300 }, viewport, 45, [0, 0, 0]);
     move.controller.move({ id: 1, x: 460, y: 300, time: 20, type: "mouse" });
     move.controller.move({ id: 1, x: 520, y: 340, time: 40, type: "mouse" });
-    // It moves the view without turning it, keeps its height, and the grabbed spot follows the cursor.
+    // It moves the view without turning it, and the grabbed spot follows the cursor.
     expect(eyeAngle(move.log.pose)).toBeCloseTo(eyeAngle(start), 5);
-    expect(move.log.pose.eye[1]).toBeCloseTo(start.eye[1], 6);
     const now = world(move.log.pose, point);
     expect(Math.hypot(now.x - 520, now.y - 340)).toBeLessThan(2);
 
@@ -905,21 +904,6 @@ describe("camera controller", () => {
     controller.move({ id: 1, x: 400, y: 320, time: 20, type: "mouse" });
     controller.move({ id: 1, x: 5000, y: -4000, time: 40, type: "mouse" });
     expect(Math.hypot(log.pose.target[0], log.pose.target[2])).toBeLessThanOrEqual(60 * 1.1 + 1e-6);
-  });
-});
-
-describe("panning a tilted view", () => {
-  const viewport = { width: 800, height: 600 };
-  it("never lets a drag near the horizon hurl the camera across the map", () => {
-    const pose: Pose = { eye: [0, 2, 60], target: [0, 1.9, 0] };
-    const out = panOnPlane(pose, [0, 0, 0], { x: 400, y: 300 }, { x: 400, y: 150 }, viewport, 45);
-    expect(Math.hypot(out.eye[0] - pose.eye[0], out.eye[2] - pose.eye[2])).toBeLessThan(60 * 10);
-  });
-
-  it("leaves the pose alone when the ray points away from the floor", () => {
-    const pose: Pose = { eye: [0, 40, 60], target: [0, 0, 0] };
-    // Far above the horizon the cursor's ray never meets the floor.
-    expect(panOnPlane(pose, [0, 0, 0], { x: 400, y: 300 }, { x: 400, y: -4000 }, viewport, 45)).toBe(pose);
   });
 });
 
@@ -1058,5 +1042,32 @@ describe("flying to a room", () => {
     };
     expect(dist(40)).toBeGreaterThan(dist(4));
     expect(dist(1000)).toBeLessThan(120);
+  });
+});
+
+describe("dragging down brings higher levels into view", () => {
+  const viewport = { width: 800, height: 600 };
+  it("a downward drag moves the model down the screen, up to as many levels as you drag", () => {
+    // A tall stack: a point on a high level starts above the top edge of the view.
+    const pose: Pose = { eye: [0, 60, 80], target: [0, 10, 0] };
+    const high: Vec3 = [0, 62, 0];
+    const state = { pose };
+    const c = createController({
+      getPose: () => state.pose,
+      setPose: (p) => (state.pose = p),
+      viewport: () => viewport,
+      fovDegrees: 45,
+      limits: () => ({ min: 2, max: 400 }),
+      centre: [0, 20, 0],
+      radius: 80,
+      onTakeover: () => {},
+      animateTo: () => {},
+    });
+    const before = projectToScreen(state.pose, high, viewport, 45).y;
+    expect(before).toBeLessThan(0);
+    c.down({ id: 1, x: 400, y: 100, time: 0, type: "mouse", button: 0 });
+    for (let i = 1; i <= 20; i++) c.move({ id: 1, x: 400, y: 100 + i * 25, time: i * 16, type: "mouse" });
+    c.up({ id: 1, x: 400, y: 600, time: 2000, type: "mouse" });
+    expect(projectToScreen(state.pose, high, viewport, 45).y).toBeGreaterThan(before + 200);
   });
 });

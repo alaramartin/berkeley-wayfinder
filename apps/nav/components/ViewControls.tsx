@@ -25,7 +25,7 @@ export function ViewControls({
           <p className="mb-2 font-medium text-neutral-900">Moving around</p>
           <ul className="space-y-1">
             <li>
-              <strong>Drag</strong> — move around the floor (one finger on a phone)
+              <strong>Drag</strong> — move the building, up, down and sideways (one finger on a phone)
             </li>
             <li>
               <strong>Hold Shift and drag</strong>, or right-drag — turn and tip the building

@@ -7,7 +7,7 @@
  *   one finger                slide the model
  *   two fingers               swipe to turn (sideways rounds it, up and down tips it), pinch to zoom, both at once
  * Mouse (as in Google Maps, Mapbox and every map viewer):
- *   left drag                 grab the floor and move it
+ *   left drag                 grab the model and move it
  *   right / middle / Shift    turn and tip the model
  *   wheel, trackpad swipe     zoom towards the cursor
  *   double tap / click        zoom in on that spot
@@ -18,7 +18,7 @@
  * fingers lifted. Here there is a single state machine, so that cannot happen, and it is pure — no
  * DOM, no three — so the transitions are unit-tested.
  */
-import { type Pose, type Touchpoint, clampPose, orbitBy, orbitStep, pivotFor, panOnPlane, slideVertical, zoomPose, TIP_PER_HEIGHT, TURN_PER_WIDTH } from "./camera";
+import { type Pose, type Touchpoint, clampPose, gesturePose, orbitBy, orbitStep, pivotFor, slideScreen, slideVertical, zoomPose, TIP_PER_HEIGHT, TURN_PER_WIDTH } from "./camera";
 import { type PointerDevice, createWheelRouter, zoomFactor } from "./input";
 import type { Vec3 } from "./scene";
 
@@ -201,7 +201,8 @@ export function createController(env: ControllerEnv, device: PointerDevice = "au
         }
         take();
         const now = touchpoint();
-        set(panOnPlane(start.pose, start.pivot, { x: start.from.x, y: start.from.y }, { x: now.x, y: now.y }, env.viewport(), env.fovDegrees));
+        // Moves in the screen's own plane, so dragging down brings the levels above into view.
+        set(gesturePose({ pose: start.pose, pivot: start.pivot, viewport: env.viewport(), fovDegrees: env.fovDegrees, limits: env.limits() }, start.from, now));
         return;
       }
 
@@ -286,8 +287,8 @@ export function createController(env: ControllerEnv, device: PointerDevice = "au
       if (intent.kind === "pan") {
         const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1;
         const anchor = env.pick?.(e.x, e.y) ?? pivotFor(pose, env.centre, env.radius);
-        // Natural scrolling: fingers moving up (positive delta) carry the floor up with them.
-        set(panOnPlane(pose, anchor, { x: e.x, y: e.y }, { x: e.x - intent.dx * unit, y: e.y - intent.dy * unit }, env.viewport(), env.fovDegrees));
+        // Natural scrolling: fingers moving up (positive delta) carry the model up with them.
+        set(slideScreen(pose, anchor, -intent.dx * unit, intent.dy * unit, env.viewport().height, env.fovDegrees));
         return;
       }
       set(zoomPose(pose, zoomFactor(e), { x: e.x, y: e.y }, env.viewport(), env.fovDegrees, env.limits(), env.pick?.(e.x, e.y) ?? undefined));
