@@ -1071,3 +1071,47 @@ describe("dragging down brings higher levels into view", () => {
     expect(projectToScreen(state.pose, high, viewport, 45).y).toBeGreaterThan(before + 200);
   });
 });
+
+describe("the Turn toggle", () => {
+  const viewport = { width: 800, height: 600 };
+  const start: Pose = { eye: [0, 50, 60], target: [0, 0, 0] };
+  const angle = (p: Pose) => Math.atan2(p.eye[0] - p.target[0], p.eye[2] - p.target[2]);
+  const make = (turn: { on: boolean }) => {
+    const state = { pose: start };
+    const c = createController({
+      getPose: () => state.pose,
+      setPose: (p) => (state.pose = p),
+      viewport: () => viewport,
+      fovDegrees: 45,
+      limits: () => ({ min: 2, max: 400 }),
+      centre: [0, 0, 0],
+      radius: 60,
+      onTakeover: () => {},
+      animateTo: () => {},
+      turnMode: () => turn.on,
+    });
+    return { state, c };
+  };
+  const drag = (c: ReturnType<typeof make>["c"], type: "mouse" | "touch") => {
+    c.down({ id: 1, x: 300, y: 300, time: 0, type, button: 0 });
+    for (let i = 1; i <= 10; i++) c.move({ id: 1, x: 300 + i * 20, y: 300, time: i * 16, type });
+    c.up({ id: 1, x: 500, y: 300, time: 2000, type });
+  };
+
+  it("off: a plain drag moves the model and does not turn it", () => {
+    for (const type of ["mouse", "touch"] as const) {
+      const { state, c } = make({ on: false });
+      drag(c, type);
+      expect(angle(state.pose)).toBeCloseTo(angle(start), 5);
+      expect(state.pose.target).not.toEqual(start.target);
+    }
+  });
+
+  it("on: a plain drag, with a mouse or one finger, turns the model", () => {
+    for (const type of ["mouse", "touch"] as const) {
+      const { state, c } = make({ on: true });
+      drag(c, type);
+      expect(angle(state.pose)).not.toBeCloseTo(angle(start), 2);
+    }
+  });
+});

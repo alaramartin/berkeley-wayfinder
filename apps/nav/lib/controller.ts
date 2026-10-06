@@ -36,6 +36,8 @@ export interface ControllerEnv {
   animateTo(pose: Pose, ms: number): void;
   /** The surface point under a screen position, if the model is there. Zooms and slides hold it under the fingers. */
   pick?(x: number, y: number): Vec3 | null;
+  /** The on-screen Turn toggle is on: a plain drag turns the model instead of moving it. */
+  turnMode?(): boolean;
 }
 
 export interface PointerInfo {
@@ -159,7 +161,7 @@ export function createController(env: ControllerEnv, device: PointerDevice = "au
         origin = { x: p.x, y: p.y, time: p.time, moved: false };
         last = { x: p.x, y: p.y, time: p.time };
         // Touch and a plain mouse drag move the map; the right or middle button, or Shift, turn it.
-        const rotate = p.type === "mouse" && (p.button === 1 || p.button === 2 || p.shift === true);
+        const rotate = (p.type === "mouse" && (p.button === 1 || p.button === 2 || p.shift === true)) || env.turnMode?.() === true;
         grabs = !rotate;
         begin(rotate ? "orbit" : "slide");
       } else {
@@ -237,7 +239,7 @@ export function createController(env: ControllerEnv, device: PointerDevice = "au
         const rest = [...pointers.values()][0]!;
         last = { x: rest.x, y: rest.y, time: p.time };
         if (origin) origin.moved = true;
-        begin("slide");
+        begin(env.turnMode?.() ? "orbit" : "slide");
         return;
       }
       if (pointers.size > 0) return;
@@ -272,7 +274,7 @@ export function createController(env: ControllerEnv, device: PointerDevice = "au
       } else if (pointers.size === 1) {
         const rest = [...pointers.values()][0]!;
         last = { x: rest.x, y: rest.y, time: last?.time ?? 0 };
-        begin("slide");
+        begin(env.turnMode?.() ? "orbit" : "slide");
       }
     },
 
