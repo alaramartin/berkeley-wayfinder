@@ -12,10 +12,10 @@
 
 ## Status
 - **Current milestone:** M4 — Nav app + deploy (app built and tested locally and pushed; **waiting on user** to approve the Vercel deploy and then the M4 review gate)
-- **Last completed task:** M4 camera controls rework (2026-10-05) — one controller for touch/mouse/trackpad: touch = one finger slides, two fingers swipe to turn + pinch to zoom; mouse = drag turns, right/Shift-drag slides, wheel zooms; trackpad = pinch zooms, swipe slides
+- **Last completed task:** M4 3D navigation + search polish (2026-10-06) — camera controller (drag moves the model in the screen plane, Shift/right-drag turns, two-finger swipe turns on phone and trackpad, pinch/wheel zoom), picking a room flies to it with a pin, L2 220/222/224 reclassified as classrooms (they were missing from search), pointer cursors; production live and auto-deploying from `main`
 - **Previously:** M4 scene rounds 1–2 — mirror fix, floor ribbon, floor-change risers, guided camera, labels, legend; corridor straightening measured and declined
 - **Vercel:** project `berkeley-wayfinder` (root `apps/nav`, team alara-martins-projects). Production deployed 2026-10-06 at https://berkeley-wayfinder.vercel.app, with Deployment Protection set to *all* deployments (the default "all except custom domains" left the production domain public), so only the owner's Vercel login opens it. GitHub is connected (2026-10-06): a push to `main` deploys to production, other branches get protected previews; manual deploys still work with `vercel deploy --prod` from the repo root
-- **Blocked on user:** whether to make it public; hands-on check of the controls on a real phone
+- **Blocked on user:** M4 review gate sign-off (hands-on check of the controls on a real phone; whether to make the site public); splitting the shared 220/222 room shape in the author tool
 - **Previously:** M4 nav app: search, 3D scene, route panel, URL state
 - **Previously:** M3 built — routing graph, A*, accessible mode, nearest-POI, instructions; 14 routing tests including real Wheeler data; `pnpm routes wheeler` prints samples
 - **Previously:** M2 review gate passed — six levels accepted (188 rooms), aligned + OSM-fitted, 11 shafts (9 stairs, 2 elevators), 4 entrances; all canonical files validate
